@@ -11,5 +11,13 @@ updates:
       actions:
         patterns: ["*"]
 
-  # Add npm / pip / pub / terraform entries here once the stack is chosen
-  # (see docs/STACK.md). Dependabot errors on ecosystems with no manifest.
+  # pnpm workspace (root + apps/*). Add pub / terraform entries as those
+  # workspaces land; Dependabot errors on ecosystems with no manifest.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]

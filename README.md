@@ -16,12 +16,12 @@ Kinfold never charges interest or late fees, and never writes first mortgages it
 ## Docs
 
 - **[docs/design.md](docs/design.md)**: the product and business design, principles, structure, risks, governance and roadmap
-- **[docs/STACK.md](docs/STACK.md)**: tech stack and dev setup (not chosen yet)
+- **[docs/STACK.md](docs/STACK.md)**: tech stack and dev setup (`pnpm dev:run:web` → http://localhost:7790)
 - [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [SUPPORT.md](SUPPORT.md)
 
 ## Status
 
-Design stage. No application code yet. Phase 1 (Family & Friends Loans, no money held) is the first build. See the roadmap in `docs/design.md`.
+Design stage. A preview website lives in `apps/web`. Phase 1 (Family & Friends Loans, no money held) is the first build. See the roadmap in `docs/design.md`.
 
 ## License
 

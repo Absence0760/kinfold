@@ -1,0 +1,147 @@
+/* Design tokens. Light by default, dark when the OS asks for it. */
+:root {
+	--bg: #faf7f2;
+	--surface: #ffffff;
+	--surface-2: #f2ede4;
+	--border: #e6dfd3;
+	--text: #1f1a14;
+	--muted: #6b6157;
+	--accent: #1f6b4f;
+	--accent-soft: #e3efe8;
+	--accent-contrast: #ffffff;
+	--warm: #b4532a;
+	--warm-soft: #f7e6dc;
+	--shadow: 0 1px 2px rgb(40 30 15 / 6%), 0 8px 24px rgb(40 30 15 / 6%);
+	--radius: 14px;
+	--max: 1120px;
+
+	color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #14120f;
+		--surface: #1d1a16;
+		--surface-2: #25211b;
+		--border: #353029;
+		--text: #f1ece4;
+		--muted: #a89e91;
+		--accent: #5cc79a;
+		--accent-soft: #1c3329;
+		--accent-contrast: #0b1f16;
+		--warm: #e88a62;
+		--warm-soft: #3a2519;
+		--shadow: none;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family:
+		ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+		sans-serif;
+	font-size: 16px;
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+	margin: 0;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+}
+
+p {
+	margin: 0;
+}
+
+a {
+	color: var(--accent);
+}
+
+.container {
+	max-width: var(--max);
+	margin: 0 auto;
+	padding: 0 20px;
+}
+
+.section {
+	padding: 88px 0;
+}
+
+.section-alt {
+	background: var(--surface-2);
+}
+
+.eyebrow {
+	color: var(--warm);
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	margin-bottom: 10px;
+}
+
+.section-title {
+	font-size: clamp(28px, 4vw, 40px);
+	max-width: 720px;
+}
+
+.section-lead {
+	color: var(--muted);
+	font-size: 18px;
+	max-width: 680px;
+	margin-top: 14px;
+}
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 20px;
+	border-radius: 999px;
+	font-weight: 600;
+	text-decoration: none;
+	border: 1px solid transparent;
+	cursor: pointer;
+	font-size: 15px;
+}
+
+.btn-primary {
+	background: var(--accent);
+	color: var(--accent-contrast);
+}
+
+.btn-ghost {
+	border-color: var(--border);
+	color: var(--text);
+	background: var(--surface);
+}
+
+:focus-visible {
+	outline: 3px solid var(--warm);
+	outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+	.section {
+		padding: 64px 0;
+	}
+}

@@ -77,10 +77,7 @@ jobs:
         # step before "Initialize CodeQL":
         #   - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         #     with: { python-version: '3.14' }
-        # No application code yet, so only `actions` runs; CodeQL fails a
-        # language with no source files. Add javascript-typescript (and/or
-        # python) when the first app code lands.
-        language: [actions]
+        language: [javascript-typescript, actions]
 
     steps:
       - name: Checkout

@@ -1,0 +1,24 @@
+{
+  "name": "kinfold",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "//-- setup --": "One-time bootstrap after a fresh clone. No Docker or cloud account needed yet.",
+    "setup": "pnpm install && pre-commit install",
+    "//-- web --": "SvelteKit 5 prerendered marketing site on port 7790 (docs/STACK.md). No backend; every page is static HTML.",
+    "dev:run:web": "pnpm -C apps/web dev",
+    "build:web": "pnpm -C apps/web build",
+    "preview:web": "pnpm -C apps/web preview",
+    "//-- check --": "Typecheck every workspace.",
+    "check": "pnpm run check:web",
+    "check:web": "pnpm -C apps/web check",
+    "//-- test --": "Vitest unit tests beside the modules they cover, plus the root-scripts guard.",
+    "test": "pnpm run test:web && pnpm run test:scripts",
+    "test:web": "pnpm -C apps/web test",
+    "test:scripts": "node scripts/check_root_scripts.mjs"
+  }
+}
