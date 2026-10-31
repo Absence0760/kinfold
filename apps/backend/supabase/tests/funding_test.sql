@@ -10,7 +10,8 @@
 --     refusal releases pledges and cancels loans not yet in force;
 --   * a loan schedule sums exactly to the principal, signing needs both parties
 --     and that exact schedule, installments over the principal fail at commit;
---   * only the lender forgives, and forgiving to zero marks the loan forgiven.
+--   * only the lender forgives, only a disbursed ('active') loan, and forgiving
+--     to zero marks the loan forgiven.
 -- Deferred constraint triggers are forced with `set constraints all immediate`
 -- inside the asserted statement, since the test transaction never commits.
 begin;
@@ -108,11 +109,15 @@ select pg_temp.member('00000000-0000-0000-0004-0000000000a1', 'CA');            
 select pg_temp.member('00000000-0000-0000-0004-0000000000a2', 'CA');                          -- fay, his sister
 select pg_temp.member('00000000-0000-0000-0004-0000000000a3', 'NY');                          -- sam, a stranger
 select pg_temp.member('00000000-0000-0000-0004-0000000000a4', 'CA', 'pending_verification');  -- uma, invited, unverified
+select pg_temp.payee('00000000-0000-0000-0004-0000000000c1');                                 -- owen's shop, verified
 
 -- b1: people only, 1000.00. b2: pool + on the board. b3: pool, no public summary yet.
 select pg_temp.request('00000000-0000-0000-0004-0000000000b1', '00000000-0000-0000-0004-0000000000a1', 'people', 100000);
 select pg_temp.request('00000000-0000-0000-0004-0000000000b2', '00000000-0000-0000-0004-0000000000a1', 'pool', 50000);
 select pg_temp.request('00000000-0000-0000-0004-0000000000b3', '00000000-0000-0000-0004-0000000000a1', 'pool', 50000);
+-- Pledges wait for a verified payee (hardening_test), so every request names the shop.
+update public.requests set payee_id = '00000000-0000-0000-0004-0000000000c1'
+where member_id = '00000000-0000-0000-0004-0000000000a1';
 select pg_temp.move('00000000-0000-0000-0004-0000000000b1', 'scoring', 'open');
 select pg_temp.move('00000000-0000-0000-0004-0000000000b2', 'scoring', 'open');
 select pg_temp.move('00000000-0000-0000-0004-0000000000b3', 'scoring', 'open');
@@ -198,7 +203,8 @@ select throws_ok($$select public.pledge('00000000-0000-0000-0004-0000000000b1', 
 -- --- all-or-nothing release --------------------------------------------------------
 reset role;
 -- b4 withdrawn, b5 expired, b6 refused: each has a gift and a loan pledged by fay.
-select pg_temp.request(id, '00000000-0000-0000-0004-0000000000a1', 'people', 100000)
+select pg_temp.request(id, '00000000-0000-0000-0004-0000000000a1', 'people', 100000, 'car_damage',
+                       '00000000-0000-0000-0004-0000000000c1')
 from unnest(array['00000000-0000-0000-0004-0000000000b4', '00000000-0000-0000-0004-0000000000b5',
                   '00000000-0000-0000-0004-0000000000b6']::uuid[]) id;
 select pg_temp.move(id, 'scoring', 'open')
@@ -284,8 +290,11 @@ select throws_ok(
   '23514', 'installments (100001) exceed the principal (100000): Kinfold loans carry no interest',
   'raising an installment over the principal fails at commit');
 
--- Unsigned loan d2 can't be forgiven; d3 needs to be in force for the over-forgiveness check.
-update public.family_loans set status = 'signed', borrower_signed_at = now(), lender_signed_at = now()
+-- Forgiveness needs a disbursed ('active') loan. d1 and d3 stand alone (no
+-- request to be paid), so the disbursement is recorded directly. Unsigned d2
+-- can't be forgiven.
+update public.family_loans set status = 'active' where id = '00000000-0000-0000-0004-0000000000d1';
+update public.family_loans set status = 'active', borrower_signed_at = now(), lender_signed_at = now()
 where id = '00000000-0000-0000-0004-0000000000d3';
 
 set local role authenticated;
@@ -299,7 +308,7 @@ select throws_ok($$select public.forgive_loan('00000000-0000-0000-0004-000000000
 select lives_ok($$select public.forgive_loan('00000000-0000-0000-0004-0000000000d1', 60000, 2026)$$,
   'the lender forgives part of the balance');
 select is((select (status, public.loan_outstanding_cents(id))::text from public.family_loans
-           where id = '00000000-0000-0000-0004-0000000000d1'), '(signed,40000)',
+           where id = '00000000-0000-0000-0004-0000000000d1'), '(active,40000)',
   'part-forgiveness reduces the balance and keeps the loan in force');
 select lives_ok($$select public.forgive_loan('00000000-0000-0000-0004-0000000000d1', 40000, 2027)$$,
   'the lender forgives the rest');

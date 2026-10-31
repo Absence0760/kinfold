@@ -13,7 +13,7 @@
 --   priya@test.com  member + appeal panel, TX: a request already paid from the pool
 --
 -- Where possible the data is made through the real functions (submit_request,
--- record_score, create_invite, pledge, set_loan_schedule, sign_loan), acting as
+-- record_score, create_invite, pledge, set_loan_terms, set_loan_schedule, sign_loan), acting as
 -- each member via request.jwt.claims, so the seed exercises the same rules the
 -- app does. Writes only the service role can make (scores, pool runs, payouts)
 -- are done directly, as postgres.
@@ -168,8 +168,11 @@ select public.pledge('00000000-0000-0000-0000-0000000000b3', 30000, 'gift');
 select public.pledge('00000000-0000-0000-0000-0000000000b3', 70000, 'loan');
 
 -- The loan: repaid on the 15th, 7 monthly installments (the last takes the
--- remainder), forgive-the-rest if repayment ever stops. Both sign.
-update public.family_loans set payment_day = 15, default_plan = 'forgive', imputed_rate_bps = 0
+-- remainder), forgive-the-rest if repayment ever stops. Sam sets the terms;
+-- both sign. (imputed_rate_bps is written by the paperwork service.)
+select public.set_loan_terms(id, 15, 3, 'forgive')
+from public.family_loans where request_id = '00000000-0000-0000-0000-0000000000b3';
+update public.family_loans set imputed_rate_bps = 0
 where request_id = '00000000-0000-0000-0000-0000000000b3';
 select public.set_loan_schedule(id, 7, (date_trunc('month', current_date + interval '1 month') + interval '14 days')::date)
 from public.family_loans where request_id = '00000000-0000-0000-0000-0000000000b3';
@@ -197,9 +200,9 @@ from public.evidence e where e.request_id = '00000000-0000-0000-0000-0000000000b
 update public.requests set status = 'paid' where id = '00000000-0000-0000-0000-0000000000b4';
 
 -- The books for that payout: committed from the pool, then paid out.
-select private.post_journal('protection', 'pool_grant', '00000000-0000-0000-0000-0000000000f2', null,
+select public.post_journal('protection', 'pool_grant', '00000000-0000-0000-0000-0000000000f2', null,
   '[{"code":"available","amount_cents":72000},{"code":"committed","amount_cents":-72000}]');
-select private.post_journal('protection', 'payout', '00000000-0000-0000-0000-0000000000b4', 'dev_transfer_b4',
+select public.post_journal('protection', 'payout', '00000000-0000-0000-0000-0000000000b4', 'dev_transfer_b4',
   '[{"code":"committed","amount_cents":72000},{"code":"paid_out","amount_cents":-72000}]');
 
 select set_config('request.jwt.claims', '', false);

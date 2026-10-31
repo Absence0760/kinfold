@@ -113,7 +113,8 @@ create function pg_temp.open_request(p_id uuid, p_amount bigint, p_score smallin
                                      p_funding public.funding_mode default 'pool',
                                      p_kind public.request_kind default 'car_damage')
 returns uuid language sql as $$
-  select pg_temp.request(p_id, '00000000-0000-0000-0005-0000000000a1', p_funding, p_amount, p_kind);
+  select pg_temp.request(p_id, '00000000-0000-0000-0005-0000000000a1', p_funding, p_amount, p_kind,
+                         '00000000-0000-0000-0005-0000000000c1');
   select pg_temp.move(p_id, 'scoring', 'open');
   update public.requests set current_score = p_score where id = p_id;
   select p_id;
@@ -125,6 +126,8 @@ $$;
 
 select pg_temp.member('00000000-0000-0000-0005-0000000000a1', 'CA');
 select pg_temp.member('00000000-0000-0000-0005-0000000000a2', 'NY');
+-- Every request's shop is verified: the pool waits for a verified payee (hardening_test).
+select pg_temp.payee('00000000-0000-0000-0005-0000000000c1');
 
 select throws_ok($$select public.run_pool_allocation('people', 1000)$$,
   '22023', 'no pooled fund people', 'the people fund has no pool to run');
