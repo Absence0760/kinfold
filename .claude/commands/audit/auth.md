@@ -1,71 +1,60 @@
 ---
-description: Sweep every backend route for auth-middleware gating + tenant-context wrapper discipline
+description: Sweep every Supabase-exposed surface (tables, views, RPCs, storage buckets, edge functions) for auth gating, explicit grants, and RLS keyed on auth.uid()
 ---
 
-Audit auth gating and tenant-context enforcement across the backend API.
+Audit auth gating and per-member data isolation across the Kinfold backend.
 
 ## Goal
 
-A single route registered without the auth middleware exposes whatever it does to anonymous callers. A single route that bypasses the tenant-aware query wrapper reads across tenant boundaries — RLS policies (or whatever isolation mechanism this stack uses) don't apply because the per-connection tenant marker (`SET app.current_org_id = …`, or the equivalent) was never set. Find both classes of bug in one pass.
+Kinfold's backend is Supabase (`apps/backend/supabase`). There is no hand-written API router: PostgREST exposes whatever the `anon` and `authenticated` roles are granted, and RLS decides which rows each caller sees. So the two bug classes are:
+
+1. **A grant or policy too wide** — an object reachable by `anon` (or by any `authenticated` member) that should be owner-only, staff-only or private. One missing `enable row level security` or one `using (true)` exposes every member's rows.
+2. **A path that skips RLS** — a `security definer` function, an edge function using the service-role key, or a storage bucket policy that doesn't re-check that the caller owns the resource.
+
+Find both classes in one pass. The intended model is written down in `docs/backend.md` § Access model (who can do what, per role) and § Architecture (edge functions run as `service_role` and are the only callers of service-only functions: `record_score`, `run_pool_allocation`, `apply_default_plan`, `private.post_journal`); every status change goes through a `security definer` function. Kinfold's migration conventions (header of `apps/backend/supabase/migrations/20261030120000_members.sql`) are the baseline: Supabase's default "grant all to anon, authenticated" is revoked at the end of every migration and clients get explicit grants only; anything clients must never read lives in the `private` schema; `security definer` functions pin `search_path = ''` and qualify every name.
 
 ## What to check
 
-1. **Global route registration.** Read the entrypoint that mounts every router/handler (e.g. `backend/src/index.ts`, `app.py`, `main.go`). The default should be "auth middleware applied at the mount". Public-by-design mounts are an explicit allowlist:
-   - `/health` and similar liveness/readiness probes
-   - Pre-auth endpoints (`/auth/login`, `/auth/register`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/verify-email`)
-   - Public read endpoints intended for unauthenticated consumption (status badges, public webhooks, OAuth callbacks)
+1. **Grants inventory.** For every object in `public` (tables, views, sequences, functions), list what `anon` and `authenticated` are granted. Against a running local stack (`pnpm dev:db:up`; DB on port 54722) query `information_schema.role_table_grants` and `information_schema.routine_privileges`; otherwise read the `grant` / `revoke` statements in each migration in order. Anything granted to `anon` must be on the documented list (fund rules, subscription formulas, pool runs, `public_stats` — `docs/backend.md` § Access model) and say so in a comment. The `board_requests` view is for **verified members only**, never `anon`. Each migration ends with the default-grant revoke — flag any that doesn't.
 
-   Anything else mounted without the auth middleware is a finding. Anything mounted *with* the auth middleware but with sub-routers that re-expose a handler via a different public mount needs re-checking — the middleware applies at the mount point, not per-handler.
+2. **RLS on every table.** Every table in `public` has `enable row level security` in the migration that created it, and at least one policy for each granted verb. A granted table with RLS off is Critical. Policies key on `(select auth.uid())`, and on member status / role where it matters (a `suspended` or `pending_verification` member must not post requests or fund them; reviewer / panel / admin powers come from the `member_roles` table, never from a JWT claim the client can set or from `user_metadata`).
 
-2. **Non-null `user` assertions in handlers.** Inside any route handler, code like `req.user!.id` (TS) / `request.user.id` (Python) / `ctx.User.OrgID` (Go) is only safe when the auth middleware actually ran upstream. Grep route handlers for these accesses and confirm each lives in a router gated by the auth middleware.
+3. **The `private` schema stays private.** `usage` on `private` is revoked from `public, anon, authenticated`. Identity (`private.member_identity`), `private.fraud_signals`, `private.audit_log`, the `private.ledger_*` tables, settings history — no grant, no view in `public` that selects them without filtering to the owner, no `security definer` function that returns them to a non-owner.
 
-3. **Tenant-aware query wrapper discipline.** Routes that read or write tenant-scoped data must use the tenant-aware wrapper (e.g. `tenantQuery(orgId, sql, params)` / `tenant_db(org_id).query(...)` / `WithTenant(ctx, orgId, ...)`). The wrapper's job is to set the per-connection tenant marker before queries fire so RLS sees an org context. The DB connects as a **non-superuser role** so RLS is actually enforced — confirm this in the project's DB-connection docs.
+4. **`security definer` functions.** Each one pins `search_path = ''`, revokes `execute` from `public`, grants only the roles that need it, and checks `auth.uid()` against the resource owner or role before acting — or is documented as intentionally caller-agnostic (e.g. a trigger function). A definer function exposed as an RPC that takes a member id argument and trusts it is Critical. The service-only functions listed above have `execute` granted to `service_role` only; `my_reliability()` and `my_giving_record()` return only the caller's own data.
 
-   **Pre-tenant queries are legitimate** (don't flag) when they're explicitly cross-tenant by design:
-   - Auth middleware itself — looking up the API key / JWT subject before tenant context can be set
-   - Login / registration / invite acceptance — pre-tenant by definition
-   - Background jobs / cron sweeps that iterate every org
-   - Public-read endpoints (badges, OAuth handshake)
-   - Admin-only DB introspection
+5. **Resource-level checks on writes.** A member can only create a request for themselves, only add evidence to their own request, only pledge through `pledge` (which requires an accepted invite, and an active member for a loan), never write `contributions`, `payouts` or ledger rows directly, never verify a payee, and never set their own score, status, role or `verified_at`. Supporters read only the requests they were invited to; reviewers never their own or their own region's (`record_review`). Check `with check` clauses as well as `using` — an UPDATE policy without `with check` lets a member move a row to another owner.
 
-   Any **new** raw query in a tenant-scoped route is a finding unless the file has a comment explaining why it's cross-tenant by design.
+6. **Storage buckets.** Per `docs/backend.md` § Access model: `evidence-original` holds files under the member's own folder and is readable only by that member — reviewers get short-lived signed URLs from the `evidence-url` edge function, which writes `private.audit_log`; `evidence-redacted` is readable by the owner and by verified members once the request is on the board. Policies on `storage.objects` key on the folder prefix and `auth.uid()`. Any bucket marked public, or a reviewer policy granting direct read on originals, is Critical (`docs/STACK.md` § Domain rules: shared evidence is redacted; originals are private). `/audit/storage` goes deeper.
 
-4. **Resource-level authorization on path-param handlers.** Endpoints that take a resource id in the URL (`/orders/:id`, `/runs/:id`, `/reports/:id`) must verify the resource belongs to the caller's org/user **before** doing the work:
+7. **Edge functions** (planned under `apps/backend/supabase/functions/`; the list is `docs/backend.md` § "Edge functions (to build)"). Each one either verifies the caller's JWT (`verify_jwt` left on in `config.toml`, or an explicit `supabase.auth.getUser()`), or is a partner webhook that verifies the partner's signature over the raw body with a constant-time compare. A function that creates a service-role client must re-implement the ownership check RLS would have done; one that doesn't is Critical.
 
-   ```
-   tenantQuery(orgId, "SELECT 1 FROM <table> WHERE id = $1", [resourceId])
-   ```
+8. **Auth config.** `apps/backend/supabase/config.toml` `[auth]`: email confirmation on, sign-up policy matches the design (no anonymous requests — `docs/design.md` § Fraud-proofing), JWT expiry sane, `site_url` / redirect allowlist not wildcarded, rate limits set. MFA for reviewer / panel / admin roles once those UIs exist.
 
-   then fail closed if no row returns. The canonical gotcha is the *streaming* endpoint (SSE / WebSocket) — without the gate, an authenticated user from a different org can subscribe to another org's live events.
-
-5. **Token in query string.** For endpoints that can't accept `Authorization: Bearer` (browser `EventSource` for SSE, `<img>` with credentials), tokens are sometimes accepted as `?token=…`. Verify the token-from-query path runs through the same JWT verification + org binding as the header path. Token-in-URL is an accepted footgun for SSE; the mitigation is short TTL + HTTPS + scoping to that single path.
-
-6. **API key paths.** If the project supports machine-to-machine API keys, confirm:
-   - Keys are hashed at rest (with a non-secret prefix retained for fast lookup, not the full hash).
-   - Key lookup runs *before* tenant context is set (a legitimate pre-tenant query).
-   - The resulting user/org context is established from the *stored* `api_keys.org_id`, never from a request header or body.
+9. **Reviewer separation.** Per `docs/design.md` § Fraud-proofing, reviewers never see their own region's requests and never review their own. Once review tables exist, confirm the policy enforces it in the database, not only in the UI.
 
 ## Report
 
 Group findings by severity:
 
-- **Critical** — a route exposes tenant data to anonymous callers; a route lets one tenant read/write another tenant's rows because the tenant marker wasn't set.
-- **High** — non-null user assertions reachable in a path that isn't gated; a `:resourceId` handler doesn't verify ownership.
-- **Medium** — new raw query in a tenant-scoped route without a comment explaining why; a per-route auth check that duplicates (and could drift from) the global one.
-- **Low** — public mount missing a comment explaining why it's public.
+- **Critical** — a table, view, RPC, bucket or edge function exposes one member's data (or `private` data) to `anon` or to another member; a member can write their own score / status / role; a service-role path with no ownership check.
+- **High** — RLS on but a policy is `using (true)` for a sensitive verb; an UPDATE policy without `with check`; a definer function missing `search_path = ''` or the `public` execute revoke; a webhook without signature verification.
+- **Medium** — a migration missing the default-grant revoke; an `anon` grant with no comment saying why it's public; role checks read from client-editable claims.
+- **Low** — a public-by-design object missing its explanatory comment.
 
-For each: file:line, the concrete fix, the worst-case blast radius.
+For each: migration file:line (or function path), the concrete fix, the worst-case blast radius. If a surface doesn't exist yet (functions, buckets), say "not present yet".
 
 ## Useful starting points
 
-- The entrypoint that mounts all routers — the full picture of who's gated.
-- The auth middleware — JWT and/or API key resolution.
-- The tenant-aware DB wrapper — the `set_config('app.current_org_id', …)` (or equivalent) is what closes the loop.
-- Any streaming endpoint (SSE / WebSocket) — the canonical "verify the resource belongs to the caller's org" gate.
-- The project's CLAUDE.md or `docs/security.md` for the documented constraint about which DB role runtime traffic uses.
+- `apps/backend/supabase/migrations/` — read in timestamp order; later migrations may redefine a policy or function
+- `apps/backend/supabase/config.toml` — `[auth]`, `[storage]`, `[api]` (`schemas` exposed, `extra_search_path`)
+- `apps/backend/supabase/tests/` — pgTAP tests (`rls_test` and siblings); every "cannot see" test should have a positive control
+- `docs/backend.md` § Access model, § Architecture, § "Where each rule is enforced"
+- `docs/STACK.md` § Domain rules
+- `docs/design.md` § Fraud-proofing
 
 ## Delegate to
 
-Use the `repo-security-auditor` agent: `"Audit auth gating and tenant-context enforcement across the backend API."`
+Use the `repo-security-auditor` agent: `"Audit auth gating, grants and RLS across every Supabase-exposed surface (tables, views, RPCs, storage buckets, edge functions)."`
 
 Read-only. Findings only.

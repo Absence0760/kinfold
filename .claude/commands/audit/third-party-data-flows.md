@@ -2,44 +2,49 @@
 description: Map every outbound personal-data hop into a sub-processor list ready for the Privacy Policy
 ---
 
-Audit every outbound flow of personal data to a third-party processor. Output is the input to a GDPR Art 30 Record of Processing Activities and the sub-processor list of a Privacy Policy.
+Audit every outbound flow of personal data to a third-party processor. Output is the input to a Record of Processing Activities (GDPR Art 30 shape, also what US state privacy laws and partner due diligence ask for) and the sub-processor list of a Privacy Policy.
 
 ## Goal
 
-A regulator's first ask in any incident is "show me your sub-processor list". A user's most-clicked Privacy Policy section is "who does my data go to?". Both need the same artefact: a table of provider × data × purpose × region × DPA + opt-out path. This audit produces it by walking the codebase.
+A regulator's or partner's first ask in any incident is "show me your sub-processor list". A member's most-clicked Privacy Policy section is "who does my data go to?". Both need the same artefact: a table of provider × data × purpose × region × DPA + opt-out path. This audit produces it by walking the codebase — and, for Kinfold today, by walking `docs/design.md`, because most processors are designed but not yet chosen or integrated.
+
+Kinfold handles unusually sensitive data: identity, income and bank-statement data, loan amounts, hardship details, photos of people, vehicles and homes, police reports (`docs/STACK.md` § Domain rules: financial and identity data is sensitive).
 
 ## What to check
 
-1. **Provider inventory.** Grep for every outbound endpoint by base URL:
-   - `strava.com`, `connect.garmin.com`, `parkrun.com`
-   - `api.anthropic.com`, `api.openai.com` (or `OPENAI_BASE_URL` for local Ollama)
-   - `api.revenuecat.com`, `api.stripe.com`
-   - `api.maptiler.com`, `*.tiles.mapbox.com` if any
-   - `sentry.io`, `*.ingest.sentry.io`
-   - an external weather API (`api.open-meteo.com` — elevation for route builder)
-   - Google APIs (`googleapis.com`, `accounts.google.com`)
-   - Apple (`appleid.apple.com`)
-   - AWS endpoints (S3, CloudFront, Lambda, KMS, Route 53) — surfaced via Terraform
-   - the auth/data platform
-   - <hosted-worker-platform> (your worker host) — Go worker + the routing service internal
-2. **Per-flow analysis.** For each:
-   - What user data leaves? (email, IP, sensor data, payment intent, prompt text, error stack — list yours)
-   - From where? (web client, backend route, Go worker, mobile native)
-   - To which region? (US east-1, EU west-1, ap-southeast-2)
-   - DPA / SCC URL?
-   - Opt-out mechanism if any? (user disconnects integration, disables session-replay (if used), etc.)
-   - Legal basis? (consent / contract / legitimate interest)
-3. **Tiles.** the map provider logs the requesting IP + viewport coordinates. Every web map render → the map provider log. Treat tile fetches as a personal-data hop.
-4. **Coach prompts.** `an AI-call entrypoint (e.g. an LLM streaming endpoint)` + the Lambda variant build a prompt that includes <sensitive-data summary built for the AI call>. That's HEALTH data sent to the AI provider. Confirm:
-   - JWT-gated (only owner's data goes out)
-   - Region of the API endpoint
-   - the AI provider's data-retention statement
-   - alternate-provider fallback (if used) data-retention statement
-5. **the error monitor.** the error monitor sees `user_id` (pseudonymous uuid), URL paths, error stack traces. Replay (if enabled) sees DOM. Confirm replay is OFF by default + opt-in.
-6. **Third-party webhook payloads.** A third-party service POSTs event ids to our webhook endpoint. Each event triggers a fetch of the full activity. The data goes from external service → backend worker → the data platform. The flow direction is *inbound*, but it creates a *retention* obligation here that mirrors the upstream source.
-7. **OAuth handoffs.** social OAuth ID tokens are presented to the auth provider, which validates against the provider. Personal data exposed = email + uid + provider profile fields. Confirm the validation flow doesn't log the token.
-8. **Email.** Local dev uses the local mail capture tool. Prod uses the email provider — confirm which (<email-service>? another transactional email provider? in-house?). Each is a sub-processor.
-9. **Sub-sub-processors.** AWS uses sub-processors of its own (CloudFront edge nodes by region). The project's Privacy Policy needs to point users to AWS's sub-processor list rather than enumerate it.
+1. **Provider inventory — in code.** Grep `apps/` for outbound base URLs and SDK imports (`fetch(`, `https://`, `@supabase/`, provider SDKs), `apps/backend/supabase/config.toml` for auth providers, SMTP, storage S3 settings and `[edge_runtime]`, and `.github/workflows/` for third-party actions that see data. Today expect: Supabase (auth, Postgres, storage) and, for the static site, whatever `apps/web` loads at runtime (fonts, analytics — check `src/app.html` and `+layout.svelte`; none is expected).
+
+2. **Provider inventory — designed, not yet chosen** (`docs/design.md` § Structure and § Open questions; `docs/backend.md` § Architecture draws the full partner set). List each as a pending row so the Privacy Policy draft can't forget it:
+   - **KYC vendor** — identity documents and selfies; Kinfold keeps only the vendor reference and outcome (`private.member_identity`).
+   - **Bank-link provider** — read-only bank statements for earnings verification (`docs/design.md` § The subscription).
+   - **Payment partner** — moves money between people and to payees; sees names, amounts, payee details.
+   - **Licensed partner insurer / reciprocal** — holds the community pool; receives claim data.
+   - **Partner credit union / CDFI** — holds the Home Fund; receives applicant data and needs assessments.
+   - **AI scorer provider** — receives unredacted evidence (see `/audit/llm-endpoint`).
+   - **Redaction service** — if redaction is a hosted API rather than a self-hosted model.
+   - **Insurer databases** — duplicate-claim checks "where a partner gives access" (`docs/design.md` § Fraud-proofing).
+   - **E-signature provider** — loan agreements and promissory notes.
+   - **County lien recording** — secured family loans record a lien on the home (`docs/design.md` § Product 1); the lien is a public record by design.
+   - **Email provider** — transactional email (local: Mailpit on port 54724).
+   - **Hosting** — AWS S3 + CloudFront for `apps/web` once `infra/` lands.
+
+3. **Per-flow analysis.** For each:
+   - What member data leaves? (email, IP, identity document, bank data, evidence photos, request text, amounts, hardship details)
+   - From where? (browser, edge function, DB job, partner webhook)
+   - To which region?
+   - DPA / data-sharing agreement URL, or "contract pending"?
+   - Opt-out, if any? (most of these are necessary for the service and have none — say so)
+   - Legal basis? (contract / consent / legal obligation for KYC)
+
+4. **Third parties in the evidence.** Photos and reports contain people who are not members (the other driver, passers-by, plates). Redaction protects the public copy; the original still flows to the scorer and reviewers. Note this as a disclosure item.
+
+5. **Funders.** Family and friends who give or lend through a shared request may not be members. Their data (name, payment details via the payment partner, loan agreement) is personal data Kinfold processes — list where it goes.
+
+6. **Error monitoring and analytics.** Any error monitor or analytics added to `apps/web` sees URLs and possibly request ids. Confirm none is present without disclosure, and that session replay is off.
+
+7. **Inbound webhooks.** Payment partner and KYC webhooks create data here; record the retention obligation they create.
+
+8. **Sub-sub-processors.** Supabase and AWS have their own sub-processor lists; the Privacy Policy points to them rather than enumerating them.
 
 ## Report
 
@@ -47,22 +52,22 @@ Output two artefacts:
 
 ### (A) Sub-processor table
 
-| Provider | Data | Region | Purpose | DPA / SCC | Opt-out |
-|---|---|---|---|---|---|
+| Provider | Status (live / designed) | Data | Region | Purpose | DPA / agreement | Opt-out |
+|---|---|---|---|---|---|---|
 
-One row per flow. The user pastes this into the Privacy Policy.
+One row per flow.
 
 ### (B) Findings
 
-- **Critical** — a sub-processor on the list that the user does not currently disclose anywhere.
-- **High** — a flow that bypasses an opt-out the user has asserted in Settings (e.g. user disabled the error monitor but it still fires).
-- **Medium** — missing region detail or unclear data-retention period.
+- **Critical** — personal data leaving to a processor that is not disclosed anywhere; unredacted evidence reaching a processor other than the scorer.
+- **High** — a flow that bypasses an opt-out the member was offered; identity documents stored by Kinfold rather than the KYC vendor.
+- **Medium** — missing region or retention detail.
 - **Low** — undocumented sub-sub-processor chain.
 
-End with a **clean** section: outbound endpoints in the codebase where you confirmed no personal data leaves.
+End with a **clean** section: outbound endpoints confirmed to carry no personal data.
 
 ## Delegate to
 
-Use the `compliance-auditor` agent: `"Map every outbound personal-data flow in this monorepo into a sub-processor list."`
+Use the `compliance-auditor` agent: `"Map every outbound personal-data flow in this repo, plus the processors designed in docs/design.md, into a sub-processor list."`
 
-Read-only. Output the table + findings. Don't recommend a default Privacy Policy — that's `intl-legal-doc-reviewer`'s job once the user drafts one.
+Read-only. Output the table + findings. Questions about what the law requires go to `legal-researcher`.

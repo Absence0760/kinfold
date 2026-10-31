@@ -1,46 +1,49 @@
 ---
-description: Audit the project's GDPR posture — lawful basis, consent, DSAR, retention, transfers, age gate, breach plan
+description: Audit Kinfold's privacy-law posture — US state privacy laws (CCPA/CPRA and peers) and GLBA-style financial privacy first, GDPR / UK GDPR only if non-US users are admitted — notice, lawful basis, consent, data-subject requests, retention vs. record-keeping duties, transfers, minors, breach plan
 ---
 
-Audit the GDPR / UK GDPR posture of this monorepo. The goal is a punch list the user can fix before opening signup to EU / UK / EEA users.
+Audit the privacy posture of Kinfold. The goal is a punch list the operator can take to counsel before the member app opens sign-up. (The file keeps its `gdpr` name for continuity with the other estate repos; the content is Kinfold's actual regime.)
 
 ## Goal
 
-GDPR fines are calibrated to global revenue, not local impact. The headline numbers (€20M or 4% of global turnover) get the press; the actual launch risk is reviewer rejection by Apple / Google Play if no in-app privacy policy + account-deletion + age-gate exist. Find every gap.
+Kinfold is a US-first cooperative: `public.members.region` is a two-letter US state code (`apps/backend/supabase/migrations/20261030120000_members.sql`), and launch is one state at a time (`docs/design.md` § Roadmap, § Open questions). It handles some of the most sensitive categories there are — identity, income and bank-statement data, loan amounts, hardship details, photos of people and property, police reports (`docs/STACK.md` § Domain rules: financial and identity data is sensitive). So the regimes that matter first are:
+
+- **State consumer privacy laws** (CCPA/CPRA and the growing set of peers) — notice at collection, right to know / delete / correct, sensitive personal information limits, no sale or sharing.
+- **Financial privacy** — GLBA's privacy and safeguards rules may apply to Kinfold or flow down through the payment partner, the partner credit union and the partner insurer by contract. Whether Kinfold itself is a "financial institution" is a question for `legal-researcher` and counsel.
+- **FCRA / ECOA** — if the reliability record or the Home Fund needs formula functions like a credit decision (`docs/design.md` § How the pieces connect: "The record replaces a credit score"), adverse-action and fair-lending duties may attach. Flag, don't decide.
+- **GDPR / UK GDPR** — only if non-US residents can join. Check whether anything prevents it; if nothing does, the GDPR checks below apply too.
+
+Kinfold is pre-launch: the web app is a prerendered marketing site and the backend is an early schema. Many checks will be "not built yet" — record what the first member-facing release must include.
 
 ## What to check
 
-1. **Privacy policy + Terms of Service.** Do `/privacy` and `/terms` routes exist in `the frontend routes directory`? Are they linked from the signup form, the marketing footer, and the iOS / Android in-app surface? Without them, both stores reject.
-2. **Lawful basis (Art 6) per data category.** For each personal-data column the user listed in `compliance-auditor.md`, what lawful basis would the user claim? Consent / contract / legitimate interest are the three plausible ones. Health data (HR, <sensitive data categories — list yours>) probably needs Art 9 explicit consent. Flag every column that has no obvious basis.
-3. **Consent capture.** No cookie / SDK consent banner today on the web app — confirm. Document what would need to fire only after consent on an EU IP (the error monitor, the map provider, the subscription-SDK, AI streaming endpoint).
-4. **DSAR endpoints.**
-   - **Export (Art 20)**: `the data-export worker` (primary) and `the data-export backend route` (rollback). Are they wired to a UI surface? Is the output machine-readable JSON or CSV (Art 20 requires "structured, commonly used, machine-readable")?
-   - **Erasure (Art 17)**: `the account-deletion backend route`. Does the UI expose it on every platform (web, Android, iOS, watches that have account state)?
-   - **Rectification (Art 16)**: edit-profile flow. Verify it.
-   - **Access (Art 15)**: same surface as export, usually.
-   - **Restriction (Art 18) + objection (Art 21)**: do we honour an "object to processing" flow at all today? Probably not.
-5. **Retention.** Are there documented retention periods? Stale session-event tables, abandoned AI-conversation tables, half-finished signups in the user-auth table? Without auto-deletion this is a "keep forever" posture, which is hard to defend.
-6. **Cross-border transfers (Chapter V).** each processor's region (data platform, cloud regions, AI provider, etc.)? (third-party providers have their own regions). Every flow from an EU data subject to a non-EU processor needs SCCs or an adequacy decision. List the flows + their required mechanism.
-7. **DPO + EU representative (Art 27).** If we have no establishment in the EU and offer goods/services to EU residents, we need an EU rep listed in the Privacy Policy. Do we?
-8. **Children (Art 8).** Member-state age of consent ranges from 13 (BE) to 16 (most of EU). The app does not collect age and has no age gate. Apple requires age gating in App Store Connect; Play requires the Data Safety form to declare "targets children?" If we're not children-targeted, we still need to discourage <16 signups for EU.
-9. **Breach notification (Art 33/34).** Is there an on-call runbook for a personal-data breach? 72-hour clock to the supervisory authority. Probably not documented anywhere today.
-10. **Records of processing (Art 30).** Do we maintain a Record of Processing Activities (the RoPA)? It's a sub-processor list + lawful basis matrix. The output of `/audit/third-party-data-flows` is essentially this — confirm we have a static copy.
-11. **Cookie / ePrivacy.** ePrivacy Directive (still in force; the GDPR did not replace it) requires consent for non-essential cookies + scripts. Audit the load order of every third-party SDK on the web entry.
-12. **DPIA (Art 35).** Continuous location + biometric data are explicitly named in EDPB guidance as "high-risk processing" requiring a DPIA before launch. Is there one?
+1. **Privacy notice + terms.** Do `/privacy` and `/terms` routes exist under `apps/web/src/routes/`? Linked from the footer (`apps/web/src/lib/landing/SiteFooter.svelte`) and, once it exists, from sign-up? A notice at collection is required before the first byte of personal data is collected.
+2. **Personal-data inventory.** List every table and column holding personal data across `apps/backend/supabase/migrations/`, noting which schema (`public` vs `private`) and which are sensitive (identity, financial, hardship, precise location, photos of people). Cross-check against what the design says Kinfold keeps — e.g. identity: only the KYC vendor's reference and outcome, never the documents (`private.member_identity`).
+3. **Lawful basis / purpose per category.** For each category, the purpose and basis (contract, legal obligation such as KYC, consent). Sensitive personal information used only for the purpose collected (CPRA limit-use); hardship details used only for Home Fund needs assessment.
+4. **Consent.** The marketing site should need no consent banner if it loads no non-essential third parties (see `/audit/cookie-consent`). Consent for bank-link access and for sharing a request with family and friends is explicit and revocable.
+5. **Data-subject requests.** Right to know / access (and GDPR Art 15/20), deletion (Art 17), correction (Art 16). Is there a planned path for each? See `/audit/data-export-completeness` and `/audit/account-deletion-completeness`.
+6. **Retention vs. record-keeping.** `docs/backend.md` § "Privacy and retention" states the design targets (originals ~2 years after close; financial records ≥ 5 years with personal fields separable). Check the code matches. Kinfold must keep some records even after a deletion request: loan agreements, repayment history, gift letters and tax paperwork (`docs/design.md` § Product 1), payout records, KYC outcomes, audit logs of sensitive reads. Each needs a documented retention period and a legal basis for keeping it; everything else needs a purge. "Keep forever" is a finding.
+7. **Public vs private.** Aggregates are public (`public_stats`, `pool_runs`); personal details never are (`docs/design.md` § Principles 6). The board is members-only and shows only the redacted summary, kind, amount, score, state and week — never names, towns or exact dates (`board_requests` view, `docs/backend.md`). Confirm nothing more leaks, Home Fund hardship details never appear, and the giving record stays private to the member (`my_giving_record()`).
+8. **Sale / sharing.** Kinfold never sells member data (`docs/design.md` § Sustainability). Confirm no analytics or ad SDK "shares" data in the CPRA sense; mortgage-partner referrals pass data only with the member's explicit action.
+9. **Cross-border transfers.** Region of each processor (Supabase project region, AWS, AI scorer provider, KYC vendor). Only matters for GDPR if non-US users are admitted; also matters if a processor stores US financial data abroad and a partner contract forbids it.
+10. **Minors.** Members must be adults to sign agreements and lend; is there an age attestation or KYC-derived check? Funders who aren't members may include minors receiving a share link — note it.
+11. **Breach notification.** Is there a runbook? US state breach laws (and GDPR's 72 hours, if applicable) and partner contracts all impose clocks.
+12. **Safeguards.** Encryption at rest, least-privilege access, audit-logged reads of sensitive data (`docs/STACK.md` § Domain rules). Check that sensitive tables are in `private` with no client grant, and that a read-audit mechanism is planned.
+13. **Automated decision-making.** Scores never refuse on their own (`docs/design.md` § Principles 8). Confirm the notice explains the score, its reasons, human review and appeal — this is also what GDPR Art 22 and emerging state AI rules ask.
 
 ## Report
 
-- **Critical** — store-rejection blockers (no in-app privacy policy, no account-deletion UI, no age gate where required).
-- **High** — required by GDPR for any EU user signup (no consent banner before SDK load, no DSAR UI, no SCCs for US processors).
-- **Medium** — best-practice gap (no retention policy, no RoPA, no DPIA on live-location).
-- **Low** — defence-in-depth (no admin-access audit log, no per-request data-handling log).
+- **Critical** — personal data collected with no notice; sensitive data in a `public` table readable by other members; an automated refusal; data sold or shared with an ad/analytics provider.
+- **High** — no deletion or access path planned; retention undefined for financial or identity records; hardship data exposed beyond the Home Fund review.
+- **Medium** — no breach runbook, no RoPA / data map, no documented basis for retained records after deletion.
+- **Low** — defence-in-depth (read-audit log not yet designed, minor gaps in notice wording).
 
-For each: regime cite (GDPR Art X / UK ICO guidance / EDPB op-N) + concrete fix scope (file or "policy doc + product change").
+For each: the regime and section (CCPA §1798.xxx, GLBA, GDPR Art X, or "ask counsel"), and the concrete fix scope (file, or "policy doc + product change").
 
-End with a **clean** list of GDPR areas that look fine.
+End with a **clean** list of areas that look fine.
 
 ## Delegate to
 
-Use the `compliance-auditor` agent: `"Audit the GDPR / UK GDPR posture of this monorepo."`
+Use the `compliance-auditor` agent: `"Audit Kinfold's privacy-law posture (US state privacy laws, financial privacy, GDPR only if non-US users can join)."` Route open legal questions to `legal-researcher`.
 
 Read-only. Findings only. Always end legal claims with "ask counsel if unsure" — this is not legal advice.

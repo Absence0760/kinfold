@@ -89,17 +89,19 @@ Don't spin up the dev server to visually verify UI/frontend changes before repor
 
 ## Available Claude tooling
 
-Run these as slash-commands. Each delegates to a specialised agent (`.claude/agents/`).
+Run these as slash-commands. Each delegates to a specialised agent under `.claude/agents/<team>/` (`engineering/`, `design/`, `audit/`, `legal/`, `personas/`). Inventory: `.claude/README.md`.
 
-- `/check` — pre-commit gate: code-reviewer + test-gap-checker + doc-hygiene-checker over the working diff, in parallel (advisory).
-- `/safe-edit` — workflow for security-sensitive or load-bearing changes.
-- `/safe-migration` — DB-schema-change workflow (apply locally, verify RLS, sync types, propose smoke tests).
-- `/polish-ui` — typography / layout polish on a target frontend surface.
+- `/check` — pre-commit gate: code-reviewer + test-gap-checker + doc-hygiene-checker over the working diff, in parallel, plus money-path-reviewer, scoring-fairness-reviewer, migration-coordinator or ui-polisher review when the diff reaches money, scoring, SQL or screens (advisory).
+- `/safe-edit` — coder ↔ reviewer loop for money, RLS, PII, evidence, scoring and auth changes.
+- `/safe-migration` — Supabase schema-change workflow (local reset, RLS / grants / `private` schema checks, types, pgTAP tests).
+- `/polish-ui` — polish one `apps/web` page or component; `/polish-ui review <target>` for a read-only review.
 - `/release-readiness` — go/no-go checklist before tagging.
-- `/audit/all` — runs the core sweep (secrets, xss, deps, infra, cost-controls) in parallel; `/audit/<area>` for a single sweep, including the ones `all` skips. Areas: `secrets`, `infra`, `deps`, `xss`, `cost-controls`, `auth`, `accessibility`, `gdpr`, `data-export-completeness`, `account-deletion-completeness`, `cookie-consent`, `third-party-data-flows`.
-- `/persona` — runs the bug-hunting persona auditors (`.claude/agents/persona-*.md`): real-world points of view (new user, power user, admin, international user, accessibility, integrator, adversary, data subject) that find logic / UX / domain bugs a code review misses. Each writes a living report to `reviews/<persona>.md` (git-ignored). Protocol + how to add domain personas: `.claude/personas/README.md`.
-
-These ship with placeholder examples and need per-project adaptation — see `.claude/README.md`.
+- `/draft` — one local branch for an ad hoc testing session; `/draft ready` runs the gate and prints the push / PR commands (Claude never pushes).
+- `/fix-issues` — fix several open GitHub issues in parallel, one worktree each; prints the publish commands.
+- Hunt-and-fix loops: `/bug-hunt`, `/ux-hunt`, `/perf-hunt`, `/a11y-hunt`, `/coverage-hunt`, `/audit-and-fix`, `/improve-round`, `/fix-ci`.
+- `/audit/all` — the core sweep in parallel; `/audit/<area>` for one sweep. Areas: `secrets`, `rls`, `auth`, `storage`, `pii-in-logs`, `xss`, `deps`, `infra`, `cost-controls`, `llm-endpoint`, `money-path`, `gdpr`, `data-export-completeness`, `account-deletion-completeness`, `third-party-data-flows`, `cookie-consent`, `regional-availability`, `accessibility`, `licenses`, `migration-locks`, `db-performance`. Index: `.claude/commands/audit/README.md`.
+- `/persona` — bug-hunting persona auditors (`.claude/agents/personas/`): the generic panel (new user, power user, admin, international user, accessibility, integrator, adversary, data subject) plus Kinfold's domain pack (requester, funder, claim-fraudster). Each writes a living report to `reviews/<persona>.md` (git-ignored). Protocol: `.claude/personas/README.md`.
+- `/endpoint-inventory` — table of every table, view, RPC and edge function the backend exposes.
 
 ## Where to look
 

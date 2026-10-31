@@ -1,45 +1,47 @@
 ---
-description: Verify GDPR Art 17 erasure — every personal-data table + Storage object + third-party link is cleared by delete-account
+description: Verify account deletion — every personal-data row, Storage object and third-party link is cleared or deliberately retained under a documented record-keeping duty
 ---
 
-Audit the account-deletion path for completeness. When a user invokes "delete my account", nothing personal should remain.
+Audit the account-deletion path for completeness. When a member invokes "delete my account", nothing personal should remain except what Kinfold is legally required to keep, and that remainder should be minimised and documented.
 
 ## Goal
 
-GDPR Art 17 (right to erasure) requires us to erase personal data on request. Apple + Google both *mandate* an in-app account-deletion route for any app that supports account creation — failure is a store-rejection blocker. The internal risk is orphaned rows: a AI-conversation tables row pointing at a deleted `auth.users.id`, a `run-photos` Storage object that survived the auth-user delete because the prefix walker missed `thumbs/`, a an external service token still queueing webhook events for a user that no longer exists.
+Deletion rights (CCPA/CPRA right to delete, GDPR Art 17 if non-US users join) require erasing personal data on request — with exceptions for records a law or contract requires Kinfold to keep. Kinfold has more of those exceptions than most apps: loan agreements and repayment history (a lender's money is still owed), gift letters and tax paperwork, payout records, KYC outcomes, and audit logs of sensitive reads. The two failure modes are both real:
+
+- **Orphaned personal data** — an evidence original surviving in Storage, a request row pointing at a deleted `auth.users` id, a KYC vendor record never told to delete.
+- **Over-deletion** — a cascade that wipes a family loan's agreement and repayment history while the borrower still owes the lender, or deletes the ledger rows a pool payout depends on.
+
+The member app is not built yet. If no deletion path exists, report "not built yet" and produce the inventory below as the spec the first implementation must meet.
 
 ## What to check
 
-1. **Handler.** `the account-deletion backend route`. Read it. Map every step to an asset class (DB row / Storage prefix / third-party link).
-2. **Foreign keys.** Walk every `the backend app/supabase/migrations/*.sql` for `references auth.users` and `references public.user_profiles`. Each one needs either `on delete cascade` (preferred, deletes automatically) or an explicit delete in the handler. Flag any that have neither.
-3. **Personal-data tables.** From `compliance-auditor.md`'s list: `runs`, `routes`, `route_reviews`, `clubs` (the user as owner), `club_members`, `events` (as host), `event_attendees`, `club_posts`, `training_plans`, `plan_weeks`, `plan_workouts`, `user_settings`, `user_device_settings`, `event_results`, `race_sessions`, `race_pings`, `user_coach_usage`, `device_tokens`, `fitness_snapshots`, `personal_records`, AI-conversation tables, `user_follows` (both directions), `run_kudos`, `run_comments`, `run_photos`, `saved_routes`, `segments` (as creator), `segment_efforts`, `notifications` (recipient + actor), `run_matched_tracks`, `gear`, `run_gear`, session-event tables, `route_history`, `heatmap_points`. Each one must drain.
-4. **Two-sided relations.** `user_follows` has `(follower_id, followed_id)` — both halves must drop. `run_kudos` and `run_comments` reference both the *author* and the *run owner* — if the user deletes, their authored rows must drop AND their runs' kudos must drop. `event_attendees` similar.
-5. **Storage prefixes.** Buckets: `runs` (`{user_id}/*.json.gz`, `{user_id}/exports/*`), `run-photos` (`{user_id}/<run_id>/<photo>.jpg` + `{user_id}/<run_id>/thumb.webp`), `avatars` (`{user_id}/*`). The Storage walker in `delete-account/index.ts` must traverse each. Per ADR `decisions §33`, `recursive Storage prefix walk` was added to drain `{user_id}/exports/`; verify it also handles `run-photos` thumbnail subprefix.
-6. **Third-party revocations.**
-   - **an external service**: revoke the OAuth token via `https://www.strava.com/oauth/deauthorize` before deleting the row in `integrations`. Otherwise the next webhook event still maps to the (now deleted) user.
-   - **the subscription provider**: subscriber id outlives our row. Per the subscription provider docs, call `purchases.deleteCustomerInfo` or the equivalent server API.
-   - **FCM / APNs**: invalidate every row in `device_tokens` so push notifications stop. Worth telling FCM the token is dead (otherwise we keep wasting send budget).
-   - **the error monitor**: purge user via `https://docs.sentry.io/api/projects/delete-a-projects-user/` or accept that the error monitor retains pseudonymised event metadata under their DPA. Document the choice.
-   - **the AI provider**: per their data-retention policies, prompts are retained 30 days (the AI provider) and not used for training. No revocation API; document.
-7. **Order.** The auth user must be the last thing deleted. If we delete the auth row first, every subsequent owner-scoped query fails RLS. Verify.
-8. **Confirmation.** The UI confirmation should require typing the email or password — Apple specifically flags one-tap deletions as a UX risk. Verify the web + mobile confirmation flow.
-9. **Auditability.** A pseudonymised log of the deletion (`user_id`, timestamp, deletion-result-set) is *helpful* for legal-hold but *not allowed* to be PII. If we log anything, confirm it's hashed.
-10. **Re-signup.** If the same email signs up later, do we create a fresh account or recover the deleted one? GDPR Art 17 implies fresh-only. Verify.
-11. **Test coverage.** Is there an end-to-end deletion test? `the backend app/supabase/tests/` is the home for pgtap suites — look for one that creates a user, populates every personal-data table, calls `delete-account`, and asserts every table is empty.
+1. **Handler.** Find the deletion path (an edge function under `apps/backend/supabase/functions/`, or a `security definer` RPC in a migration). Map every step to an asset class: DB row, Storage object, third-party link.
+2. **Foreign keys.** Walk every `apps/backend/supabase/migrations/*.sql` for `references auth.users` and `references public.members`. For each, decide: `on delete cascade` (personal data with no retention duty), `on delete set null` / pseudonymise (records that must survive without identity), or `restrict` (records that must block deletion until resolved, e.g. an open loan). Flag any FK whose behaviour doesn't match its data's duty. `public.members` cascades from `auth.users` today — check what that cascade reaches.
+3. **Personal-data tables.** Inventory every table in `public` and `private` holding member data — the tables in `docs/backend.md` § Data model: `members`, `private.member_identity`, `member_roles`, `income_verifications`, `subscriptions`, `subscription_payments`, `allocation_preferences`, `covered_assets`, `requests`, `request_events`, `evidence`, `scores`, `reviews`, `appeals`, `private.fraud_signals`, `request_invites`, `request_supporters`, `contributions`, `family_loans`, `loan_installments`, `loan_pauses`, `loan_forgiveness`, `payouts`, the `private.ledger_*` tables, `private.audit_log`. `docs/backend.md` § "Privacy and retention" is the intended policy (financial records kept ≥ 5 years with personal fields separated out so they can be deleted). For each: deleted, pseudonymised, or retained — with the retention reason and period.
+4. **Two-sided relations.** A family loan has a borrower and lenders; a request has a requester and funders; a review has a member and a reviewer. Deleting one party must not destroy the other party's record of money they're owed or gave. Decide and document what each side keeps.
+5. **Open obligations.** What happens when a member with an outstanding loan, an open request, or a pending payout asks to delete? The design's answer (`docs/design.md` § Product 1 protections) should be reflected: the deletion is deferred or restricted, the member is told why, and personal data not needed for the obligation is deleted now.
+6. **Storage.** `evidence-original`, `evidence-redacted`, any avatars, generated documents (promissory notes, gift letters). Every object under the member's prefix is deleted or retained with a reason; redacted copies (`evidence-redacted`) are kept only if truly non-identifying and needed for the open books (`docs/backend.md` § "Privacy and retention").
+7. **Board and open books.** A deleted member's past requests: removed from the members-only board (`board_requests`), or kept only as the anonymised aggregates the open books need (`pool_runs`, `pool_allocations`, `public_stats`). Nothing identifying remains.
+8. **Third parties.** KYC vendor (request deletion of the verification record or document the vendor's retention), bank-link provider (revoke the connection), payment partner (close the customer record; transaction records stay with the partner under its own duties), AI scorer provider (document its retention; no deletion API is typical), email provider (suppress, don't keep the address in marketing lists).
+9. **Order.** The auth user is deleted last; earlier steps run while RLS still recognises the member, or through a definer function that checks the caller once up front.
+10. **Confirmation.** Deletion requires re-authentication or typing a confirmation; the member is shown what will be kept and why.
+11. **Audit trail.** A deletion record exists with no personal data in it (an opaque id, timestamp, outcome per asset class).
+12. **Re-signup.** The same email later creates a fresh account, not a recovered one.
+13. **Tests.** A pgTAP test under `apps/backend/supabase/tests/` that creates a member, populates every personal-data table, runs the deletion, and asserts each table is empty, pseudonymised or retained exactly as documented.
 
 ## Report
 
-- **Critical** — a personal-data table is not drained AND has no cascade. Trivially reproducible orphan after deletion.
-- **High** — Storage prefix not walked, or third-party link not revoked.
-- **Medium** — order issue (auth user deleted too early), missing audit log, no end-to-end test.
-- **Low** — UX confirmation too easy, re-signup recovery instead of fresh.
+- **Critical** — personal data survives with no retention reason; or a deletion destroys records a lender, funder or partner is owed.
+- **High** — a Storage prefix not walked; a third-party link not revoked; no handling for open loans or requests.
+- **Medium** — wrong order; no audit record; no end-to-end test; retained data not minimised.
+- **Low** — confirmation too easy; re-signup recovers instead of starting fresh.
 
-For each: the `<table>` or `<bucket>/<prefix>` or third-party + where the handler would change.
+For each: the `<schema>.<table>` or `<bucket>/<prefix>` or third party, and where the handler would change.
 
 End with a **clean** list of tables / buckets / third-party links that are fully covered.
 
 ## Delegate to
 
-Use the `compliance-auditor` agent: `"Audit the delete-account handler for completeness per GDPR Art 17 + Apple/Play account-deletion mandates."`
+Use the `compliance-auditor` agent: `"Audit account deletion for completeness: every personal-data row, Storage object and third-party link deleted, or retained under a documented duty, with open loans and requests handled."`
 
-Read-only. Findings only.
+Read-only. Findings only. Retention periods and which duties apply are counsel's call — say "ask counsel if unsure".

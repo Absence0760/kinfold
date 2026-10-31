@@ -1,44 +1,41 @@
 ---
-description: Verify every personal-data column + Storage object is included in the GDPR Art 20 / CCPA right-to-know export
+description: Verify every personal-data column and Storage object is included in the member's right-to-know / portability export
 ---
 
-Audit the data-export endpoint for completeness. Every personal-data row in this project must be reachable via the user's export.
+Audit the data-export path for completeness. Every personal-data row Kinfold holds about a member must be reachable via that member's export.
 
 ## Goal
 
-GDPR Art 20 (portability) and CCPA right-to-know both require the export to be **complete and machine-readable**. The risk is silent drift: someone adds a new table or column holding user data, forgets to extend the exporter, and three months later a DSAR comes in and we hand back a partial archive — that's a notifiable incident.
+Right-to-know (CCPA/CPRA) and portability (GDPR Art 20, if non-US users join) require the export to be **complete and machine-readable**. The risk is silent drift: someone adds a table or column holding member data, forgets to extend the exporter, and a later request gets a partial archive. For Kinfold the export is also a trust feature — members should be able to take their loan agreements, repayment history and reliability record with them (`docs/design.md` § How the pieces connect).
+
+The member app is not built yet. If no export path exists, report "not built yet" and produce the inventory below as the spec the first implementation must meet.
 
 ## What to check
 
-1. **Walker.** The primary export is `the data-export worker` (HTTP `POST /v1/export`). The rollback is `the data-export backend route`. Read both. List every table + column the exporter pulls.
-2. **Schema.** Walk every `the backend app/supabase/migrations/*.sql` `create table` + `add column` statement. Filter to tables that hold user-data per `compliance-auditor`'s "personal data this project handles" list. Diff against the exporter's coverage.
-3. **Storage.** Buckets `runs`, `run-photos`, `avatars`, plus the export-output bucket itself. The exporter must enumerate `{user_id}/*` for each (including subprefixes like `run-photos/<user>/<run>/<thumb>.webp`). Verify.
-4. **Third-party-linked state.**
-   - an external service tokens → not user content, but the *fact* of the integration is. Include `integrations` row (sans the encrypted token).
-   - the subscription provider subscriber id + tier → include.
-   - parkrun athlete number → include.
-   - Coach chat history → AI-conversation tables is the largest under-the-radar PII pile. Verify.
-   - Notifications, kudos, comments (both as author and as recipient) — confirm both halves of the relation appear.
-5. **Derived data.** Personal records, fitness snapshots, training-load curves are derived. GDPR doesn't strictly require derived data in the export, but UX-wise it's expected. Note any gap.
-6. **Format.** Output should be JSON or CSV bundled in a zip (current state). NDJSON for very large run tables. Confirm UTC timestamps, ISO 8601, units explicit (m / s / bpm).
-7. **Authentication.** Exporter must use JWT-verified `user.id`; never trust a caller-supplied `user_id` field. Confirm the Go handler.
-8. **Rate limit + size.** At >5 years of daily runs (~1,800 runs * ~50 KB tracks = 90 MB compressed) the request needs to be async with signed-URL pickup. Confirm that's how it's structured.
-9. **Joining tables.** `run_kudos`, `run_comments`, `run_photos`, `segment_efforts`, `event_attendees`, `club_members`, `user_follows`, `run_gear`, `route_reviews` — confirm coverage. Each is small but losing it leaves the export incomplete.
-10. **Two-direction relations.** A run that the user commented on but didn't author: should it appear? Strictly the user's own data is their comment row only. Be explicit about what we ship vs not.
+1. **Exporter.** Find the export path (edge function under `apps/backend/supabase/functions/` or an RPC in a migration). List every table and column it reads.
+2. **Schema.** Walk every `apps/backend/supabase/migrations/*.sql` `create table` / `add column` in both `public` and `private`. Filter to member data. Diff against the exporter's coverage.
+3. **What a member should get.** Profile and membership (status, region, joined date, roles); covered assets; requests with amounts, payees, status and outcome; the member's own evidence (originals, not only redacted copies — it's their data); legitimacy scores with model version and reasons; reviewer decisions and appeals about them; subscriptions and payments made; loans as borrower and as lender, with schedules, repayments, forgiveness and gift letters; pledges and gifts given to others; the reliability record.
+4. **What a member should not get.** Other people's personal data: a funder's bank details, a reviewer's identity if the design keeps reviewers anonymous, unredacted third parties in someone else's evidence. Be explicit about what is withheld and why.
+5. **Identity.** Kinfold holds only the KYC vendor's reference and outcome (`private.member_identity`); export those, and point the member to the vendor for the documents.
+6. **Storage.** Every object under the member's prefix in each bucket, walked recursively, plus generated documents (agreements, gift letters).
+7. **Format.** JSON (or CSV) in a zip; UTC ISO 8601 timestamps; amounts as integer cents with the currency stated (money is `bigint` cents everywhere — never convert to floats in the export); a schema version stamp.
+8. **Authentication.** The exporter uses the JWT-verified `auth.uid()`; it never accepts a member id from the request. A service-role client in the exporter filters by that id on every query.
+9. **Size and delivery.** Large exports run async and deliver via a short-lived signed URL; the export file itself is deleted after a set period.
+10. **Tests.** A pgTAP or function test that populates every member-data table and asserts each appears in the export.
 
 ## Report
 
-- **Critical** — a table on the user-data list is not exported at all.
-- **High** — a column on an exported table is missing (e.g. `runs.metadata.bpm_samples` but not `runs.metadata.workout_step_results`).
-- **Medium** — Storage prefix not walked, or walked non-recursively where it should be.
-- **Low** — format issues (timestamps without tz, units ambiguous, missing schema_version stamp).
+- **Critical** — a member-data table is not exported at all; the exporter can be pointed at another member's id.
+- **High** — a column on an exported table is missing; a financial record (loan, repayment, payout) absent.
+- **Medium** — Storage walked non-recursively; another person's personal data included.
+- **Low** — format issues (timestamps without tz, amounts not labelled as cents, no schema version).
 
-For each: the `<table>.<column>` or `<bucket>/<prefix>`, where the exporter would change.
+For each: the `<schema>.<table>.<column>` or `<bucket>/<prefix>`, and where the exporter would change.
 
 End with a **clean** list of tables / buckets / third-party state that are fully covered.
 
 ## Delegate to
 
-Use the `compliance-auditor` agent: `"Audit the data-export endpoint for completeness per GDPR Art 20 + CCPA right-to-know."`
+Use the `compliance-auditor` agent: `"Audit the member data export for completeness per right-to-know / portability."`
 
 Read-only. Findings only.

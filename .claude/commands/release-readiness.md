@@ -6,7 +6,7 @@ Run a pre-tag readiness audit before publishing a GitHub release. Report a green
 
 ## Why this exists
 
-Releases here are **release-gated**: publishing a GitHub release fires three deploy workflows in parallel (`deploy-frontend.yml`, `deploy-backend.yml`, `deploy-studio.yml`), each with a skip-if-unchanged check that compares the new tag to the previous one. Cutting a tag with the working tree dirty, CI red, or unpushed commits means the deploy doesn't match what you think it does.
+Kinfold has no deploy workflow yet: `.github/workflows/` holds only `deploy.yml.example` (the template's gated pattern — every deploy job on `environment: production` with the operator as required reviewer, per root `CLAUDE.md` § Repo-wide hard rules). When deploys land they will be release-gated per workspace: `apps/web` (the prerendered build from `pnpm build:web`, to S3 + CloudFront per `docs/STACK.md`) and `apps/backend` (Supabase migrations + edge functions pushed to the hosted project). Cutting a tag with the working tree dirty, CI red, or unpushed commits means the deploy doesn't match what you think it does. Until a real `deploy*.yml` exists, run this as a dry readiness check and say in the verdict that nothing will auto-deploy.
 
 The gates are scattered (CI status, working tree, push state, last-tag delta per workspace) and the human-eyeball version is unreliable. This command runs them in one shot.
 
@@ -37,7 +37,7 @@ For each, mark **green** / **red** and capture a one-line reason for any red.
 git status --porcelain
 ```
 
-Empty → green. Anything → red ("uncommitted changes in: <files>"). Pay particular attention to plaintext SOPS siblings (`backend/.env`, `infra/terraform.tfvars`) — if they're showing up tracked, that's a separate Critical to flag.
+Empty → green. Anything → red ("uncommitted changes in: <files>"). Pay particular attention to plaintext env files (`.env`, `*.env.development.local`, `apps/backend/supabase/.env`, `infra/terraform.tfvars` once `infra/` exists) — if they're showing up tracked, that's a separate Critical to flag.
 
 #### 2b. main is up to date with origin
 
@@ -57,7 +57,7 @@ gh run list --branch main --limit 1 --json status,conclusion,workflowName,headSh
 
 `status=completed` and `conclusion=success` → green. Anything else → red ("CI on the head commit is `<status>/<conclusion>` — wait for green or investigate").
 
-Also check the most recent runs of `ci.yml`, `security.yml`, and `audit.yml` — if any of those have an open failed run, surface as an amber row (informational; doesn't block but worth knowing).
+Also check the most recent runs of `security.yml`, `audit.yml`, `gitleaks.yml` and any CI workflow that exists by then — if any of those have an open failed run, surface as an amber row (informational; doesn't block but worth knowing).
 
 If the user has `gh` but isn't logged in, recommend `gh auth login` and skip — don't fail the whole report.
 
@@ -69,21 +69,18 @@ Find the last release tag:
 git describe --tags --match 'v[0-9]*' --abbrev=0
 ```
 
-For each workspace, list the commits + files changed since that tag. The release workflows skip-if-unchanged per workspace; this section makes the "what will actually deploy" picture explicit.
+If there is no tag yet, compare against the root commit and say this is the first release. For each workspace, list the commits + files changed since that tag. Deploy workflows (once they exist) will skip-if-unchanged per workspace; this section makes the "what will actually deploy" picture explicit.
 
 ```
-# Frontend
-git log --oneline <last-tag>..HEAD -- frontend/
-git diff --stat <last-tag>..HEAD -- frontend/
+# Web (prerendered marketing / preview site)
+git log --oneline <last-tag>..HEAD -- apps/web/
+git diff --stat <last-tag>..HEAD -- apps/web/
 
-# Backend
-git log --oneline <last-tag>..HEAD -- backend/
-git diff --stat <last-tag>..HEAD -- backend/
+# Backend (Supabase migrations, pgTAP tests, edge functions)
+git log --oneline <last-tag>..HEAD -- apps/backend/
+git diff --stat <last-tag>..HEAD -- apps/backend/supabase/migrations/
 
-# Studio
-git log --oneline <last-tag>..HEAD -- studio/
-
-# Infra (not a workspace, but matters for any deploy)
+# Infra (not a workspace yet; only once infra/ exists)
 git log --oneline <last-tag>..HEAD -- infra/
 
 # Workflows / .claude (informational — never deploys)
@@ -92,13 +89,16 @@ git log --oneline <last-tag>..HEAD -- .github/workflows/ .claude/
 
 For each workspace, report:
 - **Commits since:** count + one-line summaries
-- **Will deploy:** `Yes` if any commit touched the workspace's tree (matches the skip-if-unchanged check in the workflow), `No` otherwise
+- **Will deploy:** `Yes` if any commit touched the workspace's tree and a deploy workflow for it exists, `No` otherwise, `n/a — no deploy workflow` until one lands
+- **Backend only:** a new migration since the last tag is a production schema change — list each file, and confirm `/safe-migration` ran on it (its commit should be path-scoped `feat(db):` / `fix(db):`). A migration touching money, scoring or the `private` schema is an amber row: name it so the operator reviews it before release.
 
 If `Commits since` is `0` for every workspace, flag as red — there's nothing to release.
 
 ### 4. Sanity checks
 
-#### 4a. Security postureSurface anything from the last `audit.yml` run that's still open:
+#### 4a. Security posture
+
+Surface anything from the last `audit.yml` run that's still open:
 
 ```
 gh issue list --label dependency-audit --state open
@@ -113,13 +113,23 @@ gh api repos/{owner}/{repo}/dependabot/alerts --jq '[.[] | select(.state=="open"
 
 Non-zero either → amber. Don't block; just surface.
 
-#### 4b. SOPS plaintext siblings absent
+#### 4b. Plaintext env files not tracked
 
 ```
-ls backend/.env infra/terraform.tfvars 2>/dev/null
+git ls-files | grep -E '(^|/)\.env($|\.)|\.env\.development\.local$|terraform\.tfvars$'
 ```
 
-Either present → amber ("plaintext SOPS sibling exists locally — confirm it's gitignored and not staged"). Both absent → green.
+Only committed, non-sensitive `.env.development` files are allowed (root `CLAUDE.md` § "Local-dev env is committed; real secrets never are"). Any other hit → red. Do not open or print the file's contents — report the path only.
+
+#### 4c. Local gates pass
+
+```
+pnpm check
+pnpm test
+pnpm build:web
+```
+
+Plus `pnpm test:backend:db` when the backend changed and the local stack is up (`pnpm dev:db:up`). Any failure → red.
 
 ### 5. Build the report
 
@@ -139,10 +149,9 @@ Either present → amber ("plaintext SOPS sibling exists locally — confirm it'
 
 | Workspace | Commits since | Will deploy | Notes |
 |---|---|---|---|
-| Frontend | <n> | Yes / No | <one-line> |
-| Backend | <n> | Yes / No | <one-line> |
-| Studio | <n> | Yes / No | <one-line> |
-| Infra | <n> | n/a | <one-line> |
+| apps/web | <n> | Yes / No / n/a | <one-line> |
+| apps/backend | <n> | Yes / No / n/a | <one-line; list new migrations> |
+| Infra | <n> | n/a | <one-line, or "no infra/ yet"> |
 
 ## Open audit signals
 
@@ -182,4 +191,4 @@ End with:
 
 - The whole thing should take under a minute. If a gate hangs (e.g. `gh run list` on a slow connection), skip it with a `⚠ skipped — <reason>` row rather than blocking the report.
 - `gh` is required for the CI-status check and the open-alert sweep. If unavailable, fall back to a one-line note: "install `gh` to auto-check CI; manual: open the Actions tab and confirm green on the head commit."
-- This command does NOT replace `docs/deployment.md`. It's a pre-flight, not the release procedure itself.
+- This command does NOT replace a deployment runbook (none exists yet; when deploys land, document them in `docs/` and link it here). It's a pre-flight, not the release procedure itself.

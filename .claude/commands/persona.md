@@ -1,5 +1,5 @@
 ---
-description: Run one, several, or all of the bug-hunting persona auditors (.claude/agents/persona-*.md). Each persona adopts a real-world point of view (new user, power user, admin, international user, accessibility, integrator, adversary, data subject, plus any project-specific domain personas) and writes findings to reviews/<persona>.md. Usage — `/persona admin`, `/persona integrator,adversary`, or `/persona all` (default).
+description: Run one, several, or all of the bug-hunting persona auditors (.claude/agents/personas/persona-*.md). Each persona adopts a real-world point of view (new user, power user, admin, international user, accessibility, integrator, adversary, data subject, plus Kinfold's domain personas: requester, funder, claim-fraudster) and writes findings to reviews/<persona>.md. Usage — `/persona admin`, `/persona integrator,adversary`, or `/persona all` (default).
 ---
 
 Dispatch the persona auditors named in the argument, in parallel, and summarize
@@ -9,17 +9,24 @@ what each filed.
 
 `$ARGUMENTS` selects which personas to run:
 
-- empty or `all` → the whole panel (every `.claude/agents/persona-*.md`).
+- empty or `all` → the whole panel (every `.claude/agents/personas/persona-*.md`).
 - a comma/space-separated list of slugs → just those. Accept slugs with or
   without the `persona-` prefix (`admin`, `persona-admin` both resolve).
 - if a slug doesn't match an existing `persona-*` agent, list the available
   personas and ask which was meant — don't guess.
 
-Discover the live list with `ls .claude/agents/persona-*.md` so this stays
-correct as project-specific domain personas are added (see
+Discover the live list with `ls .claude/agents/personas/persona-*.md` so this
+stays correct as more domain personas are added (see
 `.claude/personas/README.md` § "Domain packs").
 
 ## Procedure
+
+Kinfold today is a prerendered marketing / preview site (`apps/web`: landing
+page, request-board demo, savings calculator) plus an early Supabase schema
+(`apps/backend/supabase/migrations/`). Personas walk what exists and judge the
+design in `docs/design.md` against it; a finding against a flow that is only
+designed, not built, is filed as a design finding, not a bug.
+
 
 1. **Spawn one agent per selected persona, in parallel** — all Agent tool calls
    in a single message. Use `subagent_type: "persona-<slug>"` and a prompt that

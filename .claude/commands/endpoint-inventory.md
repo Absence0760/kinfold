@@ -1,49 +1,58 @@
 ---
-description: Generate a canonical HTTP-route inventory table by reading the router source — the ground-truth list of what endpoints exist. Feeds the persona-integrator agent and an /audit/auth pass.
+description: Generate a canonical inventory of everything Kinfold's Supabase backend exposes — PostgREST tables and views, RPC functions, storage buckets, edge functions — read from the migrations and function source, not the docs. Feeds the persona-integrator agent and an /audit/auth or /audit/rls pass.
 ---
 
-Produce a canonical, table-shaped inventory of every backend HTTP endpoint by **reading the route source** — not by trusting any doc.
+Produce a canonical, table-shaped inventory of every surface the backend exposes by **reading the source** — not by trusting any doc.
 
-Where there is no maintained API spec (or the spec is derived, runtime-generated state rather than the contract), the route source itself is the only authority for "what endpoints exist." This command flattens that into one artifact — a single Markdown table that consumers can read without spelunking the router internals.
+Kinfold has no hand-written router. Its API surface is whatever Supabase exposes from `apps/backend/supabase`: PostgREST serves every table, view and function in the exposed schemas that a client role (`anon`, `authenticated`) has been granted; Storage serves buckets under their `storage.objects` policies; edge functions under `apps/backend/supabase/functions/` serve HTTP directly (none built yet — `docs/backend.md` § "Edge functions (to build)" lists the plan). The migrations in `apps/backend/supabase/migrations/` (read in timestamp order — a later migration can redefine a grant, policy or function) are the route source.
+
+`docs/backend.md` § Access model describes the intended surface; this command records the actual one, so the two can be diffed. It flattens it into one artifact consumers can read without spelunking the migrations.
 
 This is a **generator**, not a findings audit. It describes what the API *is*; it does not flag bugs. Read-only on the codebase except for writing the one output file.
 
 ## What it produces
 
-`reviews/endpoint-inventory.md` — one row per registered route, in router-mount order (the order the routes are wired up at the app's mounting entrypoint). Columns:
+`reviews/endpoint-inventory.md` — four tables:
 
-| Method | Path | Auth | Tenant/authz scope | Request params | Response shape | Notes |
-|--------|------|------|--------------------|----------------|----------------|-------|
+1. **Tables and views** (PostgREST `/rest/v1/<name>`): name, schema, verbs granted to `anon` / `authenticated` (and column-level grants), RLS on/off, policies per verb in one line each, notes.
+2. **RPC functions** (`/rest/v1/rpc/<name>`): name, args, returns, `security definer` or invoker, roles with `execute`, the auth check inside (e.g. `auth.uid()` owner check, `member_roles` role check, service-only), notes.
+3. **Storage buckets**: bucket, public flag, size / MIME limits, `storage.objects` policies per verb.
+4. **Edge functions** (`/functions/v1/<name>`): method, `verify_jwt` setting (`config.toml`), caller (member / reviewer / partner webhook / pg_cron), what it calls with `service_role`, request and response shape.
+
+For tables 1–3 the columns map onto the generic shape below; for edge functions use it directly:
+
+| Method | Path | Auth | Authz scope | Request params | Response shape | Notes |
+|--------|------|------|-------------|----------------|----------------|-------|
 
 Fill each column from the **actual handler code**, never inferred from a doc or a name:
 
-- **Method** — `GET` / `POST` / `PATCH` / `PUT` / `DELETE`, from the route registration.
-- **Path** — the full path: the mount prefix joined to the router's own prefix and the in-handler path (e.g. a `/users` mount + a `/:id` handler → `GET /users/:id`).
-- **Auth** — `public` or the auth requirement the handler actually enforces, read from the handler itself (middleware, decorator/dependency, or an explicit in-body check). Where one router mixes public and protected handlers, classify **each row by inspecting that specific handler**, not by the router it lives in.
-- **Tenant/authz scope** — how the handler scopes data access: the tenant-scoping mechanism (a scoped query helper, a tenant-resolved DB/connection, a row-level filter) and any role/permission requirement. Flag the exceptions explicitly — a handler that touches tenant data through a raw/un-scoped path, hardcodes a tenant, or resolves the tenant from an unusual source (a URL path segment or token instead of the normal header/claim). These are inputs for `/audit/auth`; note them, don't fix them here.
+- **Method** — for tables, the verbs granted (`select` → GET, `insert` → POST, `update` → PATCH, `delete` → DELETE); RPCs are POST; edge functions per their handler.
+- **Path** — the full path as Supabase serves it (`/rest/v1/<table>`, `/rest/v1/rpc/<fn>`, `/storage/v1/object/<bucket>/…`, `/functions/v1/<name>`).
+- **Auth** — `anon`, `authenticated`, `service_role` only, or a partner signature, read from the grants / `verify_jwt` / the function body itself — classify each object individually.
+- **Authz scope** — how access is scoped: the RLS policy (owner via `auth.uid()`, verified member, invited supporter, reviewer / panel via `member_roles`, service-only) or the check inside a definer function / edge function. Flag the exceptions explicitly — a granted object with RLS off, a `using (true)` policy, a definer function that trusts a member-id argument, an edge function that uses `service_role` without re-checking ownership. These are inputs for `/audit/auth` and `/audit/rls`; note them, don't fix them here.
 - **Request params** — path params, query params (the real casing the handler reads), and the request body shape for writes. Use the names the handler actually reads, not the doc's names.
 - **Response shape** — the response type/schema the handler returns when one is declared; for surfaces with no typed client (webhooks, redirects, raw payloads) say so plainly (e.g. `204 No Content`, `302 → …`, `{ status: "ok" }`, `SVG`).
 
 Then two short cross-reference sections against the client/consumers:
 
-- **Server-only routes (no client function).** Routes with no matching call in the app's client — typically the integrator-facing surface (webhook receivers, upload/ingest endpoints, provisioning, embeds) consumed by external callers rather than the app's own UI. Call these out as the integrator-facing surface.
-- **Client calls with no matching route (drift).** Client functions whose URL no longer resolves to a registered route. Each is a real bug — a dead client call. List them with their source location.
+- **Partner- and schedule-facing surface.** Edge functions called by partners (webhooks) or pg_cron rather than a member client. Call these out as the integrator-facing surface.
+- **Design drift.** Differences between the actual grants and `docs/backend.md` § Access model (an object `anon` can read that the doc doesn't list, a documented capability with no grant). Today there is no member client (the Flutter app in `apps/mobile` is planned; `apps/web` does not call the backend), so client-call drift is "n/a"; once a client exists, also list client calls (`.from()`, `.rpc()`, `functions.invoke`) that resolve to nothing.
 
 ## Procedure
 
-1. **Find the route-mounting entrypoint.** Locate where the app wires routers to their mount prefixes and applies any app-level middleware/auth gating (e.g. `app.include_router(...)` in FastAPI, `router.<verb>(...)` mounted via `app.use(...)` in Express, the routes file in Rails, the `mux`/`ServeMux` registrations in Go `net/http`, the blueprint registrations in Flask). This is the source of truth for which routers mount where and what's gated globally. Note the special cases — public mounts, per-handler-gated routers, and routes mounted before a shared middleware.
-2. **Read every router / route module.** For each router the entrypoint mounts, open it and enumerate every handler. Don't sample — read them all.
-3. **Classify auth + tenant/authz scope per handler** by reading each handler's middleware / decorators / dependencies / in-body checks: what auth it requires (if any), how it scopes tenant data, and any role/permission gate.
-4. **Cross-reference the client / consumers.** Match each client call's URL to a registered route to populate the response-shape column and build the two drift sections.
-5. **Write `reviews/endpoint-inventory.md`** (overwrite if present). Lead with a one-line note: *generated from the route source on `<date>`; regenerate after adding routes.* This artifact can be **promoted to `docs/`** as a maintained, committed inventory if the team wants it under version control — `reviews/` is typically gitignored, so by default it's a working snapshot.
+1. **Prefer the live catalogue.** If the local stack is up (`pnpm dev:db:status`), query it — it is the exact result of every migration: `information_schema.role_table_grants`, `information_schema.column_privileges`, `information_schema.routine_privileges`, `pg_policies`, `pg_class.relrowsecurity`, `pg_proc.prosecdef`, `storage.buckets`, and `pg_policies` on `storage.objects`. Use `pnpm dev:db:psql` (read-only queries only). If the stack is down, don't start or reset it — fall back to step 2.
+2. **Otherwise read the migrations in order.** Every `create table` / `create view` / `create function` / `grant` / `revoke` / `create policy` / `insert into storage.buckets` in `apps/backend/supabase/migrations/`, applying later redefinitions over earlier ones.
+3. **Read `apps/backend/supabase/config.toml`** — `[api] schemas` (which schemas PostgREST exposes; `private` must not be one), `[functions.<name>] verify_jwt`, `[storage]` limits.
+4. **Read each edge function** under `apps/backend/supabase/functions/` (if any): its HTTP method handling, auth check, which service-only RPCs it calls.
+5. **Write `reviews/endpoint-inventory.md`** (overwrite if present). Lead with a one-line note: *generated from the migrations / local catalogue on `<date>`; regenerate after every migration or new edge function.* This artifact can be **promoted to `docs/`** as a maintained, committed inventory if the team wants it under version control — `reviews/` is typically gitignored, so by default it's a working snapshot.
 
-**Delegate to** the `Explore` (or `general-purpose`) agent: pass this file as the prompt. The agent reads the mounting entrypoint + all route modules + the client, and writes the single output file. Read-only on the rest of the codebase — no other edits, no git.
+**Delegate to** the `Explore` (or `general-purpose`) agent: pass this file as the prompt. The agent reads the catalogue or migrations, `config.toml` and the edge functions, and writes the single output file. Read-only on the rest of the codebase — no other edits, no git.
 
 ## Notes
 
-- This is a generator, not an audit. It records the current state; it does not grade auth coverage or tenant-isolation discipline. For findings, pair it with **`/audit/auth`** (route gating + tenant-scope discipline), and hand the table to the **`persona-integrator`** agent, which consumes the integrator-facing surface it surfaces.
-- An **API-contract** check (request/response shapes matching across the backend types ↔ client ↔ data model, where there's no codegen) is the natural companion when one exists.
-- **Re-run after adding or moving routes** — a new mount or a new handler makes the inventory stale immediately, and any consumer working from it starts from an out-of-date list.
+- This is a generator, not an audit. It records the current state; it does not grade auth coverage or RLS discipline. For findings, pair it with **`/audit/auth`** and **`/audit/rls`**, and hand the table to the **`persona-integrator`** agent, which consumes the integrator-facing surface it surfaces.
+- Types are generated (`pnpm gen:types` → `apps/backend/supabase/database.types.ts`); if that file is stale against the catalogue, note it.
+- **Re-run after every migration or new edge function** — a new grant or function makes the inventory stale immediately, and any consumer working from it starts from an out-of-date list.
 
 ## Guard rails
 

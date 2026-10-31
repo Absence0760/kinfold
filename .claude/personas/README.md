@@ -1,6 +1,6 @@
 # Persona audits
 
-A **persona** is a read-only Claude subagent (`.claude/agents/persona-*.md`) that
+A **persona** is a read-only Claude subagent (`.claude/agents/personas/persona-*.md`) that
 adopts a specific real-world point of view — a brand-new user, an admin, an
 international customer, an integrator, an attacker — and walks the app the way
 that person would, looking for bugs, missing primitives, wrong assumptions, and
@@ -147,3 +147,25 @@ was extracted from): `persona-approver` (approval limits, segregation of duties)
 and currency conventions). Other domains: a marketplace gets buyer/seller/
 dispute personas; a healthcare app gets patient/clinician/billing; a CMS gets
 author/editor/anonymous-reader.
+
+## Domain pack: Kinfold (this project)
+
+Kinfold is pre-product: today there is a prerendered marketing site with a
+request-board demo and a savings calculator (`apps/web`), the Supabase schema
+with seed data (`apps/backend/supabase/`, described in `docs/backend.md`), and
+the product design (`docs/design.md`). Until the member app exists, these
+personas walk the design, the schema (through `pnpm dev:db:psql` as seeded
+members) and the demo as the person would and report where the design, the copy or the
+code would fail them. Label missing capabilities as **gap** and broken
+behaviour as **defect**; label a finding against `docs/design.md` itself as
+**design** so it's clear no code is wrong yet. Each cites the principle or
+domain rule at stake (`docs/design.md` § Principles, `docs/STACK.md` § Domain
+rules).
+
+| Persona | Point of view |
+|---|---|
+| `persona-requester` | Member in a bad week: posting a damage or home request on a phone, uploading evidence, understanding the score, getting the shop paid |
+| `persona-funder` | Relative lending or giving: can I afford this, what if they stop paying, what does it mean for my taxes and the relationship |
+| `persona-claim-fraudster` | Member gaming the pool: inflated estimates, staged or recycled evidence, friends boosting, payee swaps, reviewer collusion |
+
+Run the pack with `/persona requester,funder,claim-fraudster`.

@@ -1,45 +1,38 @@
 ---
-description: Verify every third-party SDK / script / fetch is gated on consent for EU users (ePrivacy + GDPR)
+description: Verify every third-party script / fetch / cookie on the web app is either strictly necessary or gated on consent, and that the prerendered marketing site stays free of trackers
 ---
 
-Audit the web app's cookie + script consent posture. Every non-essential third-party load on an EU IP must be gated on the user's affirmative consent.
+Audit the web app's cookie and third-party-script posture.
 
 ## Goal
 
-ePrivacy Directive Art 5(3) (still in force) + GDPR (consent must be freely given, specific, informed, unambiguous) require:
-- A consent banner before any non-essential cookie or third-party script fires.
-- Granular toggles (analytics / functional / marketing) rather than one all-or-nothing button.
-- Equally prominent "Reject all" alongside "Accept all" (UK ICO + French CNIL guidance — multiple regulator fines in 2024 for dark patterns).
-- A "withdraw consent" path that's no harder to reach than the original opt-in.
+`apps/web` is a prerendered SvelteKit marketing / preview site with no backend calls and no env vars (`docs/STACK.md`). The cleanest posture — and the one that matches "Kinfold never sells member data" (`docs/design.md` § Sustainability) — is **no non-essential third-party loads at all**, so no consent banner is needed. This audit confirms that stays true, and lists what would need gating if that changes.
 
-This project has **no consent banner today**. The audit's job is to enumerate every third-party load that would need to be gated, so the user knows the scope of work before deciding to ship a banner.
+Regimes: US state privacy laws treat cross-context behavioural advertising and many analytics SDKs as "sharing", requiring an opt-out (and honouring Global Privacy Control signals). If non-US visitors are targeted, ePrivacy Art 5(3) + GDPR require prior consent for non-essential cookies and scripts, with "Reject all" as prominent as "Accept all".
 
 ## What to check
 
-1. **Page-load chain.** Walk `the frontend entry HTML`, `the frontend root layout`, `the frontend root SSR layout`, every `+page.server.ts` and `+layout.ts`. Anything that fires on `mount` or in SSR top-level that hits a non-essential third-party.
-2. **the error monitor.** Web + mobile error-monitoring SDKs may fire before consent. Confirm `enabled: false` on load, the error-monitor init is deferred until consent, and that **session replay** is OFF by default everywhere — replay is the highest-risk feature because it captures the DOM.
-3. **the subscription-SDK.** the subscription SDK package — verify it doesn't fire any analytics on import.
-4. **Map tile fetches.** Every render of any map components fetches map tiles. the map provider logs the requesting IP per tile fetch. Map fetches need consent under strict ePrivacy reading, **but** they're plausibly justifiable as "strictly necessary" for an essential feature (showing a route on a map). Document the position; it's defensible if disclosed in the cookie notice.
-5. **AI streaming endpoint.** an AI-call endpoint calls the AI provider. The user-initiated nature means consent is implicit when they tap an AI-call UI surface — but the *first-load* fetch of the page doesn't need to fire the AI provider. Verify nothing pre-warms it.
-6. **alternate-provider fallback.** Same as the AI provider.
-7. **OAuth redirects (Google / Apple).** Pre-click, the buttons must not fire any provider SDK. The redirect itself is user-initiated → consent implicit.
-8. **external APIs.** Server-side or post-action; check none are called from the unauthenticated landing page.
-9. **Local-storage / IndexedDB.** Storing settings keyed by `user_id` is fine; storing a tracking identifier or session pings on first visit is not. Grep `localStorage`, `sessionStorage`, `indexedDB`.
-10. **Cookies.** Walk `Set-Cookie` headers. auth provider cookies are *strictly necessary* (the user is logged in). Any other cookie (analytics, session replay, ads) needs the banner gate.
+1. **Page-load chain.** Walk `apps/web/src/app.html`, `apps/web/src/routes/+layout.svelte`, `apps/web/src/routes/+layout.ts`, every `+page.svelte` / `+page.ts`, and every component in `apps/web/src/lib/landing/`. List anything that loads from a third-party origin on page load: fonts (Google Fonts etc.), analytics, tag managers, embeds (video, maps, social), error monitors, chat widgets.
+2. **Self-hosted vs third-party assets.** Fonts and images should be served from `apps/web/static/` or the build output, not a third-party CDN that logs visitor IPs.
+3. **Error monitoring.** If an error monitor is added, it initialises only after consent (where required) and session replay is off.
+4. **Storage APIs.** Grep `apps/web/src/` for `localStorage`, `sessionStorage`, `indexedDB`, `document.cookie`. Remembering a UI preference (e.g. the savings calculator's last input) is fine; a persistent visitor id is not.
+5. **Cookies.** The static site should set none. Once the member app exists, Supabase Auth's session storage is strictly necessary; anything else needs a reason.
+6. **Global Privacy Control.** If any analytics is ever added, it honours `navigator.globalPrivacyControl`.
+7. **Disclosure.** Whatever loads is disclosed in the privacy notice (`/audit/gdpr`).
 
 ## Report
 
-- **Critical** — a third-party SDK that captures PII (session-replay (if used), analytics, ads) fires before consent and is on by default.
-- **High** — a non-essential third-party load that fires on the unauthenticated landing page.
-- **Medium** — a third-party load that's gated *only* on auth (anon EU user still hits it on /, /login, /privacy).
-- **Low** — a third-party that's plausibly essential (map tiles) but not yet disclosed in any cookie notice (there is no notice today).
+- **Critical** — an analytics, replay or ad SDK that captures personal data fires on page load with no consent / opt-out.
+- **High** — a non-essential third-party load on the marketing site.
+- **Medium** — a third-party font or asset CDN that could be self-hosted; a persistent identifier in browser storage.
+- **Low** — a strictly necessary load not yet disclosed in a notice.
 
-For each: the file/line that fires the load, what data it carries, and how to gate it (deferred init, conditional load, etc.).
+For each: the file:line that fires the load, what data it carries, and how to remove or gate it.
 
-End with a **clean** section listing third-party loads that fire only after user-initiated action (clicking Coach, opening a map screen, signing in) and are therefore implicit-consent-defensible.
+End with a **clean** section listing loads confirmed first-party or user-initiated.
 
 ## Delegate to
 
-Use the `compliance-auditor` agent: `"Audit the web app's cookie + third-party-SDK consent posture per ePrivacy Art 5(3) + GDPR."`
+Use the `compliance-auditor` agent: `"Audit the web app's cookie and third-party-script posture; confirm the marketing site loads no non-essential third parties."`
 
 Read-only. Findings only.

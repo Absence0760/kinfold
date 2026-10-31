@@ -1,136 +1,90 @@
 ---
-description: Verify spend safeguards across AWS, the <CMS>, <email-service>, and <payment-processor> — no single failure should produce a runaway bill
+description: Verify spend safeguards across the AI legitimacy scorer, Supabase, edge functions, hosting and partner APIs — no single failure should produce a runaway bill
 ---
 
-Audit every layer that bounds runaway spend across the stack. The realistic cost-vector accidents for this project: a leaked <email-service> / <CMS> API token, an unauthenticated Lambda burst from a botnet, a CloudFront egress flood, a <CMS> dataset overrun, a <payment-processor>-volume spike (legit or otherwise). Each one should be capped by **at least one** independent ceiling — none should run unbounded for hours before someone notices.
+Audit every layer that bounds runaway spend. Kinfold's realistic cost-vector accidents: a leaked AI scorer key, a scoring loop that re-scores the same request on every evidence edit, a member (or bot) uploading thousands of evidence files to trigger thousands of scoring and redaction calls, a Supabase plan overrun from storage or egress, an edge function stuck in a retry loop against a partner API, a CloudFront egress flood. Each one should be capped by **at least one** independent ceiling — none should run unbounded for hours before someone notices.
 
 ## Goal
 
-The baseline cost at launch is **~R380/month** (per `docs/architecture.md` cost analysis — AWS + the <CMS> paid plan + domain). A finding is anything that lets the bill exceed that by an order of magnitude before any alarm fires. <payment-processor> is per-transaction (no monthly subscription), so it doesn't have a runaway-cost path the way a token-billed AI service does — but it still has a real cost per legitimate order, which means a botnet hammering `POST /orders` indirectly hits <payment-processor> volume too.
+Kinfold is pre-launch: today only `apps/web` exists (a prerendered static site, no backend calls, no env vars) and `apps/backend/supabase` holds an early schema. So most checks below will report "not present yet" — that is a valid result. The value of running this now is to name the ceilings that must land **in the same change** as the thing that spends money (root `CLAUDE.md` § Local-first: each external dependency ships with a local equivalent and a default that points at it, so dev never spends real money either).
+
+A finding is anything that lets the bill exceed expected spend by an order of magnitude before any alarm fires.
 
 ## What to check
 
-### 1. Backend rate limiting
+### 1. AI legitimacy scorer (biggest variable cost)
 
-`backend/src/rate-limit.ts` is the in-memory per-IP fixed-window limiter applied to:
+The scorer (`score-request` edge function in `docs/backend.md`; production model not chosen yet, `docs/design.md` § Open questions; local stand-in is Ollama) reads evidence — photos, PDFs, reports — and returns a 0–100 score with reasons. Token cost scales with evidence size and with how often a request is scored.
 
-| Route | Window | Max per IP | Wired in |
-|---|---|---|---|
-| `POST /orders` | 15 min | 5 | `backend/src/routes/orders.ts` |
-| `POST /enquiries` | 15 min | 5 | `backend/src/routes/enquiries.ts` |
-| `GET /orders/:ref` | 1 min | 20 | `backend/src/routes/order-lookup.ts` |
-| `POST /webhooks/<payment>-webhook` | 1 min | 60 | `backend/src/routes/<payment>-webhook.ts` |
-| `POST /webhooks/cms-order` | 1 min | 60 | `backend/src/routes/cms-webhook.ts` |
+- **When does scoring run?** When a request's status becomes `scoring` (on submit and resubmit), not on every upload, keystroke or page view. A trigger or realtime subscription that calls the scorer per row change is High.
+- **Idempotent by input.** A score is keyed on (request, evidence set hash, model version); re-submitting the same evidence returns the stored score instead of calling the model again.
+- **Per-member and global caps.** A per-member daily scoring cap and a global daily cap, enforced server-side (in the edge function or the DB), not in the web UI.
+- **Input size bounded.** Max files per request, max file size, max pages per PDF, images downscaled before they're sent. Uploading a 500-page PDF must not produce a 500-page prompt.
+- **Provider-side cap.** The provider console has a monthly spend limit set. Surface as a manual check — the audit cannot see it.
+- **Local default.** Dev and CI score against a local model or a deterministic stub, never the paid API (root `CLAUDE.md` § Local-first). A dev path that needs a real key is a finding.
+- See `/audit/llm-endpoint` for prompt-injection and data-minimisation checks on the same endpoint.
 
-Verify:
-- The limiter is wired into every public-facing route (`GET /products`, `/gallery`, `/testimonials`, and `/health` are intentionally unlimited — they're cacheable / unprivileged reads).
-- The 5/15min limits for `POST /orders` and `POST /enquiries` match the documented value in `docs/security.md § Risk 2`.
-- The 20/min limit on `GET /orders/:ref` lets a customer legitimately repeat-poll the tracking page without hitting the limit but caps a scripted enumeration attempt.
-- The 60/min webhook limits are permissive enough that a legitimate <payment-processor> / <CMS> retry burst isn't rate-limited (<CMS>'s IPs are stable; <payment-processor>'s are well-known) but still bound a runaway loop.
+### 2. Redaction pipeline
 
-**Caveat**: the limiter is per-Lambda-instance (in-memory). API Gateway's throttling is the cross-instance cap — see check 2 below.
+Automatic redaction (`redact-evidence` edge function, `docs/backend.md`; faces, plates, names, account numbers) may be a paid vision API or a self-hosted model; locally it is open-source face and plate detection. Same questions as the scorer: runs once per file, cached by content hash, bounded input size, capped per member and globally.
 
-### 2. API Gateway throttling
+### 3. Supabase
 
-`infra/api_gateway.tf` should declare `throttling_burst_limit` and `throttling_rate_limit` on the `$default` route. The per-Lambda-instance rate limiter doesn't catch a distributed attack across many fresh Lambda cold-starts; API Gateway is the global cap.
+- **Plan and spend cap.** Hosted Supabase projects have a spend cap toggle; confirm it is on (manual check) or that a deliberate decision to turn it off is recorded.
+- **Storage growth.** Evidence buckets (`apps/backend/supabase/config.toml` `[storage]`, bucket definitions in migrations) set `file_size_limit` and `allowed_mime_types`. Unlimited size on a bucket members write to is High.
+- **Egress.** Evidence images served through signed URLs with sensible expiry and image transformations (thumbnails) rather than full originals on list views.
+- **Database.** No unbounded `select *` exposed to `anon` via PostgREST that a scraper can page through cheaply (`[api] max_rows` in `config.toml` is set).
+- **Auth.** `[auth.rate_limit]` in `config.toml` caps sign-ups, sign-ins, OTPs and email sends; SMS sign-in (paid per message) stays off unless deliberately enabled.
 
-- Limits set: green.
-- Unbounded throttling on `$default`: flag as High (this is the single most important cost-runaway gate for this project given how low the legitimate traffic is).
+### 4. Edge functions (planned under `apps/backend/supabase/functions/`; list in `docs/backend.md` § "Edge functions (to build)")
 
-### 3. AWS account budget
+- The pg_cron-scheduled ones (`run-pool` weekly; `reconcile`, `loan-servicing`, `expire-requests` daily) run on a fixed schedule and process a bounded batch per run; none re-schedules itself in a loop.
 
-`infra/budget.tf` should declare an `aws_budgets_budget`:
+- Each function that calls a paid API has a timeout and **no unbounded retry**; retries are capped with backoff and a failure is recorded, not looped.
+- Webhook handlers (payment partner, KYC vendor) are idempotent by event id, so a partner's retry burst doesn't re-trigger paid work.
+- Functions reachable without a JWT are only webhooks with signature verification.
 
-- **`monthly_budget_limit_usd`** is reasonable — single-digit dollars/month given current scale. Anything over $50 without justification is suspicious for this project's traffic.
-- **Three notifications minimum**: `ACTUAL > 50 %`, `ACTUAL > 100 %`, `FORECASTED > 100 %`. Forecasted is the only one that catches a runaway *during* the month — actual lags by up to 24 h. Missing forecasted → High.
-- **`budget_alert_emails` non-empty** in `terraform.tfvars` (encrypted). A budget with zero subscribers is a no-op.
+### 5. Partner APIs
 
-### 4. CloudWatch log retention
+Payment partner, KYC vendor and bank-link (earnings verification) provider are not chosen yet. When they land:
 
-A static site with poor cache-hit ratio can be drained on egress; a chatty Lambda with infinite log retention bleeds money slowly. Check:
+- KYC checks are charged per check: one verification per member, re-run only on a defined trigger, never on each sign-in.
+- Bank-link calls (earnings verification for the subscription) on a schedule bounded per member, not per page view.
+- Payment partner fees are per transaction and legitimately scale with use; the denial-of-wallet path is creating many payment intents that are never completed — cap intent creation per member.
 
-- Every `aws_cloudwatch_log_group` in `infra/*.tf` has `retention_in_days` ≤ 90 (default = forever = $0.50/GB/month forever).
-- The Lambda log group specifically — `/aws/lambda/<function-name>` — has it set.
-- (Historical: the Phase-0 EventBridge `pii_cleanup` schedule was deleted at the Day 8 cutover. PII retention is now handled by DynamoDB per-item TTL in `infra/dynamodb.tf`, which has no log group of its own. If you see this comment still mentioning a `pii_cleanup` schedule, that's the stale reference to flag.)
+### 6. Hosting (once `infra/` exists)
 
-### 5. CloudFront cost guardrails
+`apps/web` builds to static files for S3 + CloudFront (`docs/STACK.md`). When the Terraform lands:
 
-- `price_class = "PriceClass_100"` or `_200` (not `_All`). PriceClass_All bills from every edge location regardless of where users actually live, and the site's audience is South African.
-- S3 lifecycle expiring non-current versions on the site bucket — missing = unbounded version growth at $0.023/GB/month forever.
-- No WAF needed at current scale (over-engineering for the traffic level) — but if one's been added, confirm it's attached and the scope-down filter doesn't accidentally rate-limit legitimate users.
+- An `aws_budgets_budget` with `ACTUAL > 50%`, `ACTUAL > 100%` and `FORECASTED > 100%` notifications to a real address. Missing forecasted → High.
+- CloudFront `price_class` is `PriceClass_100` (US audience) unless justified.
+- S3 lifecycle expiring non-current versions.
+- Log groups have `retention_in_days` set.
 
-### 6. <email-service> quota
+Until `infra/` exists, report this section as "not applicable yet".
 
-<email-service>'s free tier is 100 emails/day, 3,000/month. Customer-facing emails fire on:
+### 7. Documentation matches reality
 
-- Order creation → owner notification + customer pending-payment (2 emails/order).
-- ITN payment confirmation → customer "payment received" (1/order).
-- Status change in <CMS> Studio → customer status email (1/transition; typically 2-3 transitions per order).
-
-At ~50 orders/month, that's ~250 emails/month — comfortable within free tier.
-
-Verify:
-- The <email-service> client (raw `fetch` in `backend/src/email.ts`, per `backend/CLAUDE.md`) handles 429 responses gracefully — doesn't bomb the user-facing request, doesn't auto-retry into a loop.
-- A burst of order failures (<CMS> write error) doesn't cascade-email the owner — `backend/src/routes/orders.ts` sends the owner notification AFTER the <CMS> write, so a <CMS> outage means no spam, but verify.
-- If `<EMAIL_SERVICE>_API_KEY` ever leaks, the daily/monthly cap on the <email-service> console is the only thing standing between the attacker and a giant bill. Surface as a manual check: "confirm the <email-service> project has its monthly send cap set to a value matching expected legitimate volume (e.g. 1,000/month, not unlimited)."
-
-### 7. <CMS> dataset growth
-
-<CMS> charges per-dataset row count and asset storage on paid plans. At current scale we're on Growth ($15/month, comfortable). The migration to Free (per `docs/orders-pii-split-plan.md`) caps things differently — Free is 2 datasets, 20 user seats. Neither is hit at current scale.
-
-Verify:
-- No automated process is hammering <CMS> writes. (Phase 1+ note: there is no scheduled job touching <CMS> at all — PII retention is now DynamoDB-side TTL. Any EventBridge rule still targeting the backend Lambda is unexpected; flag.)
-- The <CMS> webhook on order changes fires per-mutation — bounded by the operator's editing rate. Safe.
-- Customer-facing surfaces (`POST /orders`) write one <CMS> doc per call. With backend rate limiting + API Gateway throttling in front of it, <CMS> write volume is bounded.
-
-### 8. <payment-processor> volume
-
-<payment-processor> charges per-transaction (~2.9% + R2). Cost scales with legitimate orders. The denial-of-wallet path here is: attacker hits `POST /orders` thousands of times → backend creates <CMS> order docs + <payment-processor> redirect URLs → no real charges because the attacker doesn't complete the redirect, BUT we've burned Lambda invocations + <CMS> rows + <email-service> emails.
-
-The protections:
-
-- Backend rate limiter (check 1) → caps per-IP per-window.
-- API Gateway throttling (check 2) → caps cross-instance globally.
-- <payment-processor>-side ITN sig verification (check 4 below) → ensures we never confirm a fake payment.
-
-### 9. <payment-processor> ITN-side checks
-
-If an attacker can fake an ITN callback, they can mark unpaid orders as `payment_received` and trigger downstream emails. Verify:
-
-- `backend/src/routes/<payment>-webhook.ts` verifies the MD5 signature over the **raw body** (per `backend/CLAUDE.md`).
-- `amount_gross` is cross-checked against the stored `amountZar` — mismatches rejected.
-- Status state machine is idempotent — replaying an ITN against an already-confirmed order is a no-op, not a duplicate email.
-
-### 10. Documentation matches reality
-
-This audit's value depends on the docs being honest:
-
-- `docs/security.md § Risk 8` (cost / spend) and `§ Risk 10` (<payment-processor> integrity) match the current code.
-- `docs/architecture.md` cost table reflects the actual baseline (~R380/month or whatever the current configuration produces).
-- The proposed `docs/orders-pii-split-plan.md` cost table (R77/month post-migration) is internally consistent.
+Once a cost model exists in `docs/`, it matches the configured caps. Today there is none; recommend one alongside the first paid dependency.
 
 ## Report
 
-- **Critical** — `aws_budgets_budget` missing entirely, API Gateway throttling unbounded on `$default`, <payment-processor> ITN signature not verified (already verified per code; flag if the diff weakens it), <email-service> API key in a path that auto-retries on 429.
-- **High** — log retention infinite, AWS budget exists but no `FORECASTED` notification (catches runaway only after the fact), `budget_alert_emails` empty / placeholder, CloudFront `PriceClass_All` without justification, no per-IP rate limit on `POST /orders`.
-- **Medium** — missing S3 lifecycle for non-current versions, <CMS> webhook handler does anything non-idempotent on status change, PII cleanup logs not captured.
-- **Low** — doc drift between `docs/architecture.md` cost table and configured values, alarm exists but not subscribed to a real email, <email-service> console-side monthly cap unconfirmed.
+- **Critical** — a paid API (scorer, redaction, KYC) reachable without auth or without any cap; a scoring trigger that fires per row change; a paid key in a path that retries unboundedly.
+- **High** — no per-member scoring cap; evidence bucket with no size limit; no AWS budget forecast alert (once infra exists); dev path that requires a paid key.
+- **Medium** — scores not cached by input hash; no `max_rows`; auth rate limits left at defaults without review.
+- **Low** — provider console caps unconfirmed; cost doc missing.
 
 For each finding: file:line + the concrete change. Don't apply fixes without explicit confirmation.
 
 ## Useful starting points
 
-- `backend/src/rate-limit.ts` — the in-memory limiter
-- `backend/src/routes/orders.ts`, `<payment>-webhook.ts`, `order-lookup.ts`, `cms-webhook.ts` — wired routes
-- `infra/budget.tf` — account-wide spend ceiling
-- `infra/api_gateway.tf` — request-rate cap
-- `infra/lambda.tf` — log retention, runtime, reserved concurrency
-- `infra/s3_cloudfront.tf` — CDN cost levers
-- `docs/security.md § Risk 8` + `§ Risk 10` — risk register
-- `docs/architecture.md` — cost projection these guards defend
+- `docs/design.md` § "3. Legitimacy score", § "2. Upload evidence", § Open questions
+- `apps/backend/supabase/config.toml` — `[api]`, `[storage]`, `[auth.rate_limit]`, `[edge_runtime]`
+- `apps/backend/supabase/migrations/` — bucket and trigger definitions
+- `apps/backend/supabase/functions/` — once it exists
 
 ## Delegate to
 
-`general-purpose` agent with this file as the prompt body. Cross-cuts code + IaC + docs + provider-console gaps, so it doesn't fit one of the specialised auditors.
+`general-purpose` agent with this file as the prompt body. Cross-cuts code, config, docs and provider-console gaps, so it doesn't fit one of the specialised auditors.
 
-Read-only. Findings only. The audit must NOT mutate IaC, run `terraform plan`, hit AWS / <CMS> / <email-service> APIs, or load-test the backend — a load test against `POST /orders` is itself a small spend event.
+Read-only. Findings only. The audit must NOT call a paid API, run `terraform plan`, or load-test anything — a load test against the scorer is itself a spend event.
