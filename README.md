@@ -22,6 +22,7 @@ Kinfold never charges interest or late fees, and never writes first mortgages it
 - **[docs/design.md](docs/design.md)**: the product and business design: how requests work, repayment and hardship, the business-model review, structure, risks, governance
 - **[docs/backend.md](docs/backend.md)**: the data model, where each rule is enforced, access model, edge functions
 - **[docs/roadmap.md](docs/roadmap.md)**: what to build, stage by stage, with the gate for each
+- **[docs/followups.md](docs/followups.md)**: open items and decisions; start here when resuming
 - **[docs/STACK.md](docs/STACK.md)**: tech stack and dev setup (`pnpm dev:run:web` → http://localhost:7790)
 - [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [SUPPORT.md](SUPPORT.md)
 
