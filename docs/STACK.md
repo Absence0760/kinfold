@@ -1,6 +1,6 @@
 # Stack
 
-Kinfold is at the design stage. The product design lives in [design.md](design.md); read it before writing any code. The data model, invariants and edge functions live in [backend.md](backend.md).
+Kinfold is at the design stage. The product design lives in [design.md](design.md); read it before writing any code. The data model, invariants and edge functions live in [backend.md](backend.md). Whether each product can work, and what it would take, is in [feasibility.md](feasibility.md).
 
 ## What exists today
 

@@ -2,7 +2,7 @@
 
 What to build, in what order. Each stage ships something members can use, and the next stage starts only when the last one's gate is met. The product reasons behind the order are in [design.md](design.md#roadmap); the data model is in [backend.md](backend.md). Durations are planning estimates for a small team.
 
-Open items outside the stages (CI gaps, backend edge cases, pending decisions) are tracked in [followups.md](followups.md).
+Open items outside the stages (CI gaps, backend edge cases, pending decisions) are tracked in [followups.md](followups.md). Whether each stage's product can work at all is in [feasibility.md](feasibility.md).
 
 **Order rule:** build what moves no pooled money first. Every stage before Stage 2 can run with Kinfold holding nothing, so a mistake costs trust, not someone's savings.
 
