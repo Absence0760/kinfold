@@ -24,21 +24,21 @@ How Kinfold's backend works, and which part of it enforces each rule from [desig
 ```
 
 - **Clients** talk to PostgREST (tables and RPC functions) as the signed-in member, so RLS applies to every query.
-- **Edge functions** run as `service_role`. They are the only callers of service-only functions (`record_score`, `run_pool_allocation`, `capture_contributions`, `mark_refunded`, `resume_ended_pauses`, `apply_default_plan`, `post_journal`) and the only readers of the `refunds_due` view, and the only code that talks to partners. `service_role` bypasses RLS but not grants, so it holds explicit table, sequence and function grants (the hardening migration); the append-only triggers and the status and payout guards still apply to it.
+- **Edge functions** run as `service_role`. They are the only callers of service-only functions (`record_score`, `run_pool_allocation`, `capture_contributions`, `mark_refunded`, `resume_ended_pauses`, `apply_default_plan`, `post_journal`, `record_fraud_signal`, `resolve_fraud_signal`, `record_identity_check`) and the only readers of the `refunds_due` view, and the only code that talks to partners. `service_role` bypasses RLS but not grants, so it holds explicit table, sequence and function grants (the hardening migration); the append-only triggers and the status and payout guards still apply to it.
 - **Partner webhooks** come in through edge functions, which check the signature, then update payment statuses and post ledger journals. They are idempotent, keyed by `partner_ref`, which is unique on every money table.
 
 ## Data model
 
 Money is stored as `bigint` cents. Times are `timestamptz`. Ids are UUIDs. Enums cover every status.
 
-`20261030120400_hardening.sql` revises functions, policies and grants across all three areas below (account closure, capture and refunds, appeals, loan terms and states, payee checks, service-role grants); the tables describe the result.
+`20261030120400_hardening.sql` revises functions, policies and grants across all three areas below (account closure, capture and refunds, appeals, loan terms and states, payee checks, service-role grants), and `20261030120500_service_paths.sql` adds the payout rules, refunds net of payouts and the service-only wrappers for private writes; the tables describe the result. `apps/backend/supabase/database.types.ts` is generated from the schema (`pnpm gen:types`).
 
 ### Members (`20261030120000_members.sql`)
 
 | Table | Purpose |
 | --- | --- |
 | `members` | One row per user (`auth.users`). Holds the member's state (`region`) and status: `pending_verification` until identity verification passes, then `active`; `suspended` or `closed` members keep no role powers. A member edits only `display_name`: `region` is set at sign-up and changed only by the service after address verification, because reviewers are matched by region. Members are closed (`close_account()`), never deleted |
-| `private.member_identity` | The identity-check vendor's reference and the outcome. The documents themselves stay with the vendor |
+| `private.member_identity` | The identity-check vendor's reference and the outcome. The documents themselves stay with the vendor. Written only through `record_identity_check` (service only), which also moves a `pending_verification` member to `active` and audit-logs it; it never lifts a suspension or reopens a closed account |
 | `member_roles` | `reviewer`, `panel`, `admin` |
 | `fund_settings` | Rules for each pooled fund: minimum score, band size, reserve share, waiting days, request cap, kinds covered. Every change is logged to `private.fund_settings_history` |
 | `income_verifications` | Verified monthly take-home pay, how it was verified, and when it expires |
@@ -61,7 +61,7 @@ Money is stored as `bigint` cents. Times are `timestamptz`. Ids are UUIDs. Enums
 | `scores` | Append-only. The score, its reasons, the model and its version, the prompt version, and a hash of the inputs |
 | `reviews` | Append-only. The person's decision and a written reason (at least 10 characters). The member never sees `reviewer_id` (retaliation risk): they read decisions through `my_request_reviews(request)`, which returns only decision, reason and time. The panel reads full rows on requests that aren't their own; a reviewer reads the reviews they wrote |
 | `appeals` | One appeal per refusal (`file_appeal` counts appeals against transitions into `refused` in `request_events`), decided by a panel member who didn't review the request |
-| `private.fraud_signals` | Flags from duplicate photos, cross-request patterns and similar checks. An open high-severity flag sends a request to a person |
+| `private.fraud_signals` | Flags from duplicate photos, cross-request patterns and similar checks. An open high-severity flag sends a request to a person. Written only through `record_fraud_signal` and `resolve_fraud_signal` (service only, audit-logged) |
 | `board_requests` (view) | The members-only board: redacted summary, kind, amount, score, state, week. Never names, towns or exact dates |
 
 Request lifecycle:
@@ -78,20 +78,22 @@ Request lifecycle:
 
 A refused request is reopened only by an upheld appeal: `record_review` doesn't accept `refused` requests. Approving a request whose pledges already cover it (a funded request sent back to review) returns it to `funded`. If a request that already had money captured ends withdrawn, refused or expired, that money appears in `refunds_due` until the payment partner refunds it.
 
+A payout that is `pending` or `sent` is live: the money is with (or on its way to) the payee. While a request has a live payout the status guard refuses `refused`, `withdrawn` and `expired`, and `record_review` turns a refusal into `in_review` (the review and an audit row are still written), so a person deals with recovering the money; once the partner reports the payout `returned`, the request can be refused or withdrawn as usual. A request becomes `paid` only once at least one payout has been sent and its captured contributions cover the payouts sent.
+
 ### Funding, loans and the ledger (`…120200_funding.sql`, `…120300_repayment.sql`)
 
 | Table | Purpose |
 | --- | --- |
 | `request_invites`, `request_supporters` | Invite links (only the token's hash is stored) and the family and friends who accepted them |
-| `contributions` | Pledges from people (`gift` / `loan`) and the pool (`pool`). Status: `pledged`; `captured` by `capture_contributions(request)` (service only) once the request is funded, every loan behind it is signed and the payment partner has confirmed; `released` if the request ends unpaid before capture; `refunded` (`mark_refunded`, with `refund_partner_ref`) if it ends unpaid after. Pledges and pool grants wait for the request's payee to be verified. Strangers can give only to requests on the board; loans need an invite |
+| `contributions` | Pledges from people (`gift` / `loan`) and the pool (`pool`). Status: `pledged`; `captured` by `capture_contributions(request)` (service only) once the request is funded, every loan behind it is signed and the payment partner has confirmed; `released` if the request ends unpaid before capture; `refunded` (`mark_refunded`, with `refund_partner_ref` and `refunded_cents`, which can be less than the amount when part of it reached the payee) if it ends unpaid after. Pledges and pool grants wait for the request's payee to be verified. Strangers can give only to requests on the board; loans need an invite |
 | `family_loans` | Zero-interest loans. There is no rate column: `imputed_rate_bps` is the IRS minimum rate, kept only for tax paperwork. Also the payment day, pause allowance and agreed default plan, set with `set_loan_terms` while the loan is `proposed` (it clears both signatures) |
 | `loan_installments` | The schedule: `set_loan_schedule` puts each installment on the loan's payment day, sums exactly to the principal, and clears signatures. Constraint triggers keep the total at or below the principal, and payments plus forgiveness can't exceed it. Paying the last cent marks the loan `repaid` |
 | `loan_pauses`, `loan_forgiveness` | Pauses taken (each pushes unpaid installments back) and amounts forgiven as gifts |
 | `loan_missed_installments` (view) | Installments more than 10 days overdue on loans still collecting (`active` or `paused`), shown to the borrower and the lender |
 | `pool_runs`, `pool_allocations` | Each allocation run, with a snapshot of the settings used, the reserve held, and each request's band, need and grant. Open books |
-| `payouts` | Payments to payees. Allowed only for funded requests, only to the request's verified payee, only against an invoice on that request, and only up to the captured contributions |
+| `payouts` | Payments to payees. Created only for funded requests, only to the request's verified payee, only against an invoice on that request, and live payouts never exceed the captured contributions. Later status reports from the partner (`sent`, `failed`, `returned`) are always recorded, whatever the request's state or the payee's status by then |
 | `private.ledger_accounts`, `ledger_journals`, `ledger_lines` | Double-entry ledger. Every journal balances to zero and stays within one fund. Append-only: corrections are reversing journals |
-| `refunds_due` (view) | Service only. Captured contributions on withdrawn, refused or expired requests, waiting for the partner to refund them |
+| `refunds_due` (view) | Service only. Captured contributions on withdrawn, refused or expired requests, waiting for the partner to refund them. Live payouts use up a request's captured money oldest first, and `refund_cents` is what's left of each contribution, so only money that didn't reach the payee goes back |
 | `public_stats` (view) | Public totals per fund for the marketing site |
 
 Loan lifecycle:
@@ -124,6 +126,7 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | Reviewers are safe from retaliation | Members can't read `reviews` rows on their own requests; `my_request_reviews` omits `reviewer_id` | `hardening_test` |
 | No joining after the incident | `submit_request` checks `coverage_started_on` and the asset's `registered_on` against `waiting_days` | `requests_test` |
 | Evidence is redacted before anyone sees it | `submit_request` requires every redaction to be `confirmed`; the board shows only `public_summary`; the originals bucket is owner-only | `requests_test`, `rls_test` |
+| Money that reached the payee isn't refunded or abandoned | The status guard blocks refusing, withdrawing or expiring a request with a pending or sent payout (`record_review` routes to `in_review`); `paid` needs a sent payout covered by captured money; `refunds_due` nets out live payouts | `service_paths_test` |
 | Pay the payee, never the member | `payouts` guard trigger; payees are businesses, never members; `pledge` and `run_pool_allocation` wait for a verified payee (`submit_request` doesn't, so verification runs alongside scoring) | `ledger_test`, `hardening_test` |
 | Pledges are all-or-nothing | Funded when pledges reach the amount; released on withdraw, expire or refuse; money already captured is listed in `refunds_due` and marked by `mark_refunded` | `funding_test`, `hardening_test` |
 | No money moves on an unsigned loan | `capture_contributions` refuses unless the request is funded and every loan behind it is signed; a loan becomes `active` only when its request is paid, and only active or paused loans can be paused, forgiven or defaulted | `hardening_test`, `funding_test` |
@@ -144,7 +147,7 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | Supporter | Read the requests they were invited to and how much they've raised |
 | Reviewer (active members only) | Read requests waiting for a person (never their own); record reviews (not on refused requests); see scores and the reviews they wrote |
 | Panel (active members only) | Decide appeals (never their own, nor on a request they reviewed); read full review rows on requests that aren't their own |
-| `service_role` (edge functions only) | Record scores, run the pool, verify payees, capture pledges, record refunds, payments and payouts, post journals, resume loans whose pause has ended, apply default plans |
+| `service_role` (edge functions only) | Record scores, fraud signals and identity checks, run the pool, verify payees, capture pledges, record refunds, payments and payouts, post journals, resume loans whose pause has ended, apply default plans |
 
 Storage has two private buckets. `evidence-original` holds files under the member's own folder, readable only by the member; reviewers get short-lived signed URLs from an edge function that writes to the audit log. `evidence-redacted` is readable by the owner, and by verified members once the request is on the board.
 
@@ -152,13 +155,13 @@ Storage has two private buckets. `evidence-original` holds files under the membe
 
 | Function | Triggered by | Does | Local stand-in |
 | --- | --- | --- | --- |
-| `verify-identity` | Signup | Starts an identity check, then a webhook sets the member `active` | Fake vendor that approves `*@test.com` |
+| `verify-identity` | Signup | Starts an identity check; the vendor's webhook calls `record_identity_check`, which stores the reference and sets the member `active` | Fake vendor that approves `*@test.com` |
 | `verify-income` | Member links a bank | Reads income only (never a password), writes `income_verifications`, prices the subscription | Fixture statements |
 | `redact-evidence` | Evidence upload | Blurs faces, plates, names and account numbers, writes the redacted copy and `auto_done`, computes hashes | Open-source face and plate detection running locally |
 | `score-request` | Status becomes `scoring` | Builds inputs from redacted and original evidence plus fraud signals, calls the model, then `record_score` | Ollama model behind the same provider interface |
-| `fraud-checks` | Evidence and request events | Duplicate-photo and pattern checks, writes `private.fraud_signals` | Same code, local data |
+| `fraud-checks` | Evidence and request events | Duplicate-photo and pattern checks; records flags with `record_fraud_signal` and clears them with `resolve_fraud_signal` | Same code, local data |
 | `evidence-url` | Reviewer opens evidence | Issues a short-lived signed URL for the original and logs it | Same |
-| `payments-webhook` | Payment partner | Calls `capture_contributions` once the partner confirms a funded request's charges; refunds what `refunds_due` lists and calls `mark_refunded`; records repayments and payouts; posts journals with `post_journal` (the `public` wrapper, service only, at least two lines) | Partner's test mode, or a local webhook sink |
+| `payments-webhook` | Payment partner | Calls `capture_contributions` once the partner confirms a funded request's charges; refunds each contribution's `refund_cents` from `refunds_due` and calls `mark_refunded`; reports payouts `sent`, `failed` or `returned`; records repayments and payouts; posts journals with `post_journal` (the `public` wrapper, service only, at least two lines) | Partner's test mode, or a local webhook sink |
 | `run-pool` | pg_cron, weekly | Reads the custody balance, then calls `run_pool_allocation` | Balance from a fixture |
 | `reconcile` | pg_cron, daily | Compares ledger balances with the partners' statements and raises an alert on any difference | Fixture statements |
 | `loan-servicing` | pg_cron, daily | Calls `resume_ended_pauses`, collects due installments (paying the last one marks the loan repaid), sends reminders, offers pauses on missed payments | Fake collector |
