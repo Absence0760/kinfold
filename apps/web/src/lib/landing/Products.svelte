@@ -2,36 +2,36 @@
 	const products = [
 		{
 			tag: 'Phase 1',
-			name: 'Family & Friends Loans',
-			lead: 'Turn an informal family loan into a clear, documented, low-stress arrangement.',
+			name: 'Ask your people',
+			lead: 'Share a request with family and friends: a car repair, a down payment, help with a loan.',
 			points: [
-				'Plain-language agreement, with a lien recorded on the home',
-				'Shared balance, automatic payments, gentle reminders',
-				'Tax minimum-rate handled and forgiven as a gift',
+				'They give it, or lend it at zero interest',
+				'Plain-language agreement, with a lien on the home for big loans',
+				'Shared balance, automatic repayments, gentle reminders',
 				'Gift letters your mortgage lender will accept'
 			],
-			holds: 'Money moves directly between relatives.'
+			holds: 'Money moves between people through a payment partner. Kinfold never holds it.'
 		},
 		{
 			tag: 'Phase 2',
-			name: 'Mutual Protection Circles',
-			lead: 'Members pool a small monthly amount and cover each other when life goes wrong.',
+			name: 'Community protection',
+			lead: 'Damage requests paid from a pool everyone pays into. Starting with cars.',
 			points: [
-				'Covers home payments after job loss or illness',
-				'A family loan is forgiven if the borrower dies',
-				'Claims paid on simple evidence, appeal to a member panel',
-				'Unused money comes back to members each year'
+				'Pay a small share of your earnings, nothing if you earn little',
+				'Choose where your monthly payment goes',
+				'Public board, ranked by legitimacy score',
+				'Repair shop paid directly, so quotes can’t be gamed'
 			],
-			holds: 'Reserves held by a licensed mutual insurer.'
+			holds: 'Pool held by a licensed partner, never mixed with loan money.'
 		},
 		{
 			tag: 'Phase 3',
 			name: 'Community Home Fund',
-			lead: 'Zero-interest help for people with no wealthy family to borrow from.',
+			lead: 'Zero-interest home help for people with no wealthy family to ask.',
 			points: [
 				'Keeps families in their homes when a gap opens',
 				'Down payment help that shrinks the bank mortgage',
-				'Chosen by a published needs formula, never by popularity',
+				'Same request and evidence, scored on need too',
 				'Every repaid dollar goes to the next family'
 			],
 			holds: 'Money held by a partner credit union.'
@@ -39,13 +39,14 @@
 	];
 </script>
 
-<section class="section section-alt" id="products">
+<section class="section" id="products">
 	<div class="container">
-		<p class="eyebrow">How it works</p>
-		<h2 class="section-title">One membership. Three ways to help each other.</h2>
+		<p class="eyebrow">What you can ask for</p>
+		<h2 class="section-title">One membership. Three places help can come from.</h2>
 		<p class="section-lead">
-			You see one app. Behind it, each product is run by whoever is licensed to hold that kind of
-			money, and the money pools never mix, so a bad year in one can't drain another.
+			You see one app and one request form. Behind it, each kind of money is held by whoever is
+			licensed to hold it, and the pools never mix, so a bad year for car claims can't drain the
+			home fund.
 		</p>
 
 		<div class="grid">

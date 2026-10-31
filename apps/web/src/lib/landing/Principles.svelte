@@ -3,11 +3,11 @@
 		{ title: 'No interest, ever', text: 'Members repay what they borrowed and nothing more.' },
 		{ title: 'Lenders are protected too', text: "Nobody lends money they can't afford to lose." },
 		{ title: 'No profit from hardship', text: 'No late fees. A missed payment starts a plan, not a charge.' },
-		{ title: 'Need, not popularity', text: 'Community help goes by a published formula, not by who goes viral.' },
+		{ title: 'Evidence, not popularity', text: 'The pool pays by legitimacy score and need, never by who goes viral.' },
 		{ title: 'The home comes first', text: 'Foreclosure is the very last resort, after every other option.' },
-		{ title: 'Open books', text: 'Every fee, reserve balance and fund decision is published to members.' },
+		{ title: 'Public, except you', text: 'Requests, scores, payouts and fees are public. Personal details never are.' },
 		{ title: 'Members own it', text: 'One member, one vote. Surplus goes back to members.' },
-		{ title: 'Relationships first', text: 'Clear terms and honest tracking, so a loan never costs a family.' }
+		{ title: 'AI advises, people decide', text: 'Every score is explained. Only a person can turn a request down, and you can appeal.' }
 	];
 </script>
 

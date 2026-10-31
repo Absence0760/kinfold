@@ -1,16 +1,16 @@
 <script lang="ts">
 	const phases = [
 		{
-			name: 'Family loans',
+			name: 'Requests between people',
 			when: 'Months 0 to 9',
-			scope: 'Documents, tracking, gift letters and mortgage-partner matching. No money held.',
-			gate: 'Legal review passed and 100 families active'
+			scope: 'Post a request, upload evidence, get a score; family and friends pay it. Car damage and home help. No pooled money.',
+			gate: 'Legal review passed, 500 requests scored, score accuracy checked by people'
 		},
 		{
-			name: 'Protection pilot',
+			name: 'Community car pool',
 			when: 'Months 9 to 18',
-			scope: 'One circle, job-loss cover only, with a licensed partner.',
-			gate: 'Claims paid smoothly and a credit union partner signed'
+			scope: 'Earnings-based payments, the public board, damage requests only, one state, a licensed partner.',
+			gate: 'Requests paid within 7 days and fraud below target'
 		},
 		{
 			name: 'Home Fund pilot',
@@ -21,7 +21,7 @@
 		{
 			name: 'Grow',
 			when: 'Year 3 onward',
-			scope: 'More cover types and regions, then shared-equity homes.',
+			scope: 'More kinds of cover and more states, then shared-equity homes.',
 			gate: null
 		}
 	];
@@ -32,8 +32,8 @@
 		<p class="eyebrow">Roadmap</p>
 		<h2 class="section-title">Each step starts only when the last one proves safe.</h2>
 		<p class="section-lead">
-			We start with what helps without holding anyone's money, and add pooled money only once each
-			phase has earned it.
+			We start with requests paid by people you know, which holds nobody's money, and add the
+			community pool only once scoring has proved fair.
 		</p>
 		<ol class="phases">
 			{#each phases as phase, i (phase.name)}

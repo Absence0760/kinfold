@@ -1,20 +1,20 @@
 <script lang="ts">
 	const steps = [
-		{ when: 'Day one', text: 'Maria rents and has a thin credit file. She joins Kinfold and a Protection Circle.' },
+		{ when: 'Day one', text: 'Maria rents and has a thin credit file. She joins Kinfold and pays 1% of her earnings into the community pool.' },
 		{
 			when: 'Buying',
-			text: 'Her aunt wants to help but fears losing her savings. Kinfold sets up a $30,000 zero-interest family loan, recorded on the home, with circle cover.'
+			text: 'She posts a home request and shares it with family. Her aunt lends $30,000 at zero interest, with a written agreement recorded on the home.'
 		},
 		{ when: 'Moving in', text: 'A smaller bank mortgage means Maria pays thousands less in interest.' },
 		{
 			when: 'Year two',
-			text: "Maria is laid off. Her circle covers four months of payments. Her aunt keeps getting repaid, and nobody has a hard conversation."
+			text: 'Someone rear-ends her car. She posts a damage request with photos and the police report, scores 96%, and the pool pays the shop in three days.'
 		},
 		{
 			when: 'Year four',
-			text: 'Her on-time record opens the Community Fund. She swaps an expensive car loan for a zero-interest one.'
+			text: 'Her on-time repayments to her aunt build a record that replaces a credit score, and open the Community Home Fund for a roof repair.'
 		},
-		{ when: 'Today', text: 'Maria pays into the fund herself, helping the next family.' }
+		{ when: 'Today', text: 'Maria points her monthly payment at home requests, helping the next family.' }
 	];
 </script>
 
@@ -22,10 +22,10 @@
 	<div class="container story">
 		<div>
 			<p class="eyebrow">A member's journey</p>
-			<h2 class="section-title">The pieces protect each other.</h2>
+			<h2 class="section-title">One record, built by helping each other.</h2>
 			<p class="section-lead">
-				Protection makes lending safe. Repayment builds a record that replaces a credit score. That
-				record opens help to people banks overlook, and repaid money funds the next family.
+				Every request you post, every payment you make and every loan you repay adds to one record.
+				That record replaces a credit score and opens help to people banks overlook.
 			</p>
 		</div>
 		<ol>

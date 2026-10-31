@@ -1,14 +1,14 @@
 # Kinfold
 
-Help people buy and keep homes without paying decades of interest to banks.
+Help paid by people, not profit. Post a request (a car crash, a down payment, a loan), upload evidence, get an AI legitimacy score, and get paid by your family and friends or the community.
 
 Kinfold is a member-owned platform with one app and one membership. Behind it, each product runs as its own legal entity with its own money:
 
 | Product | What it does | Who holds the money |
 | --- | --- | --- |
-| **Family & Friends Loans** | Zero-interest loans between relatives, with plain-language documents, a recorded lien, repayment tracking and gift letters | Nobody: money moves directly between family members |
-| **Community Home Fund** | A pooled, zero-interest fund for people with no wealthy family to borrow from, allocated by need rather than popularity | A partner credit union or community lender |
-| **Mutual Protection Circles** | Members pool small monthly payments to cover each other's home payments after job loss, illness or death | A licensed mutual insurer or fraternal benefit society |
+| **Family & Friends requests** | Share a request with your people; they give, or lend at zero interest with documents, tracking and gift letters | Nobody: money moves between people through a payment partner |
+| **Community protection** | Earnings-based subscriptions fund a public board of damage requests (cars first), paid by legitimacy score, highest first | A licensed partner insurer |
+| **Community Home Fund** | Zero-interest home help for people with no wealthy family to ask, allocated by score and need rather than popularity | A partner credit union or community lender |
 | **Mortgage matching** | Steers members to fair first mortgages, with family loans and fund help already counted | Partner lenders |
 
 Kinfold never charges interest or late fees, and never writes first mortgages itself.
@@ -21,7 +21,7 @@ Kinfold never charges interest or late fees, and never writes first mortgages it
 
 ## Status
 
-Design stage. A preview website lives in `apps/web`. Phase 1 (Family & Friends Loans, no money held) is the first build. See the roadmap in `docs/design.md`.
+Design stage. A preview website lives in `apps/web`. Phase 1 (requests paid by family and friends, car damage and home help, no money held) is the first build. See the roadmap in `docs/design.md`.
 
 ## License
 

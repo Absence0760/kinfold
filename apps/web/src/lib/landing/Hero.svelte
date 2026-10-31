@@ -1,39 +1,58 @@
 <script lang="ts">
-	import { monthlyPayment, totalInterest } from '$lib/finance/amortization';
-	import { formatUsd, formatUsdShort } from '$lib/core/format';
+	import { formatUsd } from '$lib/core/format';
 
-	// The design doc's reference mortgage: $400,000 at 6.5% over 30 years.
-	const principal = 400_000;
-	const rate = 6.5;
-	const years = 30;
-	const interest = totalInterest(principal, rate, years);
-	const monthly = monthlyPayment(principal, rate, years);
+	// A sample damage request, as it would appear on the public board.
+	const request = {
+		title: 'Rear-ended at a stop light',
+		kind: 'Auto damage',
+		amount: 2_840,
+		score: 96,
+		evidence: ['Police report', '6 photos', 'Shop estimate'],
+		sources: [
+			{ label: 'Community pool', amount: 2_040 },
+			{ label: 'Two friends', amount: 800 }
+		]
+	};
+	const raised = request.sources.reduce((sum, s) => sum + s.amount, 0);
 </script>
 
 <section class="hero">
 	<div class="container hero-grid">
 		<div>
 			<p class="eyebrow">A member-owned cooperative</p>
-			<h1>Help your family buy a home, without paying a bank for the privilege.</h1>
+			<h1>When life goes wrong, ask the people around you, not a profit margin.</h1>
 			<p class="lead">
-				Kinfold lets families and communities lend to each other at zero interest, and protect each
-				other when life goes wrong. One membership. No interest. No late fees. Ever.
+				Crashed your car? Need help with a home? Post a request, upload your evidence, and get a
+				legitimacy score. Then your family, friends or the Kinfold community pay it. No interest. No
+				late fees. Ever.
 			</p>
 			<div class="actions">
-				<a class="btn btn-primary" href="#calculator">See what you'd save</a>
-				<a class="btn btn-ghost" href="#products">How it works</a>
+				<a class="btn btn-primary" href="#requests">How a request works</a>
+				<a class="btn btn-ghost" href="#board">See the request board</a>
 			</div>
 		</div>
 
-		<aside class="stat-card" aria-label="Interest on a typical mortgage">
-			<p class="stat-label">A typical {formatUsdShort(principal)} mortgage at {rate}% costs</p>
-			<p class="stat-value">{formatUsdShort(interest)}</p>
-			<p class="stat-label">in interest over {years} years.</p>
-			<hr />
-			<p class="stat-foot">
-				That's {formatUsd(monthly)} a month, and more than the house itself. Kinfold keeps that
-				money in your family.
-			</p>
+		<aside class="request-card" aria-label="Example request">
+			<div class="row">
+				<span class="kind">{request.kind}</span>
+				<span class="score" title="Legitimacy score">{request.score}<small>%</small></span>
+			</div>
+			<h2>{request.title}</h2>
+			<p class="amount">{formatUsd(request.amount)} requested</p>
+			<ul class="evidence">
+				{#each request.evidence as item (item)}
+					<li>{item}</li>
+				{/each}
+			</ul>
+			<div class="bar" role="img" aria-label="Fully funded">
+				<span style:width="{(raised / request.amount) * 100}%"></span>
+			</div>
+			<ul class="sources">
+				{#each request.sources as s (s.label)}
+					<li><span>{s.label}</span><strong>{formatUsd(s.amount)}</strong></li>
+				{/each}
+			</ul>
+			<p class="foot">Funded in 3 days. Paid straight to the repair shop.</p>
 		</aside>
 	</div>
 </section>
@@ -54,7 +73,7 @@
 	}
 
 	h1 {
-		font-size: clamp(36px, 5.4vw, 58px);
+		font-size: clamp(36px, 5.4vw, 56px);
 		letter-spacing: -0.02em;
 	}
 
@@ -72,36 +91,104 @@
 		flex-wrap: wrap;
 	}
 
-	.stat-card {
+	.request-card {
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: 20px;
-		padding: 32px;
+		padding: 28px;
 		box-shadow: var(--shadow);
 	}
 
-	.stat-label {
-		color: var(--muted);
-		font-size: 15px;
+	.row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 	}
 
-	.stat-value {
-		font-size: 72px;
-		font-weight: 800;
+	.kind {
+		font-size: 12px;
+		font-weight: 700;
+		padding: 3px 10px;
+		border-radius: 999px;
+		background: var(--warm-soft);
 		color: var(--warm);
-		line-height: 1.05;
-		letter-spacing: -0.03em;
-		margin: 6px 0;
 	}
 
-	hr {
-		border: none;
-		border-top: 1px solid var(--border);
-		margin: 22px 0;
+	.score {
+		font-size: 30px;
+		font-weight: 800;
+		color: var(--accent);
+		letter-spacing: -0.02em;
 	}
 
-	.stat-foot {
+	.score small {
+		font-size: 16px;
+	}
+
+	h2 {
+		font-size: 22px;
+		margin-top: 14px;
+	}
+
+	.amount {
+		color: var(--muted);
+		margin-top: 4px;
+	}
+
+	.evidence {
+		list-style: none;
+		padding: 0;
+		margin: 16px 0 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.evidence li {
+		font-size: 13px;
+		padding: 4px 10px;
+		border-radius: 8px;
+		background: var(--surface-2);
+	}
+
+	.bar {
+		height: 8px;
+		border-radius: 999px;
+		background: var(--surface-2);
+		margin: 22px 0 14px;
+		overflow: hidden;
+	}
+
+	.bar span {
+		display: block;
+		height: 100%;
+		background: var(--accent);
+	}
+
+	.sources {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 6px;
 		font-size: 15px;
+	}
+
+	.sources li {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.sources span {
+		color: var(--muted);
+	}
+
+	.foot {
+		margin-top: 16px;
+		padding-top: 14px;
+		border-top: 1px solid var(--border);
+		font-size: 14px;
+		color: var(--muted);
 	}
 
 	@media (max-width: 860px) {
