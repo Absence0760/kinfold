@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.17"
   },
   "scripts": {
     "//-- setup --": "One-time bootstrap after a fresh clone. The backend (dev:db:*, test:backend:db, gen:types) also needs Docker running and the Supabase CLI on PATH.",
