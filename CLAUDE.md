@@ -25,7 +25,7 @@ If you find a rule worth applying to *every* future project, propose it for the 
 
 More than one Claude session may run in **this one checkout at the same time** — sharing a single working tree *and* a single git index, so a careless `git add` + `git commit` sweeps up another session's in-flight work. The `.claude/hooks/git-scope-guard.py` PreToolUse hook enforces the rules below; if a git command is denied, its message names the scoped alternative — follow it, don't work around it.
 
-- **Commit each piece of work; never push.** Land every logical unit of work as its own path-scoped commit as you finish it — don't leave the tree dirty across tasks or batch unrelated changes into one commit. **Never `git push`** in this repo; publishing is the operator's call. (No `Co-Authored-By`/generated-by trailer — write commits as a human would.)
+- **Commit each piece of work, on `main`, and push it.** Land every logical unit of work as its own path-scoped commit as you finish it — don't leave the tree dirty across tasks or batch unrelated changes into one commit. **Pre-launch workflow (operator's decision, 2026-10-30):** no PRs; commit to `main` and `git push origin main` once `pnpm check` and `pnpm test` pass. Never force-push. Restore PR review and branch protection on `main` before Kinfold has real members or money. (No `Co-Authored-By`/generated-by trailer — write commits as a human would.)
 - **Commit path-scoped, always:** `git commit -m "…" -- path/to/file ...`. A path-scoped commit records only those paths and ignores anything else staged. Bare `git commit`, `git add -u/-A/.`, `git commit -a`, and `git commit --amend` *with staged changes* are blocked — they snapshot the shared index.
 - **Only touch what your task owns.** Don't stage, edit, delete, or `restore` files outside your task. Before committing, `git status` and confirm every path is yours.
 - **Never whole-tree:** no `git add .`, `checkout/restore .`, `reset --hard`, `git rm .`, `git stash` (without `-- <path>`), or `git clean -f` — each clobbers across the tree.
@@ -96,7 +96,7 @@ Run these as slash-commands. Each delegates to a specialised agent under `.claud
 - `/safe-migration` — Supabase schema-change workflow (local reset, RLS / grants / `private` schema checks, types, pgTAP tests).
 - `/polish-ui` — polish one `apps/web` page or component; `/polish-ui review <target>` for a read-only review.
 - `/release-readiness` — go/no-go checklist before tagging.
-- `/draft` — one local branch for an ad hoc testing session; `/draft ready` runs the gate and prints the push / PR commands (Claude never pushes).
+- `/draft` — one local branch for an ad hoc testing session; `/draft ready` runs the gate and prints the push / PR commands (for side branches; normal work goes straight to `main`, see above).
 - `/fix-issues` — fix several open GitHub issues in parallel, one worktree each; prints the publish commands.
 - Hunt-and-fix loops: `/bug-hunt`, `/ux-hunt`, `/perf-hunt`, `/a11y-hunt`, `/coverage-hunt`, `/audit-and-fix`, `/improve-round`, `/fix-ci`.
 - `/audit/all` — the core sweep in parallel; `/audit/<area>` for one sweep. Areas: `secrets`, `rls`, `auth`, `storage`, `pii-in-logs`, `xss`, `deps`, `infra`, `cost-controls`, `llm-endpoint`, `money-path`, `gdpr`, `data-export-completeness`, `account-deletion-completeness`, `third-party-data-flows`, `cookie-consent`, `regional-availability`, `accessibility`, `licenses`, `migration-locks`, `db-performance`. Index: `.claude/commands/audit/README.md`.
