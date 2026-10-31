@@ -43,10 +43,9 @@ There's already a scheduled `audit.yml` workflow that runs `pnpm audit` weekly a
    - When edge functions land, Dependabot has no Deno ecosystem — note that their imports need a manual bump cadence (or a `deno.json` import map reviewed in this audit).
    - Flag a missing ecosystem, a non-weekly schedule, or an ungrouped flood of related packages.
 
-4. **Lockfile-sync workflow exists.** Dependabot edits `<workspace>/package.json` but never touches the root `pnpm-lock.yaml`, which breaks any CI step running `pnpm install --frozen-lockfile`. The compensating workflow is `.github/workflows/dependabot-lockfile.yml` — it regenerates the lockfile on every Dependabot PR and commits the result back so CI retriggers and the PR can go green without manual intervention. Verify:
-   - The workflow file exists.
-   - It uses `DEPENDABOT_LOCKFILE_PAT` (a fine-grained PAT with `Contents: Write`), not `GITHUB_TOKEN` — GitHub blocks the latter from retriggering `pull_request` events.
-   - The PAT is scoped to this repo and has an expiry. If it's stale or revoked, dep PRs pile up unmerged.
+4. **No lockfile-sync workflow is needed — and none should exist.** Every package here is a member of the root pnpm workspace (`pnpm-workspace.yaml` → `apps/*`) and shares the one root `pnpm-lock.yaml`, and Dependabot's npm entry points at `/`, so Dependabot rewrites that lockfile in its own PR. The template's opt-in `dependabot-lockfile.yml` only helps a pnpm project that is *not* a workspace member; it was removed here (2026-10-30) because it was inert (no `DEPENDABOT_LOCKFILE_PAT` set) and checked out PR-head code, which CodeQL flags as `actions/untrusted-checkout/medium`. Verify:
+   - A recent Dependabot npm PR changes `pnpm-lock.yaml` alongside the `package.json` it bumps. If it ever changes `package.json` alone, a non-member project has crept in — fold it into the workspace rather than reintroducing the sync workflow.
+   - Flag any new workflow that checks out `github.event.pull_request.head.*` or `github.head_ref`.
 
 5. **GitHub Actions pinning.** Grep `.github/workflows/` for `uses: <action>@<ref>`.
    - Floating refs (`@main`, `@v6`) are supply-chain risks for actions that can be force-pushed by the publisher.

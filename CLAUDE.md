@@ -113,6 +113,5 @@ Run these as slash-commands. Each delegates to a specialised agent under `.claud
 - `.github/workflows/scorecard.yml` — OSSF Scorecard (base-owned)
 - `.github/workflows/claude.yml` — Claude Code automation on PRs/issues (base-owned)
 - `.github/workflows/dependabot-auto-merge.yml` — auto-merges minor/patch Dependabot PRs (base-owned)
-- `.github/workflows/dependabot-lockfile.yml` — re-syncs pnpm lockfile on Dependabot PRs (base-owned)
 - `.github/dependabot.yml` — dependency update PRs (base-owned)
 - `SECURITY.md` — vulnerability reporting policy (base-owned)
