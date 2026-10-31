@@ -2,7 +2,7 @@
 
 Open items that aren't part of a roadmap stage yet. Each says what's wrong, the fix, and when to do it. Tick an item off by deleting it in the change that fixes it. Stage work lives in [roadmap.md](roadmap.md).
 
-Last updated 2026-10-30, at `2003ffd`.
+Last updated 2026-10-31.
 
 ## Do next
 
@@ -24,6 +24,17 @@ Last updated 2026-10-30, at `2003ffd`.
 - [ ] **No record of other money for the same damage.** Members are meant to declare other cover and any FEMA, SBA, state or charity money, and report recoveries later (`design.md`, Fraud-proofing and Legal reality). **Fix:** a `request_recoveries` table (source, amount, date, evidence), owner-written and service-verified, which the pool run and payouts subtract; with pgTAP. **When:** Stage 1, step 1c.
 - [ ] **Open books need a schedule.** `publish_open_books(month)` exists but nothing calls it. **Fix:** a monthly `pg_cron` job (or the `reconcile` edge function) for the month that ended over a week ago, plus an alert if a month is missing. A payout returned after its month was published stays counted; reconcile such corrections into the next month, never by republishing. **When:** Stage 2, step 2d.
 - [ ] **Fair-lending demographics aren't stored.** The CDFI report and the bias audits need race, ethnicity and sex (age may be asked but never weighted against an applicant), and the schema holds none. **Fix:** an optional table in the `private` schema, unreadable by the scorer, reviewers and panel, filled from the government monitoring form on home-purchase and refinance loans (Reg B 1002.13) or a voluntary self-test with its four disclosures (1002.5(b)(1)). Needs `/safe-migration` and compliance review. The pool's audit is an insurance-law question; it estimates race from surname and geography (BISG) instead of asking. **When:** before the first Home Fund application (Stage 3).
+
+## Member area gaps
+
+Found while building the web member area (`/app`, `/app/board`, `/app/review`) on 2026-10-31. Each needs a migration through `/safe-migration`.
+
+- [ ] **Reviewers can't read any evidence.** The only read policy on `evidence` is the owner's, so the review console's evidence list is always empty, and the `evidence-url` signed-link function in `backend.md` doesn't exist yet. **Fix:** a reviewer read policy (or view) on `evidence` exposing kind, redaction status, in-app capture and date for requests they may review, a storage policy on `evidence-redacted` for the same, then `evidence-url` for originals with an audit-log write. **When:** Stage 1, step 1e.
+- [ ] **The appeal panel can't read the request it decides.** A panel-only member sees the refusal and the appeal text but not the request or its score. **Fix:** a select policy on `requests` and `scores` for `panel` members, limited to requests with an undecided appeal. **When:** Stage 1, step 1i.
+- [ ] **`decide_appeal` records no reason**, which breaks "every decision records reasons". The console deliberately has no reason box until it can be stored. **Fix:** add a required `p_reason` argument, store it on `appeals`, add it to the console. **When:** Stage 1, step 1i.
+- [ ] **Reviewers can't see the requester's region**, so a same-region request appears in the queue and is only refused on submit. **Fix:** expose a boolean "you may review this" (or filter the reviewer policy by region). **When:** Stage 1, step 1e.
+- [ ] **The board can't tell whether a request is taking pledges** (payee verified) or how much it has raised, so the page calls `request_raised_cents` once per open card and only finds out about an unverified payee on pledge. **Fix:** add `taking_pledges` and, for open requests only, `raised_cents` columns to `board_requests`. **When:** before the board has more than a few dozen open requests.
+- [ ] **`my_reliability.installments_paid_on_time` counts every fully paid installment**, on time or not, so the dashboard says "paid of due" rather than "on time". **Fix:** compare the paid date with the due date, or rename the column. **When:** Stage 1, step 1g.
 
 ## Funding and structure
 
