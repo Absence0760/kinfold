@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { safeNext } from '#lib/auth/next.ts';
 	import { dev } from '$app/env';
 	import { DEMO_ACCOUNTS, DEMO_PASSWORD, demoSignInAllowed } from '#lib/auth/demo-accounts.ts';
 	import { getSession, signIn } from '#lib/auth/session.ts';
 	import { isConfigured, supabaseUrl } from '#lib/supabase/client.ts';
 
 	const configured = isConfigured();
+	// Back to the page that sent you here (an invite link, say), never off-site.
+	const next = safeNext(page.url.searchParams.get('next'));
 	// `dev &&` first: `dev` is a build-time constant, so a production build drops
 	// the demo list (and its password) entirely.
 	const showDemo = dev && demoSignInAllowed(dev, supabaseUrl);
@@ -18,7 +22,7 @@
 	$effect(() => {
 		if (!configured) return;
 		getSession().then((s): void => {
-			if (s) goto('/app', { replaceState: true });
+			if (s) goto(next, { replaceState: true });
 		});
 	});
 
@@ -27,7 +31,7 @@
 		busy = key;
 		try {
 			await signIn(asEmail, asPassword);
-			await goto('/app');
+			await goto(next);
 		} catch (e) {
 			error =
 				e instanceof Error && /fetch/i.test(e.message)
