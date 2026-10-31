@@ -29,7 +29,7 @@ Every feature must pass all eight. A feature that would make money by breaking o
 3. **Hardship is never a profit source.** No late fees or penalty rates. A missed payment starts a conversation and a plan, not a charge.
 4. **Evidence, not popularity.** The community pool pays by legitimacy score (and, for the Home Fund, need), never by story quality or follower count. People without wealthy networks get the same ranking as everyone else.
 5. **Keeping the home comes first.** Foreclosure is the very last resort, after payment pauses, restructuring, protection payouts and a voluntary sale where the family keeps its equity.
-6. **Open books, private people.** Verified members see every request, score and payout on the board; anyone can see fees, reserve balances and pool runs. Names, towns and exact dates never show. Every term fits on one screen.
+6. **Open books, private people.** Verified members see every pool request, its score band and its outcome on the board; anyone can see fees, reserve balances and monthly pool totals. Names, towns, exact dates and any figure small enough to point at one person never show. Every term fits on one screen.
 7. **Members own it.** One member, one vote. Surplus goes back to members or into the fund, never to outside shareholders.
 8. **AI advises, people decide.** Every score comes with its reasons. A low score asks for more evidence; only a person can turn a request down, and every refusal can be appealed.
 
@@ -72,7 +72,7 @@ An AI model scores 0 to 100 how well the evidence supports the request, and **sh
 
 - **Your people.** The member shares the request with family and friends by link. Each can give, or lend at zero interest using the Family & Friends tooling (agreement, tracking, gift letters).
 - **The community pool.** Members pay a monthly subscription based on verified earnings. Most of it (the core share) funds the protection pool by rule; members choose where the rest goes (see "The subscription"). The pool holds back a reserve, then pays by legitimacy band: everything scoring 90 or above is filled first, **all at the same time**; if the pool can't cover the whole band, each request gets the same share of what it still needs; then the 80s, then the 70s. This is the "10 claims above 90%, filled concurrently" rule from the original vision, made precise. (Reference implementation: `apps/web/src/lib/requests/allocation.ts`.)
-- Money from both sources stacks: friends' money is counted first, so the pool only covers the gap.
+- Money from both sources stacks: **the pool pays what it covers first**, and family and friends fund the member's own share, anything above the cover cap, and anything the pool doesn't cover. The other way round, gifts would only save the pool money, and in a declared disaster FEMA expects insurance-type cover to pay before it does (44 CFR 206.191).
 - **Pledges are all-or-nothing.** Nothing is charged until a request is fully funded, so a repair shop never gets a half-paid job. If a request is withdrawn, refused or expires, every pledge is released.
 
 ### The subscription
@@ -80,6 +80,8 @@ An AI model scores 0 to 100 how well the evidence supports the request, and **sh
 - A share of verified monthly earnings (proved through a read-only bank link, with tax returns or self-attestation plus random audit for people paid in cash), **$0 below a floor** and capped at the top. Design target (formula v1): nothing below $1,500 a month of take-home pay, 1% above it, capped at $60 a month, pending actuarial work.
 - **80% is the core share** and always goes to the protection pool; the member directs the other 20% to car requests, home help or "highest score first". A pool that members could empty by redirecting it wouldn't be insurance, and a licensed partner couldn't accept it.
 - A $0 subscriber is covered, but with a lower per-request cap until they've been a member for a year, so cover can't be farmed by joining for free.
+- Verified earnings leave out disaster aid, gifts, pool payouts and loan proceeds, so help received never raises what a member pays.
+- Money a member directs to home help goes to the fund as a whole, never to a named request.
 - Year-end surplus is refunded or kept as reserves, by member vote.
 ### Fraud-proofing
 
@@ -87,7 +89,7 @@ An AI model scores 0 to 100 how well the evidence supports the request, and **sh
 | --- | --- |
 | Quote from an expensive shop, repair at a cheap one | Payment goes to the named shop against its final invoice, not to the member |
 | Staged crash | Cross-checks: police report, photo metadata and damage physics, the other party's identity, and patterns across requests, people, vehicles and shops |
-| The same damage claimed twice, or also claimed from an insurer | Photo fingerprinting across all requests; members declare other cover; insurer databases where a partner gives access |
+| The same damage claimed twice, or also paid by an insurer, FEMA, SBA, a state programme or a charity | Photo fingerprinting across all requests; members declare other cover **and any other money for the same damage**, and agree to report recoveries that arrive later; insurer databases where a partner gives access. The same repair is never paid twice |
 | Joining the day after a crash | Pool cover, and each vehicle, has a 60-day waiting period before the incident date |
 | AI-generated or edited photos | Photos taken in the Kinfold app carry content credentials and device attestation and count for more; gallery uploads count for less; large requests get an in-person shop inspection |
 | Fake repair shop | Payees are verified (business registration, bank account) before they can be paid |
@@ -101,6 +103,7 @@ These shape the roadmap; none is a reason not to build it, and all need counsel 
 
 - **A promise to pay is insurance.** If members pay in expecting their requests to be paid, regulators treat it as insurance, which needs a license and reserves. China's Xiang Hu Bao, Ant Group's mutual aid platform, served more than 100 million members and closed on 28 January 2022 amid China's fintech crackdown. So the community pool launches only through a licensed partner (or a licensed reciprocal exchange Kinfold sets up later), never as an unlicensed "no guarantee" sharing scheme.
 - **Liability insurance stays mandatory.** Every US state except New Hampshire requires drivers to carry liability cover (Virginia's opt-out fee ended in July 2024), and New Hampshire still requires proof of financial responsibility after a crash. The pool starts by covering **your own damage** (collision costs and deductibles), which is the expensive part people can't afford, and can later pay members' liability premiums for them.
+- **Disaster aid counts what we pay.** In a federally declared disaster, FEMA, SBA disaster loans and HUD rebuilding grants subtract insurance, gifts and other money for the same repair, and a member who already got the aid may have to repay it (42 USC 5155; 13 CFR 123.101 names gifts). Paying the payee makes every gift a gift for a specific repair, so it counts. We keep paying the payee (it stops fraud and laundering) and instead tell members, ask what aid they've had or applied for, and time gifts after insurance and public aid where that leaves the member better off.
 - **Strangers lending at interest-free is still lending.** Gifts from anyone are fine, and so are loans between family and friends. Loans funded by the wider community are securities or lending, which is why community home help goes through the Home Fund and a credit union rather than strangers lending directly (in November 2008 the SEC ruled that Prosper's peer-to-peer loan notes were securities, and Prosper stopped selling them until its registration took effect in July 2009). A licensed payment partner moves all money; note that agent-of-payee exemptions from money-transmitter licensing vary by state, so Kinfold relies on the partner's licences, not an exemption.
 
 ## Paying it back, and when you can't
@@ -131,7 +134,7 @@ Each step is tried before the next. None of them costs the borrower money.
 **The default plan** is chosen by both sides when the loan is signed, one of:
 
 - **Forgive the rest.** The balance becomes a gift. Good for small loans between close family.
-- **Repay on sale or refinance** (secured loans only). The lien on the home stays and is paid when the home is eventually sold or refinanced. Nobody forces a sale; the lender's money waits safely in the home's equity.
+- **Repay on sale or cash-out refinance** (secured loans only). The lien on the home stays and is paid when the home is eventually sold, or refinanced in a way that takes cash out; a plain rate-and-term refinance gets the lien resubordinated instead. Nobody forces a sale. The lender's money waits in the home's equity, but a lien behind other liens may have little equity behind it at first, and the lender is told so at signing.
 - **Mediate.** A mediator's agreement decides.
 
 **Protecting the lender:** lending is capped by the lender's savings, with a plain warning if a loan is more than they could afford to lose. Borrowers can add an optional guarantor from their own circle, social backing in place of fees: Hebrew Free Loan societies lend at 0% with guarantors and report defaults under 1%, while Kiva's peer-vouched US loans repay far worse than its partner-checked ones. Because Kinfold documents every loan properly (written agreement, schedule, payment records), an unpaid family loan can qualify as a bad-debt tax deduction for the lender, which an informal handshake loan usually can't.
@@ -147,7 +150,16 @@ Kinfold doesn't hold anyone's first mortgage, so the bank's rules apply to it. K
 3. **Get the bank's own relief:** Kinfold connects the member to a HUD-approved housing counselor to ask for forbearance or a loan modification early. US rules generally stop a servicer starting foreclosure until a borrower is more than 120 days behind, so there is time if the member acts early.
 4. **Last resort, sell on your terms:** if keeping the home isn't possible, a sale before foreclosure keeps the family's equity instead of losing it at auction.
 
-Home Fund down-payment loans run through a programme mortgage lenders already accept: Freddie Mac Affordable Seconds through the partner credit union or a CDFI, or Fannie Mae Community Seconds through a nonprofit. Payments are deferred five years or more so they stay out of the member's debt-to-income ratio, and total housing cost is kept at or below about 30% of income (Habitat for Humanity's rule), re-measured yearly. Home Fund loans are secured by a lien behind the bank's, and follow the same ladder: pause, restructure, income-based payments, and on true default, repayment when the home is sold or refinanced. **The Fund never forecloses.**
+Home Fund down-payment loans run through a programme mortgage lenders already accept, which decides who can be the lender of record:
+
+- **Fannie Mae Community Seconds** accepts governments, housing agencies, 501(c)(3) charities, Home Loan Banks, employers and tribes, not a cooperative or a credit union. The Home Fund charity (see "Structure") qualifies.
+- **Freddie Mac Affordable Seconds** accepts a credit union (if it isn't also making the first mortgage, outside Home Possible), a nonprofit, or an already-certified CDFI.
+
+Default terms: 0%, no payments until the home is sold or stops being the main residence, and a maturity no earlier than the first mortgage's (Fannie bars a required payoff before the earlier of 15 years or the first mortgage's maturity). Deferred payments keep the loan out of the member's debt-to-income ratio, and total housing cost stays at or below about 30% of income (Habitat for Humanity's rule), re-measured yearly. The no-payment shape also qualifies for lighter federal disclosure rules (12 CFR 1026.3(h)). CDFI certification counts a deferred loan only if a payment falls due within 12 months, so confirm with the CDFI Fund before relying on longer deferrals for certification.
+
+Home Fund loans are secured by a lien behind the bank's and behind any public-assistance liens, with all liens together at or below 105% of the home's value. They follow the same ladder: pause, restructure, income-based payments, and on true default, repayment when the home is sold or refinanced with cash out. **The Fund never forecloses.**
+
+Bridge and debt buy-out loans (steps 2 and 3 of "What it funds") are not Community or Affordable Seconds. They need their own lending-licence review, and federal ability-to-repay rules apply unless the lender is a certified CDFI or a 501(c)(3) lending only to households at or below 80% of area median income (12 CFR 1026.43(a)(3)).
 
 ### Tracking what people give and receive
 
@@ -170,15 +182,22 @@ Four dashboards, one per audience. Each shows only what its audience is allowed 
 | --- | --- | --- |
 | **Member home** | The member | Open requests with status, score and its reasons; loans given and taken with the next installment; pauses and missed installments; subscription and pool cover; the reliability record and the private giving record |
 | **Public transparency** | Anyone, on the website | Per fund: money in, requests paid, money paid out, reserve held against the 20% target, pool runs and how often a run fell short. The expense share against the ~15% target and every fee. The measures in "How we know it's helping", headed by **the share of help reaching households without wealthy networks** |
-| **Members-only board** | Verified members | Every pool request with its redacted summary, amount, score and outcome, by state and week (never names, towns or exact dates) |
+| **Members-only board** | Verified members | Every pool request from the last 12 months (and any still open) with its member-confirmed redacted summary, outcome, amount band and 10-point score band, by month and by state, or by Census division where the state has fewer than 1,000 active members. The exact amount shows only while a request is still being funded, because givers need it. Never names, towns or exact dates |
 | **Operations console** | Reviewers, panel, staff | The review queue, scores near the review line, fraud signals, appeals, daily reconciliation breaks, reserve alerts, and score gaps by model version for the bias audit |
 
 Rules for all four:
 
-- **Small numbers identify people.** Any public or board figure counted from fewer than 10 members or requests is hidden or merged into a wider group ("fewer than 10" or a bigger region or period). "One roof request in Vermont this week" points at a person.
+- **Small numbers identify people.** "One roof request in Vermont this week" points at a person, and so does the difference between two live totals. So:
+  - Public figures are **monthly snapshots of ended months, never live**, so one new request can't be read off as a change.
+  - A count of 1 to 10 shows as "10 or fewer" (CMS hides 1 to 10; CDC under 10).
+  - A dollar total shows only when it covers at least 11 requests and no one request is half of it, rounded to $1,000.
+  - A percentage needs a base of at least 30 (NCHS's rule for a share).
+  - When one cell of a breakdown is hidden, a second is hidden too, or small cells roll up (state to Census division to national; month to quarter to year), so nothing can be worked out by subtraction. Snapshots never overlap and have no all-funds or all-time totals until that's built.
+  - Free text is the riskiest field: the board's summary is redacted automatically, then confirmed by the member before it shows, and confirmed again after any change.
 - **The giving record never leaves the member's own dashboard.** It isn't on the operations console either; reviewers decide requests without it.
 - **Every console read of PII is audit-logged**, the same as signed-URL evidence views.
-- **The transparency dashboard is the grant report.** Funders and agencies (see "Public and grant funding") get the same aggregates the public sees, plus the extra aggregates a grant requires, never member records.
+- **The transparency dashboard is the grant report.** Funders and agencies (see "Public and grant funding") get the same aggregates the public sees, plus the extra aggregates a grant requires. Any loan-level report an agency requires (the CDFI Fund asks for census tract and some demographics) goes only to that agency under a written data agreement, never onto a dashboard.
+- **A missed installment shows as the next step**, worded the same for borrower and lender ("Behind by $120 · pause available"), never as a running count of misses.
 
 ## Business model review: gotchas and fixes
 
@@ -228,7 +247,7 @@ Kinfold's costs per request are real even though it charges no interest: identit
 | --- | --- | --- |
 | Family & Friends requests | Kinfold runs the software; money moves between people through a payment partner | Share a request; friends give or lend at 0% |
 | Community protection | A licensed partner insurer (later, Kinfold's own licensed reciprocal) holds the pool | Pay an earnings-based subscription; post damage requests to the public board |
-| Community Home Fund | A partner credit union or community development lender holds the money; Kinfold runs the app and the selection rules | Apply for zero-interest help, or contribute |
+| Community Home Fund | **Kinfold Home Fund**, a separate 501(c)(3) public charity whose board the cooperative elects. It owns the loans, receives gifts, grants, program-related investments and federal awards, and keeps its money in its own accounts at a partner credit union. Kinfold runs the app and the selection rules for it, at fair market value | Apply for zero-interest help, or give |
 | Mortgage matching | Partner lenders, ideally credit unions and community lenders | A fair first mortgage, with family loans and fund help already counted |
 
 ### Why one platform
@@ -271,6 +290,8 @@ A member shares any request (a car repair, a down payment, a loan payoff) with t
 
 **Tax note:** US rules (26 USC 7872) treat a below-market family loan above $10,000 as if it charged the Applicable Federal Rate. For loans totalling $100,000 or less, the imputed interest the lender must report is capped at the borrower's net investment income, and is zero if that is $1,000 or less (unless tax avoidance is a main purpose). The forgone interest is still a gift. If a documented loan goes unpaid, the lender may deduct it as a nonbusiness bad debt (a short-term capital loss) only if it was a bona fide loan and they made reasonable collection efforts, which Kinfold's records show. Document templates need review by a tax attorney before launch.
 
+**For the member receiving help:** gifts from family and friends aren't income (26 USC 102); a giver who gives one person more than $19,000 in 2026 files a gift-tax return (Form 709), though tax is rarely due. Gifts from an employer are wages, not gifts. Requests paid straight to a shop don't put a Form 1099-K in the member's name, and the payment partner's own threshold is $20,000 and 200 transactions a year (26 USC 6050W(e), as amended in 2025).
+
 ## Product 2: Community protection
 
 Damage requests paid from the community pool. **Cars first**, then homes, then other cover as reserves and data grow.
@@ -291,6 +312,11 @@ Damage requests paid from the community pool. **Cars first**, then homes, then o
 2. **Requests** are scored and paid by band, highest first, filled concurrently.
 3. **Reinsurance** covers rare disasters such as a hailstorm hitting a whole city.
 4. **Surplus** at year end is refunded or kept as reserves, by member vote.
+5. **In declared disasters** the pool decides within 30 days, outside the weekly run, and gives the member a payment statement or a decline letter: FEMA won't consider an insured loss without one. The pool never waits to pay "after FEMA".
+
+Payouts reimburse a loss, so they aren't income, but they reduce any casualty-loss tax deduction (IRS Publication 547). The app tells members both things when a request is paid.
+
+**Pointing members to public help:** the pool sits beside public programmes rather than taking their money. Kinfold points members to state low-cost auto insurance where it exists (California's covers liability only, which pairs with the pool's own-damage cover), the state FAIR plan when no insurer will cover a home, roof-strengthening grants such as Strengthen Alabama Homes (up to $10,000, paid to the contractor), and FEMA, SBA and USDA repair help after disasters. None of that money enters the pool.
 
 **Fairness rules:** the subscription depends on earnings, never on neighbourhood, race, credit score or proxies for them; scores depend only on evidence; refusals are made by people, in plain language, with appeal to a member panel.
 
@@ -300,8 +326,9 @@ For people with no wealthy family to borrow from. Lends without interest, alloca
 
 **Where the money comes from**
 
-- **Members' contributions:** gifts, or zero-interest deposits withdrawable on notice.
-- **Matching:** foundations, employers and local governments match small contributions, weighted toward under-served areas.
+- **Gifts** to the Home Fund charity, tax-deductible for people who itemize, and from 2026 up to $1,000 ($2,000 joint) for people who don't (26 USC 170(p)), which needs the Fund to stay a public charity. Gifts go to the Fund as a whole; a gift pointed at a named family's request isn't deductible (IRS Publication 3833), so those go through Family & Friends instead.
+- **Community investment notes, later:** zero-interest notes members can withdraw on notice, only after state securities counsel signs off. They're investments, not insured savings, and not deductible; only banks and credit unions may call anything a "deposit".
+- **Matching and program-related investments:** foundations, employers and local governments match small gifts, weighted toward census tracts that meet the CDFI Fund's income and poverty tests (never chosen by racial makeup); foundations can also lend to the Fund at 0% to 1%, or back its loss reserve.
 - **Repayments:** every repaid dollar goes back out to the next family.
 - **Surplus** from the cooperative's fees.
 
@@ -312,9 +339,13 @@ For people with no wealthy family to borrow from. Lends without interest, alloca
 3. **Buying out expensive debt:** replacing a high-rate loan on a home with a zero-interest one.
 4. **Over time, whole homes:** shared equity. The fund co-owns a home and the family buys the fund's share back with no interest; the repaid share funds the next family.
 
-**How applicants are chosen:** the same request, evidence and legitimacy score as every other request, plus a published needs formula covering need, readiness and reliability (rent paid on time, subscription payments, family loan repayments). A member panel reviews edge cases. Hardship details stay private; the public board shows only the request type, amount, score and outcome.
+**Who it helps:** households at or below 80% of area median income, households facing foreclosure or eviction, and households in a designated distressed area: the charitable class the Fund exists for. An account is free and a subscription is never a condition of help, because a charity can't keep its help for paying members.
 
-**Contributor safety:** contributors choose gift or deposit up front. Deposits are held by the regulated partner and backed by a loss reserve. The app says plainly that deposits carry risk and are not insured savings.
+**How applicants are chosen:** the same request, evidence and legitimacy score as every other request, plus a published needs formula covering need, readiness and reliability (rent paid on time, family loan repayments). The formula uses no prohibited basis under fair-lending law, and public-assistance income counts like any other income. A member panel reviews edge cases. Directors don't borrow from the Fund while they serve. Hardship details stay private; the board shows only the request type, amount band, score band and outcome.
+
+**Public money stays in the funder's name:** FHLB, HOME, CDBG and state housing-agency help goes to the household under that programme's own note and lien, never into the Fund, because programme rules follow the money forever (HOME repayments stay HOME money, 24 CFR 92.503) and a city's HOME agreement would usually oblige the lien holder to enforce it. The Fund's own loan is sized last, to fill the gap that's left.
+
+**Contributor safety:** a gift is a gift: it isn't returned. Until notes are approved, the Fund takes only gifts, grants and program-related investments. The Fund's money, repayments and surplus are used only for charitable lending and never return to the cooperative or its members as members; on dissolution they go to another charity.
 
 ## How the pieces connect
 
@@ -345,32 +376,42 @@ Flat, published fees for real work, never interest or penalties. Grants fund the
 | Family loan setup fee | Documents, lien recording, tax setup | Flat, not a percentage; waived for low-income members |
 | Loan servicing | Payment processing, tracking, yearly tax paperwork | Small flat monthly fee, shown before signing |
 | Pool admin share | Scoring, review and paying requests | Capped, published share of subscriptions; the rest stays in the pool |
-| Mortgage partner referrals | Matching members to fair lenders | Disclosed; never steers to a worse offer |
+| Mortgage matching (no fee) | Matching members to fair lenders | Kinfold takes **no referral fees** from mortgage lenders: RESPA section 8 bans them, and disclosure doesn't cure it |
 | Employer benefit | Employers offer membership as a housing benefit | Employer pays; members' terms are identical |
-| Grants and impact funding | Start-up costs and fund matching | Funders get no say over individual decisions |
+| Grants and impact funding | Home Fund lending and matching (through the Home Fund charity); co-op start-up only for specific charitable projects | Funders get no say over individual decisions |
 
 **Kinfold never:** charges interest, charges late fees, sells member data, earns hidden returns on members' money, or takes outside investors who expect profits from members.
 
 ### Public and grant funding
 
-Insurers' government billions mostly come from programmes where the government subsidises or backstops the cover itself. In federal crop insurance the government pays about 60% of farmers' premiums and pays insurers 12% to 22% of premium for running the policies. In flood insurance (NFIP) the government is the insurer, and private companies sell and service the policies for a fee. In ACA and Medicare Advantage, subsidies follow the customer to the insurer. Terrorism cover has a federal backstop (TRIA). **None of these covers car damage, deductibles or home repairs**, and Kinfold's pool isn't the insurer anyway (the partner is). The public money that fits Kinfold is on the **lending and housing** side:
+Insurers' government billions mostly come from programmes where the government subsidises or backstops the cover itself. In federal crop insurance the government pays about 60% of farmers' premiums and pays insurers 12% to 22% of premium for running the policies. In flood insurance (NFIP) the government is the insurer, and private companies sell and service the policies for a fee. In ACA and Medicare Advantage, subsidies follow the customer to the insurer. Terrorism cover has a federal backstop (TRIA). **None of these subsidies covers car damage, deductibles or home repairs**, and Kinfold's pool isn't the insurer anyway (the partner is). Disaster aid and some state programmes do pay for repairs, but they sit beside the pool (see Product 2), not inside it. The public money that fits Kinfold is on the **lending and housing** side, and nearly all of it goes to the **Home Fund charity**, not the cooperative:
 
 | Source | What it funds | Fit and catch | When |
 | --- | --- | --- | --- |
-| **Foundations and impact funders** | Start-up costs, matching | No track record needed. The only realistic money before launch | Stage 0 onward |
-| **CDFI Fund (US Treasury)** | Technical Assistance awards (historically up to about $125,000) for "emerging" lenders not yet certified; Financial Assistance and capital for certified CDFIs. Certification also brings bank investment, because banks get CRA credit for funding CDFIs | The best fit, for the Home Fund. Certification needs: a primary community-development mission, financing as a main activity, at least 60% of loans (by number and dollars) to a defined target market, development services, a board at least a third accountable to that market, and not being a government body. A TA recipient must become certified within about two years. Funded at $324M for FY2026 after the administration proposed cutting it, and payouts have run late, so don't plan around a set date | Apply for TA once the Home Fund has a lending plan (end of Stage 2); certify during Stage 3 |
-| **FHLB Affordable Housing Program** | Down-payment grants (per-household cap set yearly by FHFA, $22,000 baseline) | Only through a member bank or credit union, so the Home Fund's partner credit union applies, with Kinfold as the referral path | Stage 3 |
-| **State housing finance agencies; HOME and CDBG funds through cities** | Down-payment help and foreclosure prevention, the Home Fund's first two priorities | Local, competitive, income limits per programme | Stage 3, in the pilot city |
-| **HUD housing counseling grants** | Counseling | Go to HUD-approved nonprofit agencies. Kinfold **partners with one** for the "get the bank's own relief" step rather than becoming one | Stage 3 |
+| **Foundations and impact funders** | Home Fund lending, matching, its start-up costs | Grants go to the Home Fund charity, or through a fiscal sponsor until the IRS recognises it. A foundation can fund the cooperative itself only for a specific charitable project, with expenditure responsibility and the money kept separate (Treas. Reg. 53.4945-6). The cooperative's own start-up costs come from member capital, cooperative or CDFI loans, and development-centre help | Stage 0 onward |
+| **Program-related investments** | Loans to the Fund at 0% to 1%, or deposits and guarantees at the partner credit union that back the loss reserve | Debt only, never equity. The foundation needs no extra oversight when the borrower is a public charity (Treas. Reg. 53.4944-3) | Stage 3 |
+| **CDFI Fund (US Treasury)** | Technical Assistance grants ($10,000 to $150,000 in the FY2025 round, no match required) for "emerging" lenders not yet certified; Financial Assistance and capital for certified CDFIs. Certification also brings bank investment, because banks get CRA credit for funding CDFIs | The best fit, for the Home Fund. Only an entity holding loans on its own books can certify (loans the credit union keeps count for the credit union), so it must be the Home Fund charity, and it must exist before applying. Certification needs: a primary community-development mission, financing as a main activity, at least 60% of loans (by number and dollars) to a target market, development services, accountability to that market (today a third of the board; a September 2026 proposal would measure it by lending), and not being a government body. Race-based target markets are being removed, so use low-income households or qualifying census tracts. An emerging CDFI must certify by its award agreement's date, within about three years. Funded at $324M for FY2026 after the administration proposed cutting it; payouts have run late and no FY2026 notice was out on 2026-10-30, so don't plan around a set date | TA once the Home Fund charity exists and has a lending plan (end of Stage 2); certify after a full fiscal year of lending in Stage 3 |
+| **FHLB Affordable Housing Program** | Down-payment grants to first-time buyers at or below 80% of area median income, with counseling and a 5-year retention lien. Per-household cap $32,837 for 2026 (FHFA); each Home Loan Bank may set less | Only through a member bank or credit union, so the partner credit union must be an FHLB member willing to run the set-aside. The grant is the household's, in the credit union's name, stacked under the Fund's loan | Stage 3 |
+| **State housing finance agencies; HOME and CDBG funds through cities** | Down-payment help and foreclosure prevention, the Home Fund's first two priorities | Local, competitive, income limits per programme. Each programme's lien stays in the funder's own name; Kinfold never administers HOME or CDBG paper. A city may be able to count the Fund's 0% loans as HOME match (24 CFR 92.220) | Stage 3, in the pilot city |
+| **HUD housing counseling grants** | Counseling | Go to HUD-approved nonprofit agencies. Kinfold **partners with one** agency, certified under 24 CFR part 214, for every applicant and for the "get the bank's own relief" step, rather than becoming one | Stage 3 |
 | **USDA Rural Cooperative Development Grants** | Free help setting up a co-op, from regional development centres | Paid to the centres, not to co-ops (FY2026: $200,000 to $1M per centre, rural focus). Kinfold uses a centre's help with forming the cooperative; it doesn't apply itself | Stage 0, co-op formation |
 | **Local-government matching** | Home Fund matching (Product 3) | Relationship by relationship | Stage 3 |
 
 **What grants must not buy:**
 
 - **No say over individual decisions** (the Sustainability guardrail). Grant agreements fund the Fund, not a list of chosen families.
-- **No member records.** Many programmes require reporting. The CDFI Fund's yearly loan-level report asks for each loan's census tract and, where collected, borrower race and ethnicity. Kinfold reports what a programme strictly requires, collects demographics only as voluntary self-reporting kept apart from scoring (it doubles as bias-audit data), and agrees the data terms in writing before signing.
+- **Only the records an award requires.** The CDFI Fund's yearly loan-level report asks for each loan's census tract and borrower demographics where collected, and accepts "Do Not Know". Federal auditors and inspectors general can see any loan file a federal award pays for (2 CFR 200.337), and the Fund's loan terms tell members so. Data terms are agreed in writing before signing.
+- **Demographics only where the law allows asking.** Fair-lending law bars asking race, ethnicity or sex, with exceptions (12 CFR 1002.5). For home-purchase and refinance loans secured by the home, the lender must ask on the government monitoring form (1002.13), and Kinfold asks on the credit union's behalf. For every other Fund loan, Kinfold asks only as a voluntary fair-lending self-test with its four required disclosures (1002.5(b)(1)), or doesn't ask. The answers never reach the scorer, reviewers or panel; self-test results go to the board and the auditor, not the public; and CDFI reports show "Do Not Know" for self-test data.
+- **No public money in the protection pool.** Grants may pay members' subscriptions from a separate labelled pot, fund mitigation, or fund operations; they never change cover terms or who the pool pays. Federal money inside the pool would turn payouts into federal aid and push them behind insurance in the payment order.
 - **No eligibility rule that breaks a principle.** If a grant's income limits or target market would make the Home Fund refuse someone the formula would help, that money funds a separate, labelled pot; it doesn't change the formula.
 - **No dependence.** Grant money pays for start-up and matching, never for running costs the fees must cover, so a cut programme pauses matching but not the cooperative.
+
+**Federal money in a revolving loan fund comes with conditions** (2 CFR 200), so federally funded loans are tracked as their own pot:
+
+- A single audit once federal spending reaches $1M a year, where the count includes new loans plus the opening balance of earlier federally funded loans (200.501, 200.502(b)).
+- Repayments are programme income, bound to the programme's rules; ask for the "addition" method (200.307).
+- The government gets a licence to work and data the award pays for (200.315), so federal money never funds the platform or the scorer.
+- Awards can be ended when agency priorities change (200.340(a)(4)).
 
 ## Risks and safeguards
 
@@ -400,6 +441,7 @@ The biggest risk is mostly helping families who are already comfortable. The Com
 - **Open books** every quarter: reserves, claims, fund allocations (anonymised), fees and costs.
 - **Paid, rotating member panels** for fund edge cases and claim appeals.
 - **Annual independent audit** of finances and of the fund formula's fairness.
+- **The Home Fund charity is the cooperative's affiliate, not its property.** The cooperative elects its board. Services between them are at fair market value, approved by independent directors (26 USC 4958), and the Fund's assets never return to the cooperative or its members as members.
 
 ## Roadmap
 
@@ -408,8 +450,8 @@ Start with cars and requests paid by people you know: it exercises the whole req
 | Phase | When | Scope | Gate to move on |
 | --- | --- | --- | --- |
 | 1. Requests between people | Months 0 to 9 | Requests, evidence, redaction and scoring for car damage and home help; family and friends pay (gifts and 0% loans). No pooled money | Legal review passed; 500 requests scored; people agree with the score at least 9 times in 10 |
-| 2. Community car pool | Months 9 to 18 | Earnings-based subscriptions, the members-only board, own-damage car requests, one state, licensed partner insurer | Requests paid within 7 days; fraud below target; books reconcile daily; credit union partner signed |
-| 3. Home Fund pilot | Months 18 to 30 | One city, credit union partner, matching funds | 25 fund loans repaying on time |
+| 2. Community car pool | Months 9 to 18 | Earnings-based subscriptions, the members-only board, own-damage car requests, one state, licensed partner insurer | Requests paid within 7 days; fraud below target; books reconcile daily; credit union partner signed (a Home Loan Bank member); Home Fund charity formed |
+| 3. Home Fund pilot | Months 18 to 30 | One city, the Home Fund charity lending through a credit union partner, matching funds, CDFI application | 25 fund loans repaying on time |
 | 4. Grow | Year 3 onward | More cover types and states; members' own reciprocal insurer; shared-equity homes | — |
 
 ### How we know it's helping
@@ -424,7 +466,7 @@ Start with cars and requests paid by people you know: it exercises the whole req
 | Relationships intact | Yearly survey: did the loan help or hurt the family? | Most families say it helped |
 | Request speed | Whether help arrives when needed | Paid within 7 days |
 | Score agreement | Whether people reviewing agree with the AI score | At least 9 in 10 |
-| Score fairness | Score gaps by neighbourhood, age and language | No significant gap in the yearly audit |
+| Score fairness | Score gaps by neighbourhood, age and language, published only for groups of at least 30 members | No significant gap in the yearly audit |
 
 ## Open questions
 
@@ -433,5 +475,8 @@ Start with cars and requests paid by people you know: it exercises the whole req
 - Which licensed insurer to partner with for the car pool, and whether to set up Kinfold's own reciprocal exchange later.
 - The subscription formula (floor, share of earnings, cap), which needs actuarial work.
 - Which AI model scores requests, how it's evaluated before launch, and where evidence is stored.
-- Legal form of the cooperative and its subsidiaries; needs a lawyer experienced in cooperatives and consumer finance. It also decides CDFI eligibility: the Home Fund entity must be the financing entity with its own accountable board.
-- Which target market to define for CDFI certification (low-income households, or the pilot city's underserved tracts) so that 60% of Home Fund lending meets it without the formula refusing anyone outside it.
+- Legal form of the cooperative and its subsidiaries; needs a lawyer experienced in cooperatives and consumer finance. Choose a cooperative statute with no investor members (for example, not Minnesota 308B).
+- The Home Fund charity: its Form 1023 timeline and public-support test, the services agreement with the cooperative, and how it is licensed as a lender in the launch state.
+- Which target market to define for CDFI certification (low-income households, or the pilot city's qualifying census tracts) so that 60% of Home Fund lending meets it.
+- Whether a 0% forgivable family loan counts as a "subsidized loan" when HUD calculates disaster-rebuilding grants (HUD excludes only private loans on typical commercial terms, 84 FR 28836).
+- How the community pool's yearly bias audit gets demographics: the pool is insurance, not credit, so it is a state insurance-law question; estimating race from surname and geography (the CFPB's BISG method) avoids asking.
