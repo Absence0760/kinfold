@@ -14,7 +14,7 @@
 		},
 		{
 			title: 'Get paid',
-			text: 'Your people, the community pool, or both. Money goes straight to the repair shop or lender, never through a middleman taking a cut.'
+			text: 'Your cover, the community, your people, or all three. Money goes straight to the repair shop or lender, never through a middleman taking a cut.'
 		}
 	];
 
@@ -25,7 +25,7 @@
 		},
 		{
 			title: 'The community',
-			text: 'Members pay a small share of their earnings each month, and choose where it goes. The pool pays the highest-scoring requests first, all at once.'
+			text: 'Members pay dues of a small share of their earnings, which buy deductible cover that pays every covered claim in full. A gift-funded repair fund helps with the rest, highest-scoring requests first.'
 		}
 	];
 
@@ -43,7 +43,7 @@
 		<h2 class="section-title">One way to ask for help, whatever went wrong.</h2>
 		<p class="section-lead">
 			Insurance claims and home loans work the same way on Kinfold. The only difference is whether
-			the money is a gift, a payout from the pool, or a zero-interest loan you pay back.
+			the money is a gift, an insured payout, a repair grant, or a zero-interest loan you pay back.
 		</p>
 
 		<ol class="steps">

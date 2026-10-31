@@ -1,4 +1,5 @@
-// How the community pool is shared out across open requests.
+// How the community repair fund (gifts and grants, not insured cover) is shared
+// out across open requests.
 //
 // Requests are grouped into legitimacy bands (90-100, 80-89, ...). The highest
 // band is filled first, and every request inside a band is filled at the same

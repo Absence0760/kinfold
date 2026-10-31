@@ -9,7 +9,8 @@
 		score: 96,
 		evidence: ['Police report', '6 photos', 'Shop estimate'],
 		sources: [
-			{ label: 'Community pool', amount: 2_040 },
+			{ label: 'Deductible cover', amount: 1_000 },
+			{ label: 'Repair fund', amount: 1_040 },
 			{ label: 'Two friends', amount: 800 }
 		]
 	};

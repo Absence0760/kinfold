@@ -1,6 +1,6 @@
 <script lang="ts">
 	const steps = [
-		{ when: 'Day one', text: 'Maria rents and has a thin credit file. She joins Kinfold and pays 1% of her earnings into the community pool.' },
+		{ when: 'Day one', text: 'Maria rents and has a thin credit file. She joins Kinfold and pays 1% of her earnings in dues, which buy her deductible cover.' },
 		{
 			when: 'Buying',
 			text: 'She posts a home request and shares it with family. Her aunt lends $30,000 at zero interest, with a written agreement recorded on the home.'
@@ -8,7 +8,7 @@
 		{ when: 'Moving in', text: 'A smaller bank mortgage means Maria pays thousands less in interest.' },
 		{
 			when: 'Year two',
-			text: 'Someone rear-ends her car. She posts a damage request with photos and the police report, scores 96%, and the pool pays the shop in three days.'
+			text: 'Someone rear-ends her car. She posts a damage request with photos and the police report, scores 96%, and her deductible cover pays the shop in three days.'
 		},
 		{
 			when: 'Year four',

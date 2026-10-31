@@ -7,10 +7,10 @@
 			gate: 'Legal review passed, 500 requests scored, reviewers agree with the score 9 times in 10'
 		},
 		{
-			name: 'Community car pool',
+			name: 'Community car cover',
 			when: 'Months 9 to 18',
-			scope: 'Earnings-based payments, a members-only board, own-damage car requests, one state, a licensed partner insurer.',
-			gate: 'Requests paid within 7 days, fraud below target, books reconcile daily'
+			scope: 'Dues based on earnings pay for deductible cover from a licensed partner insurer, alongside a gift-funded repair fund and zero-interest repair loans. One state.',
+			gate: 'Claims paid on time, fraud below target, books reconcile daily'
 		},
 		{
 			name: 'Home Fund',

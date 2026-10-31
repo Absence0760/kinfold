@@ -30,15 +30,15 @@
 		<p class="eyebrow">The request board</p>
 		<h2 class="section-title">Ranked by evidence, not by who tells the saddest story.</h2>
 		<p class="section-lead">
-			The board is visible to verified members only, and shows each request's state and week, never
-			names or towns. The pool fills the highest band first
-			(90% and up), every request in it at the same time, then moves down. Below 70%, a person
-			reviews it and asks for more evidence. Move the slider to see how this month's pool is shared
-			out.
+			The board is visible to verified members only, and shows each request's state or region and
+			month, never names or towns. The community repair fund, paid for by gifts, fills the highest
+			band first (90% and up), every request in it at the same time, then moves down. Below 70%, a
+			person reviews it and asks for more evidence. Insured cover is different: a covered claim is
+			always paid in full. Move the slider to see how this month's repair fund is shared out.
 		</p>
 
 		<label class="pool">
-			<span>This month's community pool <strong>{formatUsd(pool)}</strong></span>
+			<span>This month's repair fund <strong>{formatUsd(pool)}</strong></span>
 			<input type="range" min="0" max="25000" step="500" bind:value={pool} />
 		</label>
 
@@ -57,7 +57,7 @@
 						<p class="meta">
 							{formatUsd(raised)} of {formatUsd(r.amount)}
 							{#if r.funded > 0}· {formatUsd(r.funded)} from friends{/if}
-							{#if a.grant > 0}· {formatUsd(a.grant)} from the pool{/if}
+							{#if a.grant > 0}· {formatUsd(a.grant)} from the fund{/if}
 						</p>
 					</div>
 					<span class="status">{labels[a.status]}</span>
@@ -66,7 +66,7 @@
 		</ul>
 		<p class="note">
 			Illustration only. Bands, thresholds and amounts are design targets, not live data. Left in
-			the pool: {formatUsd(result.remainingPool)}.
+			the fund: {formatUsd(result.remainingPool)}.
 		</p>
 	</div>
 </section>

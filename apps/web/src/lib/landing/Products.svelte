@@ -15,14 +15,14 @@
 		{
 			tag: 'Phase 2',
 			name: 'Community protection',
-			lead: 'Damage requests paid from a pool everyone pays into. Starting with cars.',
+			lead: 'Help with car damage, starting with the deductible you can’t afford.',
 			points: [
-				'Pay a small share of your earnings, nothing if you earn little',
-				'Choose where your monthly payment goes',
-				'Members-only board, ranked by legitimacy score',
+				'Dues are a small share of your earnings, nothing if you earn little',
+				'Dues buy deductible cover that pays covered claims in full',
+				'A gift-funded repair fund and zero-interest repair loans for the rest',
 				'Repair shop paid directly, so quotes can’t be gamed'
 			],
-			holds: 'Pool held by a licensed partner, never mixed with loan money.'
+			holds: 'Cover issued by a licensed partner insurer, never mixed with loan money.'
 		},
 		{
 			tag: 'Phase 3',
@@ -34,7 +34,7 @@
 				'Same request and evidence, scored on need too',
 				'Every repaid dollar goes to the next family'
 			],
-			holds: 'Money held by a partner credit union.'
+			holds: 'Run by the Kinfold Home Fund, a charity; its money is kept at a partner credit union.'
 		}
 	];
 </script>
