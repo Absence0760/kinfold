@@ -10,7 +10,7 @@ What to build, in what order. Each stage ships something members can use, and th
 | --- | --- |
 | Preview site (`apps/web`) | ✅ Live locally; deployable as static files |
 | Schema v1: members, requests, evidence, scores, reviews, funding, loans, repayment, ledger, pool (`apps/backend`) | ✅ Migrations apply; pgTAP suite green |
-| CI: `pnpm check`, `pnpm test` (web, scripts, pgTAP) on every PR | Required check on `main` |
+| CI: `pnpm check`, `pnpm test` (web, scripts, pgTAP) on every push to `main` (no PRs pre-launch; see `CLAUDE.md`) | Green on `main`; PR review and branch protection switched back on before Stage 1 has real members |
 | Infra skeleton (Terraform, estate pattern): AWS account via `new-project-account.sh`, S3 + CloudFront for the site, hosted Supabase project, `production` environment with a required reviewer | The site deploys through the gated workflow |
 | Counsel engaged (insurance, consumer lending, money transmission, co-op formation) and a first-state shortlist | Written legal plan for Stage 1 |
 
