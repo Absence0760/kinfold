@@ -6,7 +6,8 @@
 -- committed (see CLAUDE.md, "Local-dev env is committed; real secrets never are").
 -- Never run this against a real project.
 --
--- Dev logins (password for all: testtest):
+-- Dev logins (password for all: testtest). The web sign-in page offers each as a
+-- one-click demo account; keep apps/web/src/lib/auth/demo-accounts.ts in step:
 --   maria@test.com  member, CA: a draft, a funded request with a family loan
 --   sam@test.com    member, CA: maria's brother and lender; an open request on the board
 --   james@test.com  member + reviewer, NY (outside CA, so he can review maria and sam)

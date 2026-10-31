@@ -8,10 +8,10 @@ A pnpm workspace (`apps/*`), laid out like `project-stocks`:
 
 | Workspace | What it is | Port |
 | --- | --- | --- |
-| `apps/web` | SvelteKit 3 (Svelte 5) marketing / preview site: landing page, request board demo and savings calculator. `adapter-static` with every route **prerendered** to HTML (a public site, unlike project-stocks' auth-gated SPA). Does not call the backend; no env vars. Kit config lives in `vite.config.ts` (there is no `svelte.config.js` in Kit 3). | 7790 |
+| `apps/web` | SvelteKit 3 (Svelte 5). Two halves: the public marketing / preview site (landing page, request board demo, savings calculator), **prerendered** to HTML under the `(site)` route group; and the member area (`/signin`, `/app/*`), a browser-only SPA (`ssr = false`) that talks to Supabase under RLS and is served from the adapter's `200.html` fallback. `adapter-static`. Env vars live in `src/env.ts` (Kit 3's `defineEnvVars`, read via `$app/env/public`): `PUBLIC_SUPABASE_URL` (committed `.env.development`) and `PUBLIC_SUPABASE_ANON_KEY` (never written to a file; `bin/dev-run-web.sh` reads it from `supabase status`). Kit config lives in `vite.config.ts` (there is no `svelte.config.js` in Kit 3). | 7790 |
 | `apps/backend` | Supabase (Postgres 17, Auth, Storage, Edge Functions) for the member app. Local stack via the Supabase CLI in Docker. Migrations in `supabase/migrations`, pgTAP tests in `supabase/tests`. | API 54721, DB 54722, Studio 54723, Mailpit 54724 |
 
-Code layout in `apps/web/src/lib`: `finance/` (loan maths, pure and tested), `requests/` (community repair fund allocation by evidence band, pure, with example tests plus `fast-check` property tests of its money invariants), `core/` (formatting), `landing/` (page sections), imported as `#lib/...` (a `package.json` subpath import; Kit 3 dropped the `$lib` alias). Styling is plain CSS with design tokens in `src/app.css` (light and dark via `prefers-color-scheme`); no CSS framework.
+Code layout in `apps/web/src/lib`: `auth/` (session helpers and the dev demo accounts), `supabase/` (the one client, typed from `apps/backend/supabase/database.types.ts`), `finance/` (loan maths, pure and tested), `requests/` (community repair fund allocation by evidence band, pure, with example tests plus `fast-check` property tests of its money invariants), `core/` (formatting), `landing/` (page sections), imported as `#lib/...` (a `package.json` subpath import; Kit 3 dropped the `$lib` alias). Styling is plain CSS with design tokens in `src/app.css` (light and dark via `prefers-color-scheme`); no CSS framework.
 
 ## Commands
 
@@ -23,8 +23,8 @@ Code layout in `apps/web/src/lib`: `finance/` (loan maths, pure and tested), `re
 | `pnpm dev:db:status` | Local URLs, ports and keys of the running stack |
 | `pnpm dev:db:psql` | `psql` into the local DB on 127.0.0.1:54722 |
 | `pnpm dev:db:studio` | Open Supabase Studio on http://127.0.0.1:54723 |
-| `pnpm dev:run:web` | Dev server on http://localhost:7790 |
-| `pnpm build:web` | Prerender to `apps/web/build/` (deployable to S3 + CloudFront as-is) |
+| `pnpm dev:run:web` | Dev server on http://localhost:7790. With `dev:db:up` running, `/signin` lists the seeded demo accounts (maria, sam, james, priya; password `testtest`): click one to sign in. The list only appears in a dev build pointed at a loopback Supabase URL |
+| `pnpm build:web` | Prerender to `apps/web/build/`. S3 + CloudFront must serve `200.html` for unknown paths so `/app/*` loads |
 | `pnpm preview:web` | Serve the production build on 7790 |
 | `pnpm check` | svelte-check typecheck |
 | `pnpm test` | Vitest unit tests + the root-scripts guard + pgTAP (needs `dev:db:up` first) |

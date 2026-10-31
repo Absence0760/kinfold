@@ -13,7 +13,9 @@ export default defineConfig({
 	plugins: [
 		sveltekit({
 			preprocess: vitePreprocess(),
-			adapter: adapter({ precompress: false })
+			// fallback: the member area (/signin, /app/*) is a browser-only SPA,
+			// served from 200.html for any path that wasn't prerendered.
+			adapter: adapter({ precompress: false, fallback: '200.html' })
 		})
 	],
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { dev } from '$app/env';
+
 	const links = [
 		{ href: '#requests', label: 'How it works' },
 		{ href: '#board', label: 'Requests' },
@@ -20,6 +22,11 @@
 			{/each}
 		</nav>
 		<span class="badge">Design preview</span>
+		<!-- The member area exists only against the local stack for now, so the
+		     link is left out of the production build. -->
+		{#if dev}
+			<a class="signin" href="/signin">Sign in</a>
+		{/if}
 	</div>
 </header>
 
@@ -74,6 +81,12 @@
 		border-radius: 999px;
 		background: var(--warm-soft);
 		color: var(--warm);
+		white-space: nowrap;
+	}
+
+	.signin {
+		font-size: 15px;
+		font-weight: 600;
 		white-space: nowrap;
 	}
 
