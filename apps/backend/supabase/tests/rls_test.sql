@@ -3,7 +3,8 @@
 -- Properties this file pins:
 --   * a member sees only their own requests, evidence and subscriptions, and
 --     never another member's draft;
---   * anon reads neither requests nor the board, but can read the open books;
+--   * anon reads neither requests nor the board, but can read the open books
+--     (published monthly snapshots; board_privacy_test pins what they hide);
 --   * scores, reviews, pool runs, payouts and contributions are written only by
 --     security definer functions or the service role, and a request's status
 --     never changes through a direct client update (column grants);
@@ -120,6 +121,8 @@ select pg_temp.move('00000000-0000-0000-0001-0000000000b3', 'scoring', 'open');
 update public.requests set public_summary = 'Rear bumper after a parking-lot hit', current_score = 90,
   submitted_at = now()
 where id = '00000000-0000-0000-0001-0000000000b3';
+update public.requests set public_summary_confirmed_at = now()
+where id = '00000000-0000-0000-0001-0000000000b3';
 
 -- A loan between bob and carol; alice is not a party.
 insert into public.family_loans (id, borrower_id, lender_id, principal_cents)
@@ -229,11 +232,7 @@ select throws_ok('select count(*) from public.board_requests', '42501', 'permiss
   'anon cannot read the request board');
 select throws_ok('select count(*) from public.evidence', '42501', 'permission denied for table evidence',
   'anon cannot read evidence');
--- Reads every column: count(*) alone lets the planner skip the per-fund
--- subqueries, and with them the functions the view calls.
-select is((select count(*) from public.public_stats
-           where requests_paid >= 0 and paid_out_cents >= 0 and pool_runs >= 0 and allocated_cents >= 0), 2::bigint,
-  'anon reads the open-books stats (one row per pooled fund)');
+select lives_ok('select count(*) from public.open_books', 'anon reads the published open books');
 select is((select count(*) from public.fund_settings), 2::bigint,
   'anon reads the published fund rules');
 

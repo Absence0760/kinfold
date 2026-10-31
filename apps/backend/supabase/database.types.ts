@@ -623,6 +623,42 @@ export type Database = {
         }
         Relationships: []
       }
+      open_books: {
+        Row: {
+          allocated_cents: number | null
+          fund: Database["public"]["Enums"]["fund"]
+          month: string
+          paid_out_cents: number | null
+          pool_runs: number
+          pool_runs_short: number | null
+          published_at: string
+          requests_paid: number | null
+          reserve_cents: number | null
+        }
+        Insert: {
+          allocated_cents?: number | null
+          fund: Database["public"]["Enums"]["fund"]
+          month: string
+          paid_out_cents?: number | null
+          pool_runs: number
+          pool_runs_short?: number | null
+          published_at?: string
+          requests_paid?: number | null
+          reserve_cents?: number | null
+        }
+        Update: {
+          allocated_cents?: number | null
+          fund?: Database["public"]["Enums"]["fund"]
+          month?: string
+          paid_out_cents?: number | null
+          pool_runs?: number
+          pool_runs_short?: number | null
+          published_at?: string
+          requests_paid?: number | null
+          reserve_cents?: number | null
+        }
+        Relationships: []
+      }
       payees: {
         Row: {
           created_at: string
@@ -676,6 +712,7 @@ export type Database = {
           partner_ref: string | null
           payee_id: string
           request_id: string
+          sent_at: string | null
           status: Database["public"]["Enums"]["payout_status"]
         }
         Insert: {
@@ -686,6 +723,7 @@ export type Database = {
           partner_ref?: string | null
           payee_id: string
           request_id: string
+          sent_at?: string | null
           status?: Database["public"]["Enums"]["payout_status"]
         }
         Update: {
@@ -696,6 +734,7 @@ export type Database = {
           partner_ref?: string | null
           payee_id?: string
           request_id?: string
+          sent_at?: string | null
           status?: Database["public"]["Enums"]["payout_status"]
         }
         Relationships: [
@@ -983,6 +1022,7 @@ export type Database = {
           member_id: string
           payee_id: string | null
           public_summary: string | null
+          public_summary_confirmed_at: string | null
           status: Database["public"]["Enums"]["request_status"]
           submitted_at: string | null
           title: string
@@ -1000,6 +1040,7 @@ export type Database = {
           member_id: string
           payee_id?: string | null
           public_summary?: string | null
+          public_summary_confirmed_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string | null
           title: string
@@ -1017,6 +1058,7 @@ export type Database = {
           member_id?: string
           payee_id?: string | null
           public_summary?: string | null
+          public_summary_confirmed_at?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           submitted_at?: string | null
           title?: string
@@ -1276,14 +1318,16 @@ export type Database = {
     Views: {
       board_requests: {
         Row: {
+          amount_band_max_cents: number | null
+          amount_band_min_cents: number | null
           amount_cents: number | null
-          current_score: number | null
+          area: string | null
           id: string | null
           kind: Database["public"]["Enums"]["request_kind"] | null
+          month_of: string | null
           public_summary: string | null
-          region: string | null
+          score_band: number | null
           status: Database["public"]["Enums"]["request_status"] | null
-          week_of: string | null
         }
         Relationships: []
       }
@@ -1303,30 +1347,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      public_stats: {
-        Row: {
-          allocated_cents: number | null
-          fund: Database["public"]["Enums"]["fund"] | null
-          paid_out_cents: number | null
-          pool_runs: number | null
-          requests_paid: number | null
-        }
-        Insert: {
-          allocated_cents?: never
-          fund?: Database["public"]["Enums"]["fund"] | null
-          paid_out_cents?: never
-          pool_runs?: never
-          requests_paid?: never
-        }
-        Update: {
-          allocated_cents?: never
-          fund?: Database["public"]["Enums"]["fund"] | null
-          paid_out_cents?: never
-          pool_runs?: never
-          requests_paid?: never
-        }
-        Relationships: []
       }
       refunds_due: {
         Row: {
@@ -1387,8 +1407,13 @@ export type Database = {
         Args: { p_loan: string }
         Returns: Database["public"]["Enums"]["loan_status"]
       }
+      board_area: { Args: { p_region: string }; Returns: string }
       capture_contributions: { Args: { p_request: string }; Returns: number }
       close_account: { Args: never; Returns: undefined }
+      confirm_public_summary: {
+        Args: { p_request: string }
+        Returns: undefined
+      }
       confirm_redaction: { Args: { p_evidence: string }; Returns: undefined }
       coverage_started_on: { Args: { p_member: string }; Returns: string }
       create_invite: {
@@ -1451,6 +1476,10 @@ export type Database = {
           reason: string
         }[]
       }
+      on_board: {
+        Args: { r: Database["public"]["Tables"]["requests"]["Row"] }
+        Returns: boolean
+      }
       pause_loan: {
         Args: { p_loan: string; p_months: number; p_reason?: string }
         Returns: undefined
@@ -1474,6 +1503,7 @@ export type Database = {
         }
         Returns: string
       }
+      publish_open_books: { Args: { p_month: string }; Returns: undefined }
       record_fraud_signal: {
         Args: {
           p_detail?: Json

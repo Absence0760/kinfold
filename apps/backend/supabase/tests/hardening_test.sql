@@ -250,6 +250,9 @@ from unnest(array['00000000-0000-0000-0009-0000000000b3', '00000000-0000-0000-00
 update public.requests set public_summary = 'Front wing after a low-speed bump', current_score = 99,
   submitted_at = now()
 where id in ('00000000-0000-0000-0009-0000000000b3', '00000000-0000-0000-0009-0000000000b4');
+-- The member confirms the summary (a separate step: changing it clears this).
+update public.requests set public_summary_confirmed_at = now()
+where id in ('00000000-0000-0000-0009-0000000000b3', '00000000-0000-0000-0009-0000000000b4');
 insert into public.request_supporters (request_id, member_id, relationship) values
   ('00000000-0000-0000-0009-0000000000b3', '00000000-0000-0000-0009-0000000000a2', 'brother'),
   ('00000000-0000-0000-0009-0000000000b7', '00000000-0000-0000-0009-0000000000a2', 'brother');
@@ -288,8 +291,10 @@ select is(public.request_raised_cents('00000000-0000-0000-0009-0000000000b7'), 1
 select pg_temp.login('00000000-0000-0000-0009-0000000000a3');
 select is(public.request_raised_cents('00000000-0000-0000-0009-0000000000b7'), null::bigint,
   'a stranger gets nothing for a request off the board');
-select is(public.request_raised_cents('00000000-0000-0000-0009-0000000000b4'), 50000::bigint,
-  'a verified member reads raised for a request on the board');
+-- b4 is funded by the pool run above, so raised equals the ask; the board
+-- shows only its amount band (board_privacy_test pins the open case).
+select is(public.request_raised_cents('00000000-0000-0000-0009-0000000000b4'), null::bigint,
+  'a verified stranger does not read raised once a request on the board is funded');
 select pg_temp.login('00000000-0000-0000-0009-0000000000a9');
 select is(public.request_raised_cents('00000000-0000-0000-0009-0000000000b4'), null::bigint,
   'an unverified member gets nothing, even for a board request');

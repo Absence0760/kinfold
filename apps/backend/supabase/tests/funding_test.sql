@@ -123,6 +123,8 @@ select pg_temp.move('00000000-0000-0000-0004-0000000000b2', 'scoring', 'open');
 select pg_temp.move('00000000-0000-0000-0004-0000000000b3', 'scoring', 'open');
 update public.requests set public_summary = 'Rear bumper after a parking-lot hit', current_score = 88
 where id = '00000000-0000-0000-0004-0000000000b2';
+update public.requests set public_summary_confirmed_at = now()
+where id = '00000000-0000-0000-0004-0000000000b2';
 
 -- --- invites -------------------------------------------------------------------
 set local role authenticated;

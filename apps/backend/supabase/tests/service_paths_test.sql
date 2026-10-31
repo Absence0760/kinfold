@@ -16,7 +16,7 @@
 --     activates a pending member but never lifts a suspension.
 -- Service-role steps run as the real service_role (set local role).
 begin;
-select plan(38);
+select plan(40);
 
 -- --- fixtures ------------------------------------------------------------------
 -- Temporary helpers, gone at rollback. They run as postgres (the owner), standing
@@ -223,6 +223,10 @@ values ('00000000-0000-0000-000a-0000000000f3', '00000000-0000-0000-000a-0000000
 update public.payees set status = 'suspended' where id = '00000000-0000-0000-000a-0000000000c1';
 select lives_ok($$update public.payouts set status = 'sent' where id = '00000000-0000-0000-000a-0000000000f3'$$,
   'the partner''s "sent" is recorded even if the payee was suspended after the payout was created');
+select ok((select sent_at is not null from public.payouts where id = '00000000-0000-0000-000a-0000000000f3'),
+  'a payout records when it was sent (the open books count it by that)');
+select ok((select sent_at is not null from public.payouts where id = '00000000-0000-0000-000a-0000000000f1'),
+  'a payout recorded as sent when it is created gets a sent time');
 update public.payees set status = 'verified' where id = '00000000-0000-0000-000a-0000000000c1';
 update public.contributions set status = 'released' where id = '00000000-0000-0000-000a-0000000000e5';
 select throws_ok($$update public.requests set status = 'paid' where id = '00000000-0000-0000-000a-0000000000b3'$$,
