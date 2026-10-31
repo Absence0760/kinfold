@@ -16,7 +16,7 @@
     "dev:db:status": "pnpm -C apps/backend db:status",
     "dev:db:psql": "pnpm -C apps/backend db:psql",
     "dev:db:studio": "pnpm -C apps/backend db:studio",
-    "//-- web --": "SvelteKit 5 prerendered marketing site on port 7790 (docs/STACK.md). Does not use the backend; every page is static HTML.",
+    "//-- web --": "SvelteKit 3 (Svelte 5) prerendered marketing site on port 7790 (docs/STACK.md). Does not use the backend; every page is static HTML.",
     "dev:run:web": "pnpm -C apps/web dev",
     "build:web": "pnpm -C apps/web build",
     "preview:web": "pnpm -C apps/web preview",

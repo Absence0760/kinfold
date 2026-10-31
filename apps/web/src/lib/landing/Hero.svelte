@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { formatUsd } from '$lib/core/format';
+	import { formatUsd } from '#lib/core/format.ts';
 
 	// A sample damage request, as it would appear on the members-only board.
 	const request = {

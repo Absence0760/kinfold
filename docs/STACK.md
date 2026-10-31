@@ -8,10 +8,10 @@ A pnpm workspace (`apps/*`), laid out like `project-stocks`:
 
 | Workspace | What it is | Port |
 | --- | --- | --- |
-| `apps/web` | SvelteKit 5 marketing / preview site: landing page, request board demo and savings calculator. `adapter-static` with every route **prerendered** to HTML (a public site, unlike project-stocks' auth-gated SPA). Does not call the backend; no env vars. | 7790 |
+| `apps/web` | SvelteKit 3 (Svelte 5) marketing / preview site: landing page, request board demo and savings calculator. `adapter-static` with every route **prerendered** to HTML (a public site, unlike project-stocks' auth-gated SPA). Does not call the backend; no env vars. Kit config lives in `vite.config.ts` (there is no `svelte.config.js` in Kit 3). | 7790 |
 | `apps/backend` | Supabase (Postgres 17, Auth, Storage, Edge Functions) for the member app. Local stack via the Supabase CLI in Docker. Migrations in `supabase/migrations`, pgTAP tests in `supabase/tests`. | API 54721, DB 54722, Studio 54723, Mailpit 54724 |
 
-Code layout in `apps/web/src/lib`: `finance/` (loan maths, pure and tested), `requests/` (community-pool allocation by legitimacy band, pure and tested), `core/` (formatting), `landing/` (page sections). Styling is plain CSS with design tokens in `src/app.css` (light and dark via `prefers-color-scheme`); no CSS framework.
+Code layout in `apps/web/src/lib`: `finance/` (loan maths, pure and tested), `requests/` (community-pool allocation by legitimacy band, pure and tested), `core/` (formatting), `landing/` (page sections), imported as `#lib/...` (a `package.json` subpath import; Kit 3 dropped the `$lib` alias). Styling is plain CSS with design tokens in `src/app.css` (light and dark via `prefers-color-scheme`); no CSS framework.
 
 ## Commands
 

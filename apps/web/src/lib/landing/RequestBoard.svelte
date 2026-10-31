@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { allocatePool, type AllocationStatus } from '$lib/requests/allocation';
-	import { formatUsd } from '$lib/core/format';
+	import { allocatePool, type AllocationStatus } from '#lib/requests/allocation.ts';
+	import { formatUsd } from '#lib/core/format.ts';
 
 	// Sample damage requests. Illustration only.
 	const requests = [

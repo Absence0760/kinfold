@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { compareSavings } from '$lib/finance/amortization';
-	import { formatUsd } from '$lib/core/format';
+	import { compareSavings } from '#lib/finance/amortization.ts';
+	import { formatUsd } from '#lib/core/format.ts';
 
 	let loanAmount = $state(400_000);
 	let rate = $state(6.5);
