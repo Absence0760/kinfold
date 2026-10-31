@@ -1,0 +1,15 @@
+{
+  "name": "@kinfold/backend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "db:up": "supabase start",
+    "db:down": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:status": "supabase status",
+    "db:psql": "psql postgresql://postgres:postgres@127.0.0.1:54722/postgres",
+    "db:studio": "xdg-open http://127.0.0.1:54723",
+    "test:db": "supabase test db",
+    "gen:types": "supabase gen types typescript --local > supabase/database.types.ts"
+  }
+}
