@@ -12,6 +12,8 @@
 --   sam@test.com    member, CA: maria's brother and lender; an open request on the board
 --   james@test.com  member + reviewer, NY (outside CA, so he can review maria and sam)
 --   priya@test.com  member + appeal panel, TX: a request already paid from the pool
+--   (also b5, sam's request needing evidence, and b6, maria's refused and appealed
+--   request, so the review console at /app/review has work for james and priya)
 --
 -- Where possible the data is made through the real functions (submit_request,
 -- record_score, create_invite, pledge, set_loan_terms, set_loan_schedule, sign_loan), acting as
@@ -160,6 +162,12 @@ where id = '00000000-0000-0000-0000-0000000000b2';
 update public.requests set public_summary = 'Side mirror and driver door after a hit-and-run.'
 where id = '00000000-0000-0000-0000-0000000000b4';
 
+-- Each owner confirms their summary, which is what puts it on the members-only board.
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a4","role":"authenticated"}', false);
+select public.confirm_public_summary('00000000-0000-0000-0000-0000000000b2');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a3","role":"authenticated"}', false);
+select public.confirm_public_summary('00000000-0000-0000-0000-0000000000b4');
+
 -- b3: maria invites sam; he gives 300.00 and lends 700.00 at zero interest, which funds it.
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
 select set_config('seed.invite', public.create_invite('00000000-0000-0000-0000-0000000000b3', 'brother'), false);
@@ -205,5 +213,43 @@ select public.post_journal('protection', 'pool_grant', '00000000-0000-0000-0000-
   '[{"code":"available","amount_cents":72000},{"code":"committed","amount_cents":-72000}]');
 select public.post_journal('protection', 'payout', '00000000-0000-0000-0000-0000000000b4', 'dev_transfer_b4',
   '[{"code":"committed","amount_cents":72000},{"code":"paid_out","amount_cents":-72000}]');
+
+
+-- --- work for the review console --------------------------------------------------------
+-- b5 sam    needs_evidence  home_repair, people: scored below the minimum, so a person looks
+-- b6 maria  refused         car_damage, people: james refused it, maria appealed (priya decides)
+
+insert into public.requests (id, member_id, kind, funding, title, description, amount_cents, incident_on, payee_id) values
+  ('00000000-0000-0000-0000-0000000000b5', '00000000-0000-0000-0000-0000000000a4', 'home_repair', 'people',
+   'Burst pipe under the bathroom', 'Plumber came out; written quote still to come.', 120000, current_date - 5,
+   '00000000-0000-0000-0000-0000000000c1'),
+  ('00000000-0000-0000-0000-0000000000b6', '00000000-0000-0000-0000-0000000000a1', 'car_damage', 'people',
+   'Scraped in a parking garage', 'Garage camera footage requested; shop estimate attached.', 65000, current_date - 12,
+   '00000000-0000-0000-0000-0000000000c1');
+insert into public.evidence (request_id, kind, original_path, redacted_path, sha256, captured_in_app, redaction_status) values
+  ('00000000-0000-0000-0000-0000000000b5', 'photo',
+   '00000000-0000-0000-0000-0000000000a4/b5-pipe.jpg', '00000000-0000-0000-0000-0000000000a4/b5-pipe.jpg', repeat('7', 64), false, 'confirmed'),
+  ('00000000-0000-0000-0000-0000000000b6', 'estimate',
+   '00000000-0000-0000-0000-0000000000a1/b6-estimate.pdf', '00000000-0000-0000-0000-0000000000a1/b6-estimate.pdf', repeat('8', 64), false, 'confirmed');
+
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a4","role":"authenticated"}', false);
+select public.submit_request('00000000-0000-0000-0000-0000000000b5');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+select public.submit_request('00000000-0000-0000-0000-0000000000b6');
+select set_config('request.jwt.claims', '{"role":"service_role"}', false);
+select public.record_score('00000000-0000-0000-0000-0000000000b5', 58::smallint,
+  '["one photo, taken outside the app", "no plumber quote or invoice yet"]',
+  'dev-scorer', '0.0.1', 'score-v1', repeat('d', 64));
+select public.record_score('00000000-0000-0000-0000-0000000000b6', 74::smallint,
+  '["estimate from a verified shop", "photos of the damage are missing"]',
+  'dev-scorer', '0.0.1', 'score-v1', repeat('e', 64));
+
+-- james (NY) refuses b6; maria appeals, which leaves an open appeal for the panel.
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a2","role":"authenticated"}', false);
+select public.record_review('00000000-0000-0000-0000-0000000000b6', 'refuse',
+  'The estimate is for a full rear panel, but the damage described is a scrape on the side.');
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', false);
+select public.file_appeal('00000000-0000-0000-0000-0000000000b6',
+  'The shop quoted the whole panel because the scrape runs from the door to the rear bumper. I can send photos.');
 
 select set_config('request.jwt.claims', '', false);
