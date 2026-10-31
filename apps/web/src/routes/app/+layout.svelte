@@ -12,6 +12,8 @@
 	const links = $derived([
 		{ href: '/app', label: 'Home' },
 		{ href: '/app/board', label: 'Board' },
+		{ href: '/app/loans', label: 'Loans' },
+		{ href: '/app/invite', label: 'Invites' },
 		...(canReview ? [{ href: '/app/review', label: 'Review' }] : [])
 	]);
 
@@ -90,6 +92,7 @@
 
 	nav {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 4px;
 		flex: 1;
 	}

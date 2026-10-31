@@ -28,6 +28,7 @@
 	import RequestForm from '../RequestForm.svelte';
 	import AppealPanel from './AppealPanel.svelte';
 	import EvidencePanel from './EvidencePanel.svelte';
+	import InvitePanel from '#lib/invites/InvitePanel.svelte';
 
 	let { data } = $props();
 
@@ -431,12 +432,11 @@
 		onchanged={refresh}
 	/>
 
-	{#if r.funding !== 'pool'}
-		<!--
-			INVITE PANEL SLOT: the parent mounts the invite panel (src/lib/invites/)
-			here, for requests family and friends pay for (funding 'people' or 'both').
-		-->
-		<section class="invite-slot" data-slot="invite-panel"></section>
+	<!-- Family and friends: create_invite works until the request closes. -->
+	{#if r.funding !== 'pool' && !['withdrawn', 'expired', 'refused', 'paid'].includes(r.status)}
+		<section class="block invite-slot">
+			<InvitePanel requestId={r.id} kind={r.kind} status={r.status} amountCents={r.amount_cents} headingLevel={2} />
+		</section>
 	{/if}
 
 	{#if detail.events.length}

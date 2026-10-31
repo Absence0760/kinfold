@@ -65,7 +65,10 @@
 	</div>
 {:then home}
 	<section class="block" aria-labelledby="requests-h">
-		<h2 id="requests-h">Your requests</h2>
+		<div class="block-head split">
+			<h2 id="requests-h">Your requests</h2>
+			<a class="btn btn-primary" href="/app/requests/new">Ask for help</a>
+		</div>
 		{#if home.requests.length === 0}
 			<div class="empty">
 				<p><strong>You haven’t asked for help yet.</strong></p>
@@ -81,7 +84,7 @@
 					<li>
 						<article class="card" aria-labelledby="req-{r.id}">
 							<div class="card-head">
-								<h3 id="req-{r.id}">{r.title}</h3>
+								<h3 id="req-{r.id}"><a href="/app/requests/{r.id}">{r.title}</a></h3>
 								{@render badge(st.tone, st.label)}
 							</div>
 							<p class="meta">
@@ -155,6 +158,7 @@
 						<article class="card" aria-labelledby="loan-{l.loan.id}">
 							<div class="card-head">
 								<h3 id="loan-{l.loan.id}">
+									<a href="/app/loans/{l.loan.id}">
 									{#if l.role === 'borrower'}
 										You borrowed {formatCents(l.loan.principal_cents)}{l.lenderRelationship
 											? ` from your ${l.lenderRelationship}`
@@ -162,6 +166,7 @@
 									{:else}
 										You lent {formatCents(l.loan.principal_cents)}
 									{/if}
+									</a>
 								</h3>
 								{@render badge(st.tone, st.label)}
 							</div>
@@ -685,5 +690,20 @@
 		.facts.wide {
 			padding: 14px 14px;
 		}
+	}
+
+	.block-head.split {
+		justify-content: space-between;
+	}
+
+	.card h3 a {
+		color: inherit;
+		text-decoration: underline;
+		text-decoration-color: var(--border);
+		text-underline-offset: 3px;
+	}
+
+	.card h3 a:hover {
+		text-decoration-color: var(--accent);
 	}
 </style>
