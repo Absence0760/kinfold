@@ -15,6 +15,7 @@ Open items outside the stages (CI gaps, backend edge cases, pending decisions) a
 | CI: `pnpm check`, `pnpm test` (web, scripts, pgTAP) on every push to `main` (no PRs pre-launch; see `CLAUDE.md`) | Green on `main`; PR review and branch protection switched back on before Stage 1 has real members |
 | Infra skeleton (Terraform, estate pattern): AWS account via `new-project-account.sh`, S3 + CloudFront for the site, hosted Supabase project, `production` environment with a required reviewer | The site deploys through the gated workflow |
 | Counsel engaged (insurance, consumer lending, money transmission, co-op formation) and a first-state shortlist | Written legal plan for Stage 1 |
+| Start-up funding: foundation and impact-funder applications; formation help from a cooperative development centre ([design.md](design.md#public-and-grant-funding)) | Start-up costs covered without outside equity |
 
 ## Stage 1: Requests between people (months 1 to 9)
 
@@ -26,10 +27,10 @@ Goal: the whole request flow, funded only by family and friends. Car damage and 
 | 1b | **Identity checks**: `verify-identity` edge function, vendor sandbox, local fake | Members become `active` only after passing |
 | 1c | **Requests and evidence**: create a draft, in-app capture (content credentials, device attestation), upload to the private bucket, `redact-evidence`, member confirms each redaction | Gallery uploads allowed but marked |
 | 1d | **Scoring v1**: `score-request` behind a provider interface (local Ollama, hosted model in prod), explained reasons, `fraud-checks` (duplicate photos) | Build a labelled evaluation set (at least 300 real-shaped cases) **before** turning scoring on |
-| 1e | **Reviewer console** (authenticated web routes): review queue, signed-URL evidence viewer, decisions with reasons, audit trail | Same-region and self-review blocked in the database |
+| 1e | **Operations console** (authenticated web routes): review queue, signed-URL evidence viewer, decisions with reasons, fraud signals, audit trail | Same-region and self-review blocked in the database; every PII read audit-logged. Reconciliation and reserve panels join in 2h |
 | 1f | **Supporters and payments**: invite links, gifts, all-or-nothing pledges through the payment partner, payee verification, payouts to shops against the final invoice, `payments-webhook`, ledger journals | Partner test mode locally |
 | 1g | **Family loans**: agreement and e-signature, schedule on payday, autopay (`loan-servicing`), pauses, the default-plan choice, forgiveness and gift letters, IRS minimum-rate paperwork | Templates reviewed by a tax attorney |
-| 1h | **Records**: reliability record and private giving record screens | |
+| 1h | **Member home dashboard**: open requests with score reasons, loans and next installment, pauses, missed installments, reliability record, private giving record | The giving record shows nowhere else ([design.md](design.md#dashboards)) |
 | 1i | **Appeals**: member appeal and the panel console | |
 
 **Gate to Stage 2:** legal review passed. 500 requests scored, and reviewers agree with the score at least 9 times in 10. No significant score gap by neighbourhood, age or language. Every payout reconciles with the payment partner. Kinfold never held funds.
@@ -43,7 +44,7 @@ Goal: earnings-based subscriptions fund a protection pool for own-damage car req
 | 2a | **Partner integration**: fronting insurer and reinsurance contracts, custody account, statements feed |
 | 2b | **Subscriptions**: `verify-income` (bank link), formula pricing, collection, the 80/20 split into fund journals, allocation preferences |
 | 2c | **Pool runs**: weekly `run-pool`, reserve held, allocation published, pool contributions captured on funding |
-| 2d | **Members-only board** and the public stats page |
+| 2d | **Members-only board** and the **public transparency dashboard** (per fund money in and out, reserve, pool runs and shortfalls, fees, expense share, the help-reaching measures), with figures under 10 members or requests hidden or merged |
 | 2e | **Cover terms**: per-request caps by vehicle value, the member's share rising with `pool_requests_paid_3y`, waiting periods (already enforced) |
 | 2f | **Fraud v2**: cross-request, cross-vehicle and cross-shop pattern checks; in-person inspection workflow for large requests |
 | 2g | **Subrogation**: when another driver is at fault, the member assigns recovery; the partner claims from their insurer and refunds the pool |
@@ -60,7 +61,8 @@ Goal: zero-interest home help for people with no family to lend, through a partn
 | 3a | `fund_loans`: the same shape as `family_loans`, with the fund as lender, a subordinate lien, and monthly or income-based schedules |
 | 3b | Needs formula (versioned, inputs logged), panel review for edge cases |
 | 3c | Mortgage-gap bridging, plus referral to HUD-approved housing counselors |
-| 3d | Matching funds from foundations, employers and local government, tracked per source |
+| 3d | Matching funds from foundations, employers and local government, tracked per source; CDFI Technical Assistance application, then certification (target market, accountable board, loan-level reporting from voluntary data only) |
+| 3g | FHLB down-payment grants through the partner credit union; state housing finance agency and city programmes in the pilot city; a HUD-approved counseling agency partner for 3c |
 | 3e | Mortgage partner referrals (disclosed, never steering to a worse offer) |
 | 3f | Home cover in the protection pool (repairs), if loss data supports it |
 

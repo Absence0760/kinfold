@@ -162,6 +162,24 @@ What it must not do:
 
 What it can feed, openly and by published rule: **how often** a member's pool requests are paid (in the last three years) raises their own share of the next request, the same way a deductible works. Frequent claimants pay more of their own repair; they never wait longer or get refused.
 
+## Dashboards
+
+Four dashboards, one per audience. Each shows only what its audience is allowed to see; none is a back door to another's data.
+
+| Dashboard | Who sees it | What it shows |
+| --- | --- | --- |
+| **Member home** | The member | Open requests with status, score and its reasons; loans given and taken with the next installment; pauses and missed installments; subscription and pool cover; the reliability record and the private giving record |
+| **Public transparency** | Anyone, on the website | Per fund: money in, requests paid, money paid out, reserve held against the 20% target, pool runs and how often a run fell short. The expense share against the ~15% target and every fee. The measures in "How we know it's helping", headed by **the share of help reaching households without wealthy networks** |
+| **Members-only board** | Verified members | Every pool request with its redacted summary, amount, score and outcome, by state and week (never names, towns or exact dates) |
+| **Operations console** | Reviewers, panel, staff | The review queue, scores near the review line, fraud signals, appeals, daily reconciliation breaks, reserve alerts, and score gaps by model version for the bias audit |
+
+Rules for all four:
+
+- **Small numbers identify people.** Any public or board figure counted from fewer than 10 members or requests is hidden or merged into a wider group ("fewer than 10" or a bigger region or period). "One roof request in Vermont this week" points at a person.
+- **The giving record never leaves the member's own dashboard.** It isn't on the operations console either; reviewers decide requests without it.
+- **Every console read of PII is audit-logged**, the same as signed-URL evidence views.
+- **The transparency dashboard is the grant report.** Funders and agencies (see "Public and grant funding") get the same aggregates the public sees, plus the extra aggregates a grant requires, never member records.
+
 ## Business model review: gotchas and fixes
 
 A critical read of the model above, and what changed because of it. Each fix is already reflected in the sections above and in the database (`apps/backend/supabase/migrations`).
@@ -333,6 +351,27 @@ Flat, published fees for real work, never interest or penalties. Grants fund the
 
 **Kinfold never:** charges interest, charges late fees, sells member data, earns hidden returns on members' money, or takes outside investors who expect profits from members.
 
+### Public and grant funding
+
+Insurers' government billions mostly come from programmes where the government subsidises or backstops the cover itself. In federal crop insurance the government pays about 60% of farmers' premiums and pays insurers 12% to 22% of premium for running the policies. In flood insurance (NFIP) the government is the insurer, and private companies sell and service the policies for a fee. In ACA and Medicare Advantage, subsidies follow the customer to the insurer. Terrorism cover has a federal backstop (TRIA). **None of these covers car damage, deductibles or home repairs**, and Kinfold's pool isn't the insurer anyway (the partner is). The public money that fits Kinfold is on the **lending and housing** side:
+
+| Source | What it funds | Fit and catch | When |
+| --- | --- | --- | --- |
+| **Foundations and impact funders** | Start-up costs, matching | No track record needed. The only realistic money before launch | Stage 0 onward |
+| **CDFI Fund (US Treasury)** | Technical Assistance awards (historically up to about $125,000) for "emerging" lenders not yet certified; Financial Assistance and capital for certified CDFIs. Certification also brings bank investment, because banks get CRA credit for funding CDFIs | The best fit, for the Home Fund. Certification needs: a primary community-development mission, financing as a main activity, at least 60% of loans (by number and dollars) to a defined target market, development services, a board at least a third accountable to that market, and not being a government body. A TA recipient must become certified within about two years. Funded at $324M for FY2026 after the administration proposed cutting it, and payouts have run late, so don't plan around a set date | Apply for TA once the Home Fund has a lending plan (end of Stage 2); certify during Stage 3 |
+| **FHLB Affordable Housing Program** | Down-payment grants (per-household cap set yearly by FHFA, $22,000 baseline) | Only through a member bank or credit union, so the Home Fund's partner credit union applies, with Kinfold as the referral path | Stage 3 |
+| **State housing finance agencies; HOME and CDBG funds through cities** | Down-payment help and foreclosure prevention, the Home Fund's first two priorities | Local, competitive, income limits per programme | Stage 3, in the pilot city |
+| **HUD housing counseling grants** | Counseling | Go to HUD-approved nonprofit agencies. Kinfold **partners with one** for the "get the bank's own relief" step rather than becoming one | Stage 3 |
+| **USDA Rural Cooperative Development Grants** | Free help setting up a co-op, from regional development centres | Paid to the centres, not to co-ops (FY2026: $200,000 to $1M per centre, rural focus). Kinfold uses a centre's help with forming the cooperative; it doesn't apply itself | Stage 0, co-op formation |
+| **Local-government matching** | Home Fund matching (Product 3) | Relationship by relationship | Stage 3 |
+
+**What grants must not buy:**
+
+- **No say over individual decisions** (the Sustainability guardrail). Grant agreements fund the Fund, not a list of chosen families.
+- **No member records.** Many programmes require reporting. The CDFI Fund's yearly loan-level report asks for each loan's census tract and, where collected, borrower race and ethnicity. Kinfold reports what a programme strictly requires, collects demographics only as voluntary self-reporting kept apart from scoring (it doubles as bias-audit data), and agrees the data terms in writing before signing.
+- **No eligibility rule that breaks a principle.** If a grant's income limits or target market would make the Home Fund refuse someone the formula would help, that money funds a separate, labelled pot; it doesn't change the formula.
+- **No dependence.** Grant money pays for start-up and matching, never for running costs the fees must cover, so a cut programme pauses matching but not the cooperative.
+
 ## Risks and safeguards
 
 The biggest risk is mostly helping families who are already comfortable. The Community Home Fund and needs-weighted matching exist to counter it, and the share of help reaching households without wealthy networks is a headline measure.
@@ -394,4 +433,5 @@ Start with cars and requests paid by people you know: it exercises the whole req
 - Which licensed insurer to partner with for the car pool, and whether to set up Kinfold's own reciprocal exchange later.
 - The subscription formula (floor, share of earnings, cap), which needs actuarial work.
 - Which AI model scores requests, how it's evaluated before launch, and where evidence is stored.
-- Legal form of the cooperative and its subsidiaries; needs a lawyer experienced in cooperatives and consumer finance.
+- Legal form of the cooperative and its subsidiaries; needs a lawyer experienced in cooperatives and consumer finance. It also decides CDFI eligibility: the Home Fund entity must be the financing entity with its own accountable board.
+- Which target market to define for CDFI certification (low-income households, or the pilot city's underserved tracts) so that 60% of Home Fund lending meets it without the formula refusing anyone outside it.
