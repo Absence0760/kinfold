@@ -4,7 +4,7 @@
 
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
-Email the maintainer at <contact-email> (replace this placeholder with your actual address before publishing the repo). Include:
+Report it privately through GitHub's private vulnerability reporting: <https://github.com/Absence0760/kinfold/security/advisories/new> (also reachable from the repository's **Security** tab → **Report a vulnerability**). Only the maintainers can see the report. Include:
 
 - A description of the vulnerability and its impact
 - Steps to reproduce (PoC if possible)
@@ -14,7 +14,7 @@ You can expect an acknowledgement within 72 hours and a triage decision within 7
 
 ## Scope
 
-This template ships with the following defensive scaffolding:
+This repository ships with the following defensive scaffolding:
 
 - **Secret scanning** — `.github/workflows/gitleaks.yml` scans every push, every PR, and the full history weekly. `.pre-commit-config.yaml` runs the same scan locally before commit.
 - **Dependency review** — `.github/workflows/audit.yml` runs `pnpm audit` / equivalent per workspace and fails on high-severity findings.
