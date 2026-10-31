@@ -27,7 +27,7 @@ Last updated 2026-10-31.
 
 ## Member area gaps
 
-Found while building the web member area (`/app`, `/app/board`, `/app/review`) on 2026-10-31. Each needs a migration through `/safe-migration`.
+Found while building the web member area (`/app`, `/app/board`, `/app/review`, `/app/requests`, `/app/invite`, `/app/loans`) on 2026-10-31. Most need a migration through `/safe-migration`; the web app explains each gap to the member rather than faking it.
 
 - [ ] **Reviewers can't read any evidence.** The only read policy on `evidence` is the owner's, so the review console's evidence list is always empty, and the `evidence-url` signed-link function in `backend.md` doesn't exist yet. **Fix:** a reviewer read policy (or view) on `evidence` exposing kind, redaction status, in-app capture and date for requests they may review, a storage policy on `evidence-redacted` for the same, then `evidence-url` for originals with an audit-log write. **When:** Stage 1, step 1e.
 - [ ] **The appeal panel can't read the request it decides.** A panel-only member sees the refusal and the appeal text but not the request or its score. **Fix:** a select policy on `requests` and `scores` for `panel` members, limited to requests with an undecided appeal. **When:** Stage 1, step 1i.
@@ -35,6 +35,22 @@ Found while building the web member area (`/app`, `/app/board`, `/app/review`) o
 - [ ] **Reviewers can't see the requester's region**, so a same-region request appears in the queue and is only refused on submit. **Fix:** expose a boolean "you may review this" (or filter the reviewer policy by region). **When:** Stage 1, step 1e.
 - [ ] **The board can't tell whether a request is taking pledges** (payee verified) or how much it has raised, so the page calls `request_raised_cents` once per open card and only finds out about an unverified payee on pledge. **Fix:** add `taking_pledges` and, for open requests only, `raised_cents` columns to `board_requests`. **When:** before the board has more than a few dozen open requests.
 - [ ] **`my_reliability.installments_paid_on_time` counts every fully paid installment**, on time or not, so the dashboard says "paid of due" rather than "on time". **Fix:** compare the paid date with the due date, or rename the column. **When:** Stage 1, step 1g.
+
+- [ ] **Evidence redaction isn't running.** New uploads stay `pending`, and `submit_request` refuses them, so a request made in the web app can't be submitted. **Fix:** the `redact-evidence` edge function (sets `redacted_path`, `auto_done`), which must also check that the stored file exists and its SHA-256 matches the row before redacting; seed one `auto_done` row so the member's confirm-redaction step can be exercised. **When:** Stage 1, step 1c.
+- [ ] **Removed evidence leaves its file in storage.** `evidence-original` has no delete policy, so the web app removes the row but not the object. **Fix:** a delete policy on the member's own folder while the request is `draft` or `needs_evidence`, or a remove function that queues the object for the service to delete. **When:** Stage 1, step 1c.
+- [ ] **`evidence-original` accepts any file type and size.** The web app checks, the server doesn't. **Fix:** set `allowed_mime_types` and `file_size_limit` on the bucket in a migration. **When:** before any hosted environment.
+- [ ] **A member can't reject a bad redaction or ask for a different public summary**; only the service can set `rejected`. **Fix:** `reject_redaction(evidence, note)` and `request_summary_change(request, note)`. **When:** Stage 1, step 1c.
+- [ ] **Payee kind isn't tied to request kind**, so a repair shop can be named on a loan payoff. **Fix:** a check in `submit_request`, with pgTAP. **When:** Stage 1, step 1c.
+- [ ] **An invitee sees nothing before accepting**, not even who invited them, and accepting uses the link up. **Fix:** a read-only security definer `invite_preview(token)` returning the owner's display name, title, kind, amount and status. **When:** Stage 1, step 1f.
+- [ ] **Owners and supporters can't see each other's names**, because members read only their own row; the panels fall back to the relationship. **Fix:** a view exposing display names only between a request's owner and its supporters. **When:** Stage 1, step 1f.
+- [ ] **Invite links can't be cancelled.** **Fix:** `revoke_invite(invite)` for the owner, a `revoked_at` column, checked in `accept_invite`. **When:** Stage 1, step 1f.
+- [ ] **`accept_invite` without a member row fails on a foreign key** instead of a readable error (the web app maps it). **Fix:** raise "finish setting up your account" in the function. **When:** with the sign-up flow (1a).
+- [ ] **A supporter can read the whole request row**, including `current_score`. **Fix:** a column grant or a supporter view with only what they need. **When:** Stage 1, step 1f.
+- [ ] **Partial forgiveness doesn't shrink the schedule.** Installments still sum to the full principal, so collecting the last ones would break the totals check. **Fix:** `forgive_loan` takes the amount off the last unpaid installments (or the collector stops at what's outstanding), with pgTAP. **When:** Stage 1, step 1g, before autopay.
+- [ ] **`set_loan_schedule` accepts a first date in the past.** The web form blocks it; the database doesn't. **Fix:** refuse a first date before today. **When:** Stage 1, step 1g.
+- [ ] **No defined trigger for the default plan.** `apply_default_plan` runs "after mediation, or at the agreed trigger", but no trigger exists. **Fix:** define it in the `loan-servicing` design (e.g. N missed installments after a pause offer and mediation) and record it in `backend.md`. **When:** Stage 1, step 1g.
+- [ ] **No prepayment path**, though the agreement and `design.md` promise members can repay early. **Fix:** an extra-payment function through the payment partner. **When:** Stage 1, step 1f/1g with the partner.
+- [ ] **Either side can set loan terms while `proposed`**, which matches `design.md` ("borrower and lenders set the amount, schedule and purpose"); the web app says any change clears both signatures. Confirm that's intended, or restrict it in the database. **When:** operator's call.
 
 ## Funding and structure
 
