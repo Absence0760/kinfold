@@ -27,7 +27,7 @@ Every feature must pass all eight. A feature that would make money by breaking o
 1. **No interest, ever.** Members repay what they borrowed and nothing more. Where tax law requires a minimum rate on family loans, Kinfold shows it and arranges for it to be forgiven as a gift.
 2. **Protect the lender as much as the borrower.** Nobody lends money they can't afford to lose. Lenders get clear warnings and a cap tied to their savings.
 3. **Hardship is never a profit source.** No late fees or penalty rates. A missed payment starts a conversation and a plan, not a charge.
-4. **Evidence, not popularity.** The community pool pays by legitimacy score (and, for the Home Fund, need), never by story quality or follower count. People without wealthy networks get the same ranking as everyone else.
+4. **Evidence, not popularity.** Community money is shared by evidence score (and, for the Home Fund, need), never by story quality or follower count, and insured cover pays every covered claim in full. People without wealthy networks get the same ranking as everyone else.
 5. **Keeping the home comes first.** Foreclosure is the very last resort, after payment pauses, restructuring, protection payouts and a voluntary sale where the family keeps its equity.
 6. **Open books, private people.** Verified members see every pool request, its score band and its outcome on the board; anyone can see fees, reserve balances and monthly pool totals. Names, towns, exact dates and any figure small enough to point at one person never show. Every term fits on one screen.
 7. **Members own it.** One member, one vote. Surplus goes back to members or into the fund, never to outside shareholders.
@@ -41,7 +41,8 @@ Everything on Kinfold starts as a **request**. Insurance claims and home loans d
  Post request ──► Upload evidence ──► Legitimacy score ──► Funded
  (what, how much)  (PII removed)       (AI, explained)      │
                                                             ├─► Your people: gift or 0% loan
-                                                            └─► Community pool: by score band
+                                                            ├─► Insured cover: deductible, paid in full
+                                                            └─► Community repair fund: by score band
 ```
 
 ### 1. Post a request
@@ -71,18 +72,26 @@ An AI model scores 0 to 100 how well the evidence supports the request, and **sh
 ### 4. Funded
 
 - **Your people.** The member shares the request with family and friends by link. Each can give, or lend at zero interest using the Family & Friends tooling (agreement, tracking, gift letters).
-- **The community pool.** Members pay a monthly subscription based on verified earnings. Most of it (the core share) funds the protection pool by rule; members choose where the rest goes (see "The subscription"). The pool holds back a reserve, then pays by legitimacy band: everything scoring 90 or above is filled first, **all at the same time**; if the pool can't cover the whole band, each request gets the same share of what it still needs; then the 80s, then the 70s. This is the "10 claims above 90%, filled concurrently" rule from the original vision, made precise. (Reference implementation: `apps/web/src/lib/requests/allocation.ts`.)
-- Money from both sources stacks: **the pool pays what it covers first**, and family and friends fund the member's own share, anything above the cover cap, and anything the pool doesn't cover. The other way round, gifts would only save the pool money, and in a declared disaster FEMA expects insurance-type cover to pay before it does (44 CFR 206.191).
+- **Insured cover.** Members' dues pay for a group policy the cooperative buys from a licensed insurer (see "Membership dues and cover premium" and Product 2). A covered claim is **paid in full**, minus the member's share, to the shop, within the state's deadline. The evidence score decides how fast and how much evidence is needed, never how much is paid.
+- **The community repair fund.** Gifts and grants, never dues, fund capped repair grants for what cover doesn't reach. Nobody buys a right to it, so it isn't insurance. It pays by evidence-score band: everything scoring 90 or above is filled first, **all at the same time**; if the fund can't cover the whole band, each request gets the same share of what it still needs; then the 80s, then the 70s. This is the "10 claims above 90%, filled concurrently" rule from the original vision, made precise. (Reference implementation: `apps/web/src/lib/requests/allocation.ts`.)
+- **A 0% repair loan for the rest**, made by a partner credit union or CDFI and paid to the shop, with Kinfold's evidence check in front.
+- Money stacks in a fixed order: **insured cover pays first**, then the repair fund, then a 0% repair loan, and family and friends fund whatever is left. The other way round, gifts would only save the insurer money, and in a declared disaster FEMA expects insurance to pay before it does (44 CFR 206.191).
 - **Pledges are all-or-nothing.** Nothing is charged until a request is fully funded, so a repair shop never gets a half-paid job. If a request is withdrawn, refused or expires, every pledge is released.
 
-### The subscription
+### Membership dues and cover premium
 
-- A share of verified monthly earnings (proved through a read-only bank link, with tax returns or self-attestation plus random audit for people paid in cash), **$0 below a floor** and capped at the top. Design target (formula v1): nothing below $1,500 a month of take-home pay, 1% above it, capped at $60 a month, pending actuarial work.
-- **80% is the core share** and always goes to the protection pool; the member directs the other 20% to car requests, home help or "highest score first". A pool that members could empty by redirecting it wouldn't be insurance, and a licensed partner couldn't accept it.
-- A $0 subscriber is covered, but with a lower per-request cap until they've been a member for a year, so cover can't be farmed by joining for free.
+**Two payments, kept apart.** No US state lets an insurer price car damage cover by earnings: rating laws require price differences to follow expected losses (for example Vt. Stat. tit. 8 § 4685, Tex. Ins. Code § 2251.051, Fla. Stat. § 627.0651), and a reciprocal exchange is held to the same law. So:
+
+- **The cover premium** is the partner insurer's filed group rate: one broadly averaged rate per vehicle class and plan, never set by earnings, paid in full to the insurer for every covered vehicle.
+- **Membership dues** are a share of verified earnings (proved through a read-only bank link, with tax returns or self-attestation plus random audit for people paid in cash), **$0 below a floor** and capped at the top. Design target (formula v1): nothing below $1,500 a month of take-home pay, 1% above it, capped at $60 a month, pending actuarial work. The formula should be marginal (1% of the amount above the floor), so a $1 raise never costs $15.
+- **The cooperative pays every member's premium from dues.** Dues are never called or receipted as premium, and Kinfold's insurance agency never funds premiums from its commission: anti-rebating law binds insurers and agents (Vt. § 4724(8), N.C. § 58-63-15(8)), so the payment has to come from the cooperative.
+- **Members below the floor get the Basic plan, fully paid by the cooperative.** Any member may choose Basic or Standard. A lower cap tied to income would be unfair discrimination in benefits, so the difference is the plan, not the person.
+- **Liability insurance is a condition of cover.** The pool never replaces the cover the law requires.
 - Verified earnings leave out disaster aid, gifts, pool payouts and loan proceeds, so help received never raises what a member pays.
-- Money a member directs to home help goes to the fund as a whole, never to a named request.
-- Year-end surplus is refunded or kept as reserves, by member vote.
+- A separate, voluntary contribution can be member-directed. It funds the repair fund or the Home Fund as a whole, never insured claims and never a named request.
+- Dues left after premiums and costs go to reserves or back to members, by member vote.
+
+**Why not one earnings-based pool for full repairs:** besides being unfileable, it doesn't pay. US collision and comprehensive cover averaged about $700 a car-year in 2023 (NAIC), and full own-damage claims cost roughly $380 to $700 a member-year, while the formula raises $19 to $36 a month on average, of which about 69 cents in the dollar reaches claims after the pool share, fronting and reinsurance. Pricing by earnings also invites adverse selection: members at the cap overpay and leave, and the riskiest drivers stay. Deductible cover breaks even at about $6 to $13 a month. (Model and sources: `reviews/car-pool-economics.md`, git-ignored.)
 ### Fraud-proofing
 
 | Attack | Defence |
@@ -102,7 +111,7 @@ An AI model scores 0 to 100 how well the evidence supports the request, and **sh
 These shape the roadmap; none is a reason not to build it, and all need counsel before launch.
 
 - **A promise to pay is insurance.** If members pay in expecting their requests to be paid, regulators treat it as insurance, which needs a license and reserves. China's Xiang Hu Bao, Ant Group's mutual aid platform, served more than 100 million members and closed on 28 January 2022 amid China's fintech crackdown. So the community pool launches only through a licensed partner (or a licensed reciprocal exchange Kinfold sets up later), never as an unlicensed "no guarantee" sharing scheme.
-- **Liability insurance stays mandatory.** Every US state except New Hampshire requires drivers to carry liability cover (Virginia's opt-out fee ended in July 2024), and New Hampshire still requires proof of financial responsibility after a crash. The pool starts by covering **your own damage** (collision costs and deductibles), which is the expensive part people can't afford, and can later pay members' liability premiums for them.
+- **Liability insurance stays mandatory.** Every US state except New Hampshire requires drivers to carry liability cover (Virginia's opt-out fee ended in July 2024), and New Hampshire still requires proof of financial responsibility after a crash. Kinfold's cover starts with **your deductible**, the part people can't afford, keeps liability with the member's own insurer, and could later pay members' liability premiums for them.
 - **Disaster aid counts what we pay.** In a federally declared disaster, FEMA, SBA disaster loans and HUD rebuilding grants subtract insurance, gifts and other money for the same repair, and a member who already got the aid may have to repay it (42 USC 5155; 13 CFR 123.101 names gifts). Paying the payee makes every gift a gift for a specific repair, so it counts. We keep paying the payee (it stops fraud and laundering) and instead tell members, ask what aid they've had or applied for, and time gifts after insurance and public aid where that leaves the member better off.
 - **Strangers lending at interest-free is still lending.** Gifts from anyone are fine, and so are loans between family and friends. Loans funded by the wider community are securities or lending, which is why community home help goes through the Home Fund and a credit union rather than strangers lending directly (in November 2008 the SEC ruled that Prosper's peer-to-peer loan notes were securities, and Prosper stopped selling them until its registration took effect in July 2009). A licensed payment partner moves all money; note that agent-of-payee exemptions from money-transmitter licensing vary by state, so Kinfold relies on the partner's licences, not an exemption.
 
@@ -165,7 +174,7 @@ Bridge and debt buy-out loans (steps 2 and 3 of "What it funds") are not Communi
 
 **Yes, track it, but show it only to the member, and never use it to decide who gets help.**
 
-Each member has a private **giving record**: subscriptions paid, gifts given, money lent, and money received from the pool and from people. It makes the cooperative feel fair, shows members what their money did, and gives them a reason to keep helping.
+Each member has a private **giving record**: dues paid, gifts given, money lent, and money received from the pool and from people. It makes the cooperative feel fair, shows members what their money did, and gives them a reason to keep helping.
 
 What it must not do:
 
@@ -180,7 +189,7 @@ Four dashboards, one per audience. Each shows only what its audience is allowed 
 
 | Dashboard | Who sees it | What it shows |
 | --- | --- | --- |
-| **Member home** | The member | Open requests with status, score and its reasons; loans given and taken with the next installment; pauses and missed installments; subscription and pool cover; the reliability record and the private giving record |
+| **Member home** | The member | Open requests with status, score and its reasons; loans given and taken with the next installment; pauses and missed installments; dues, plan and cover; the reliability record and the private giving record |
 | **Public transparency** | Anyone, on the website | Per fund: money in, requests paid, money paid out, reserve held against the 20% target, pool runs and how often a run fell short. The expense share against the ~15% target and every fee. The measures in "How we know it's helping", headed by **the share of help reaching households without wealthy networks** |
 | **Members-only board** | Verified members | Every pool request from the last 12 months (and any still open) with its member-confirmed redacted summary, outcome, amount band and 10-point score band, by month and by state, or by Census division where the state has fewer than 1,000 active members. The exact amount shows only while a request is still being funded, because givers need it. Never names, towns or exact dates |
 | **Operations console** | Reviewers, panel, staff | The review queue, scores near the review line, fraud signals, appeals, daily reconciliation breaks, reserve alerts, and score gaps by model version for the bias audit |
@@ -207,10 +216,10 @@ A critical read of the model above, and what changed because of it. Each fix is 
 
 | Gotcha | Why it breaks the model | Fix |
 | --- | --- | --- |
-| **Pricing by earnings alone invites adverse selection** | A careless driver pays the same as a careful one. Careful drivers leave, the pool gets riskier, payments rise: the classic insurance death spiral | Keep earnings-based pricing (it's the point), but put the risk in **cover terms**: per-request caps tied to vehicle value, a member share that rises with how often you claim, and waiting periods. Price stays fair; abuse gets expensive |
-| **Fully member-directed money isn't a pool** | If everyone points their money at home help, car requests go unpaid, and "insurance" that may not pay is just crowdfunding | 80% core share to the protection pool by rule; members direct the 20% |
+| **Pricing by earnings is unlawful and invites adverse selection** | State rating laws require prices to follow risk, and a careless driver paying the same as a careful one starts the classic death spiral | The insurer charges one filed group rate; **earnings-based dues** pay it, through the cooperative (see "Membership dues and cover premium"). Risk lives in cover terms: caps by vehicle value, a member share that rises with claims, waiting periods |
+| **"Pay what's available" isn't allowed for insurance** | An insured claim must be paid in full on the state's clock (California: 40 days to decide, 30 to pay; Texas: 15 business days and 5, with 18% a year if late), so banded, partial payment is an unfair claims practice | Insured claims are paid in full; banded allocation applies only to the gift-funded repair fund, which promises nothing |
 | **Joining after the crash** | Nothing stops someone signing up, paying $0 and posting a request the same week | 60-day waiting period on cover and on each newly added vehicle, enforced in `submit_request` |
-| **A monthly pool can run dry** | One hailstorm could use a month's money and leave everyone else waiting | 20% of every run held as reserve, reinsurance for disasters, and lower bands wait for the next run rather than being refused |
+| **A monthly fund can run dry** | One hailstorm could empty the repair fund and leave everyone else waiting | Insured claims are the insurer's risk, backed by its reserves, reinsurance and aggregate stop-loss. The repair fund holds 20% of every run as reserve, and lower bands wait for the next run rather than being refused |
 | **Partial funding helps nobody** | A shop won't fix half a car | Pledges are all-or-nothing; pool grants and friends' pledges stay pledged until the request is fully covered |
 | **Generative AI makes photo evidence cheap to fake** | In 2026 a convincing damaged-bumper photo takes seconds | In-app capture with content credentials counts more; photo fingerprints are compared across all requests; large requests get a physical inspection |
 | **"Legitimacy score" sounds like an accusation** | Telling an honest member they scored 55% legit implies fraud, and regulators look hard at AI that affects claims (the NAIC's December 2023 model bulletin on insurers' use of AI, adopted by 27 states plus DC and Puerto Rico by October 2026, expects a written AI programme with governance and testing for unfair discrimination; California, Colorado, New York and Texas have their own rules) | Recommend calling it an **evidence score** in the app: it measures how well the evidence supports the request. Low scores ask for more evidence and never refuse |
@@ -218,11 +227,11 @@ A critical read of the model above, and what changed because of it. Each fix is 
 | **Family loans can block the mortgage** | A repayable family loan counts toward debt-to-income, and Fannie Mae only accepts a second lien that charges a market rate, so a 0% family lien doesn't fit a Fannie mortgage at all (FHA does allow secured family loans) | Down payments default to **gifts** with a gift letter. The app asks the mortgage type before offering a lien: secured 0% family loans only with FHA or with the first lender's written approval; otherwise an unsecured note that counts toward debt-to-income, and the app explains the trade-off |
 | **Money moving between people is money transmission** | Holding or routing funds between members needs state money-transmitter licenses | A licensed payment partner moves all money; Kinfold records it but never holds it |
 | **A fake request can launder money** | Pay "gifts" into a staged request, get clean money out | Money only ever goes to verified payees (shops, lenders, sellers), never to the member; payers are identity-checked above partner thresholds |
-| **When another driver is at fault, their insurer should pay** | Otherwise the pool subsidises other insurers | The pool pays the member's deductible and gap straight away, and the member assigns the recovery right (subrogation) to the partner insurer, which claims from the at-fault insurer and refunds the pool |
+| **When another driver is at fault, their insurer should pay** | Otherwise Kinfold's cover subsidises other insurers | Deductible cover pays straight away, and the member assigns the recovery right (subrogation) to the partner insurer, which claims from the at-fault insurer |
 
 ### Unit economics
 
-Kinfold's costs per request are real even though it charges no interest: identity checks (about $0.50 to $3 a member at list prices), bank links (vendors don't publish prices; budget about $1 to $2 a connection a year until quoted), AI scoring (cents), human review (the big one, minutes per borderline request), payment fees (0.25% to 3%), the partner insurer's fronting fee (often 5% to 10% of premium) and reinsurance. At ~$15 average monthly subscription, an expense share around 15% leaves room for these and still beats the roughly 25% to 28% US property and casualty insurers spend on underwriting expenses (25.3% in AM Best's January 2026 figures). Rules that keep it there:
+Kinfold's costs per request are real even though it charges no interest: identity checks (about $0.50 to $3 a member at list prices), bank links (vendors don't publish prices; budget about $1 to $2 a connection a year until quoted), AI scoring (cents), human review (the big one, minutes per borderline request), payment fees (0.25% to 3%), the partner insurer's fronting fee (often 5% to 10% of premium) and reinsurance. At ~$15 average monthly dues, an expense share around 15% leaves room for these and still beats the roughly 25% to 28% US property and casualty insurers spend on underwriting expenses (25.3% in AM Best's January 2026 figures). Rules that keep it there:
 
 - AI does the first pass on every request; people handle only the low-score, flagged and appealed ones. Score agreement is tracked so automation only grows where it's proven accurate.
 - Givers see payment fees and can choose to cover them.
@@ -230,12 +239,13 @@ Kinfold's costs per request are real even though it charges no interest: identit
 
 ### The insurance structure over time
 
-1. **Launch: managing agent with a fronting carrier.** Kinfold designs the product, runs the app and scoring; a licensed insurer issues the cover and holds the reserves; reinsurers take catastrophe risk.
+1. **Launch: a group policy from a fronting carrier.** The cooperative is the group policyholder; Kinfold designs the product and runs the app and scoring; a licensed insurer files the rate, issues the cover and holds the reserves; reinsurers take catastrophe and aggregate risk.
 2. **Later: a reciprocal exchange.** Members insure each other directly, with Kinfold as the manager (attorney-in-fact). Surplus legally belongs to members, which is the cooperative's whole idea (Erie Insurance Exchange and USAA are reciprocals). Attorney-in-fact fees are a known conflict of interest (Erie's manager may keep up to 25% of premium), so Kinfold's fee would be capped in the bylaws. Needs capital and a license, so it waits for proven loss data.
 
 ### What's still unsolved
 
-- **Fair cover limits for $0 subscribers** need real loss data before they're set.
+- **What the Basic plan covers**, and how much dues can pay for, need the partner's real rates and loss data.
+- **Whether a premium the cooperative pays is income to the member** is unresolved; it needs tax counsel.
 - **The scoring model** needs a labelled evaluation set before launch, and a decision on vendor model vs. self-hosted.
 - **Cross-state rules**: insurance and lending law is per state; the first state is chosen partly for how friendly its regulator is to new models (Kentucky, Vermont, West Virginia, North Carolina and South Dakota run insurance sandboxes; Utah runs a general one).
 
@@ -246,7 +256,7 @@ Kinfold's costs per request are real even though it charges no interest: identit
 | Piece | Who runs it | What the member sees |
 | --- | --- | --- |
 | Family & Friends requests | Kinfold runs the software; money moves between people through a payment partner | Share a request; friends give or lend at 0% |
-| Community protection | A licensed partner insurer (later, Kinfold's own licensed reciprocal) holds the pool | Pay an earnings-based subscription; post damage requests to the public board |
+| Community protection | A licensed partner insurer issues a group policy to the cooperative (later, Kinfold's own licensed reciprocal); the repair fund is gift-funded; a partner credit union or CDFI makes the 0% repair loans | Pay earnings-based dues; post damage requests; repair-fund requests appear on the members-only board |
 | Community Home Fund | **Kinfold Home Fund**, a separate 501(c)(3) public charity whose board the cooperative elects. It owns the loans, receives gifts, grants, program-related investments and federal awards, and keeps its money in its own accounts at a partner credit union. Kinfold runs the app and the selection rules for it, at fair market value | Apply for zero-interest help, or give |
 | Mortgage matching | Partner lenders, ideally credit unions and community lenders | A fair first mortgage, with family loans and fund help already counted |
 
@@ -294,31 +304,34 @@ A member shares any request (a car repair, a down payment, a loan payoff) with t
 
 ## Product 2: Community protection
 
-Damage requests paid from the community pool. **Cars first**, then homes, then other cover as reserves and data grow.
+Help with car damage, in three layers: insured deductible cover, a gift-funded repair fund, and 0% repair loans. **Cars first**, then homes, then other cover as data grows. The research behind this shape is in [feasibility.md](feasibility.md#community-car-pool).
 
 **What it covers at launch** (amounts are design targets pending actuarial review)
 
-| Event | Cover | Why start here |
-| --- | --- | --- |
-| Damage to your car in a crash, at fault or not | Repair cost, paid to the shop | Collision cover is where premiums hurt most |
-| Your deductible when another insurer pays | The deductible | A $1,000 deductible is a crisis for most households |
-| Hail, flood, deer and other non-crash damage | Repair cost | Simple, photo-heavy evidence; good for proving the scorer |
+| Layer | What it pays | Funded by | Why |
+| --- | --- | --- | --- |
+| **Deductible cover** (insured) | The member's deductible, up to $1,000, when their own collision or comprehensive cover or another driver's insurer pays the claim | The group premium, paid from dues | A $1,000 deductible is a crisis for most households, and this cover breaks even at about $6 to $13 a month with almost no hail exposure |
+| **Gap cover** (insured, after launch) | Own damage up to $1,000 a year for members without collision cover, raised only when loss data supports it | The group premium | Full own-damage cover can't be paid for at these dues (see above) |
+| **Community repair fund** (not insurance) | Capped repair grants, paid to the shop, by evidence-score band | Gifts and grants only | Nobody pays in for cover, so it promises nothing and may pay partly; capped grant funds of this kind last (Broodfonds, Britepaths) |
+| **0% repair loan** (not insurance) | The rest of the repair, paid to the shop | A partner credit union or CDFI, with a gift-funded loss reserve | Zero-interest repair lending repays well (Mission Asset Fund reports about 0.7% losses) |
 
-**Not at launch:** liability for injuring someone else (stays with a licensed insurer, as the law requires), health, and life.
+**Not covered:** liability for injuring someone else (members must keep their own, as the law requires), health, and life.
 
 **How the money works**
 
-1. **Subscriptions** (earnings-based, member-directed; see "How it works") go into a ring-fenced pool held by the licensed partner.
-2. **Requests** are scored and paid by band, highest first, filled concurrently.
-3. **Reinsurance** covers rare disasters such as a hailstorm hitting a whole city.
-4. **Surplus** at year end is refunded or kept as reserves, by member vote.
-5. **In declared disasters** the pool decides within 30 days, outside the weekly run, and gives the member a payment statement or a decline letter: FEMA won't consider an insured loss without one. The pool never waits to pay "after FEMA".
+1. **Dues pay the group premium.** A licensed partner insurer issues a group policy to the cooperative at one filed, broadly averaged rate per vehicle class and plan, starting with deductible cover. The cooperative pays each member's premium from earnings-based dues. The insurer holds the reserves and buys reinsurance and aggregate stop-loss.
+2. **Covered claims are paid in full** (less the member's share) to the shop, within the state's deadlines, whatever the month's totals. The evidence score decides speed and what evidence is needed, never the amount. Only a person can deny a claim, with appeal.
+3. **The repair fund pays by band**, highest first, filled concurrently, from gifts and grants, with 20% of each run held back.
+4. **Surplus dues** at year end go to reserves or back to members, by member vote.
+5. **In declared disasters** the insurer decides within 30 days and gives the member a payment statement or a decline letter: FEMA won't consider an insured loss without one. Cover never waits to pay "after FEMA".
+
+**Launch states:** Vermont first, then Rhode Island, then Kentucky (whose group-rating law still needs checking), because their rating laws allow group-averaged rates and Vermont and Kentucky run insurance sandboxes. Avoid California, Michigan and North Carolina, where car damage cover is written at state or bureau rates.
 
 Payouts reimburse a loss, so they aren't income, but they reduce any casualty-loss tax deduction (IRS Publication 547). The app tells members both things when a request is paid.
 
-**Pointing members to public help:** the pool sits beside public programmes rather than taking their money. Kinfold points members to state low-cost auto insurance where it exists (California's covers liability only, which pairs with the pool's own-damage cover), the state FAIR plan when no insurer will cover a home, roof-strengthening grants such as Strengthen Alabama Homes (up to $10,000, paid to the contractor), and FEMA, SBA and USDA repair help after disasters. None of that money enters the pool.
+**Pointing members to public help:** cover and the repair fund sit beside public programmes rather than taking their money. Kinfold points members to state low-cost auto insurance where it exists (California's covers liability only), the state FAIR plan when no insurer will cover a home, roof-strengthening grants such as Strengthen Alabama Homes (up to $10,000, paid to the contractor), and FEMA, SBA and USDA repair help after disasters. None of that money enters the pool.
 
-**Fairness rules:** the subscription depends on earnings, never on neighbourhood, race, credit score or proxies for them; scores depend only on evidence; refusals are made by people, in plain language, with appeal to a member panel.
+**Fairness rules:** dues depend on earnings, never on neighbourhood, race, credit score or proxies for them; the insurer's rate depends only on its filed factors; scores depend only on evidence; refusals are made by people, in plain language, with appeal to a member panel.
 
 ## Product 3: Community Home Fund
 
@@ -339,7 +352,7 @@ For people with no wealthy family to borrow from. Lends without interest, alloca
 3. **Buying out expensive debt:** replacing a high-rate loan on a home with a zero-interest one.
 4. **Over time, whole homes:** shared equity. The fund co-owns a home and the family buys the fund's share back with no interest; the repaid share funds the next family.
 
-**Who it helps:** households at or below 80% of area median income, households facing foreclosure or eviction, and households in a designated distressed area: the charitable class the Fund exists for. An account is free and a subscription is never a condition of help, because a charity can't keep its help for paying members.
+**Who it helps:** households at or below 80% of area median income, households facing foreclosure or eviction, and households in a designated distressed area: the charitable class the Fund exists for. An account is free and paying dues is never a condition of help, because a charity can't keep its help for paying members.
 
 **How applicants are chosen:** the same request, evidence and legitimacy score as every other request, plus a published needs formula covering need, readiness and reliability (rent paid on time, family loan repayments). The formula uses no prohibited basis under fair-lending law, and public-assistance income counts like any other income. A member panel reviews edge cases. Directors don't borrow from the Fund while they serve. Hardship details stay private; the board shows only the request type, amount band, score band and outcome.
 
@@ -353,19 +366,19 @@ For people with no wealthy family to borrow from. Lends without interest, alloca
  Requests + evidence ──► Scores people can trust ──► Friends and pool pay
          ▲                                                  │
          │              One membership,                     ▼
-   Money recycles ◄──── one reliability record ◄──── Repayments, subscriptions
+   Money recycles ◄──── one reliability record ◄──── Repayments, dues
 ```
 
-Every request scored, subscription paid and loan repaid adds to one reliability record. The record replaces a credit score and opens the Home Fund to people banks overlook, and repaid money funds the next family. Loan money and the protection pool never mix.
+Every request scored, dues payment made and loan repaid adds to one reliability record. The record replaces a credit score and opens the Home Fund to people banks overlook, and repaid money funds the next family. Loan money and the protection pool never mix.
 
 **A member's journey: Maria**
 
-1. Maria rents and has a thin credit file. She joins Kinfold and pays about 1% of her earnings into the pool.
+1. Maria rents and has a thin credit file. She joins Kinfold and pays about 1% of her earnings in dues, which buy her deductible cover.
 2. She posts a home request and shares it with family. Her aunt lends $30,000 at zero interest, with a written agreement recorded on the home.
 3. Maria buys with a smaller bank mortgage and pays thousands less in interest.
-4. In year two someone rear-ends her car. She posts a damage request with photos and the police report; it scores 96% and the pool pays the shop in three days.
+4. In year two someone rear-ends her car. She posts a damage request with photos and the police report; it scores 96%, and her deductible cover pays the shop in three days while the other driver's insurer pays the rest.
 5. Her on-time repayments build a reliability record that opens the Home Fund for a roof repair.
-6. Maria now points her subscription at home requests, helping the next family.
+6. Maria now gives a little each month to the Home Fund, helping the next family.
 
 ## Sustainability
 
@@ -375,7 +388,7 @@ Flat, published fees for real work, never interest or penalties. Grants fund the
 | --- | --- | --- |
 | Family loan setup fee | Documents, lien recording, tax setup | Flat, not a percentage; waived for low-income members |
 | Loan servicing | Payment processing, tracking, yearly tax paperwork | Small flat monthly fee, shown before signing |
-| Pool admin share | Scoring, review and paying requests | Capped, published share of subscriptions; the rest stays in the pool |
+| Dues admin share | Scoring, review, the app and paying requests | Capped, published share of dues; the rest pays premiums and reserves |
 | Mortgage matching (no fee) | Matching members to fair lenders | Kinfold takes **no referral fees** from mortgage lenders: RESPA section 8 bans them, and disclosure doesn't cure it |
 | Employer benefit | Employers offer membership as a housing benefit | Employer pays; members' terms are identical |
 | Grants and impact funding | Home Fund lending and matching (through the Home Fund charity); co-op start-up only for specific charitable projects | Funders get no say over individual decisions |
@@ -384,7 +397,7 @@ Flat, published fees for real work, never interest or penalties. Grants fund the
 
 ### Public and grant funding
 
-Insurers' government billions mostly come from programmes where the government subsidises or backstops the cover itself. In federal crop insurance the government pays about 60% of farmers' premiums and pays insurers 12% to 22% of premium for running the policies. In flood insurance (NFIP) the government is the insurer, and private companies sell and service the policies for a fee. In ACA and Medicare Advantage, subsidies follow the customer to the insurer. Terrorism cover has a federal backstop (TRIA). **None of these subsidies covers car damage, deductibles or home repairs**, and Kinfold's pool isn't the insurer anyway (the partner is). Disaster aid and some state programmes do pay for repairs, but they sit beside the pool (see Product 2), not inside it. The public money that fits Kinfold is on the **lending and housing** side, and nearly all of it goes to the **Home Fund charity**, not the cooperative:
+Insurers' government billions mostly come from programmes where the government subsidises or backstops the cover itself. In federal crop insurance the government pays about 60% of farmers' premiums and pays insurers 12% to 22% of premium for running the policies. In flood insurance (NFIP) the government is the insurer, and private companies sell and service the policies for a fee. In ACA and Medicare Advantage, subsidies follow the customer to the insurer. Terrorism cover has a federal backstop (TRIA). **None of these subsidies covers car damage, deductibles or home repairs**, and Kinfold isn't the insurer anyway (the partner is). Disaster aid and some state programmes do pay for repairs, but they sit beside Kinfold's cover (see Product 2), not inside it. The public money that fits Kinfold is on the **lending and housing** side, and nearly all of it goes to the **Home Fund charity**, not the cooperative:
 
 | Source | What it funds | Fit and catch | When |
 | --- | --- | --- | --- |
@@ -402,7 +415,7 @@ Insurers' government billions mostly come from programmes where the government s
 - **No say over individual decisions** (the Sustainability guardrail). Grant agreements fund the Fund, not a list of chosen families.
 - **Only the records an award requires.** The CDFI Fund's yearly loan-level report asks for each loan's census tract and borrower demographics where collected, and accepts "Do Not Know". Federal auditors and inspectors general can see any loan file a federal award pays for (2 CFR 200.337), and the Fund's loan terms tell members so. Data terms are agreed in writing before signing.
 - **Demographics only where the law allows asking.** Fair-lending law bars asking race, ethnicity or sex, with exceptions (12 CFR 1002.5). For home-purchase and refinance loans secured by the home, the lender must ask on the government monitoring form (1002.13), and Kinfold asks on the credit union's behalf. For every other Fund loan, Kinfold asks only as a voluntary fair-lending self-test with its four required disclosures (1002.5(b)(1)), or doesn't ask. The answers never reach the scorer, reviewers or panel; self-test results go to the board and the auditor, not the public; and CDFI reports show "Do Not Know" for self-test data.
-- **No public money in the protection pool.** Grants may pay members' subscriptions from a separate labelled pot, fund mitigation, or fund operations; they never change cover terms or who the pool pays. Federal money inside the pool would turn payouts into federal aid and push them behind insurance in the payment order.
+- **No public money in insured cover.** Grants may pay members' dues from a separate labelled pot, fund the repair fund or mitigation, or fund operations; they never change cover terms or who the cover pays. Federal money inside the cover would turn payouts into federal aid and push them behind insurance in the payment order.
 - **No eligibility rule that breaks a principle.** If a grant's income limits or target market would make the Home Fund refuse someone the formula would help, that money funds a separate, labelled pot; it doesn't change the formula.
 - **No dependence.** Grant money pays for start-up and matching, never for running costs the fees must cover, so a cut programme pauses matching but not the cooperative.
 
@@ -450,7 +463,7 @@ Start with cars and requests paid by people you know: it exercises the whole req
 | Phase | When | Scope | Gate to move on |
 | --- | --- | --- | --- |
 | 1. Requests between people | Months 0 to 9 | Requests, evidence, redaction and scoring for car damage and home help; family and friends pay (gifts and 0% loans). No pooled money | Legal review passed; 500 requests scored; people agree with the score at least 9 times in 10 |
-| 2. Community car pool | Months 9 to 18 | Earnings-based subscriptions, the members-only board, own-damage car requests, one state, licensed partner insurer | Requests paid within 7 days; fraud below target; books reconcile daily; credit union partner signed (a Home Loan Bank member); Home Fund charity formed |
+| 2. Community car cover | Months 9 to 18 | Earnings-based dues paying a group deductible policy from a licensed partner insurer, the gift-funded repair fund and its members-only board, 0% repair loans, one state | Requests paid within 7 days; fraud below target; books reconcile daily; credit union partner signed (a Home Loan Bank member); Home Fund charity formed |
 | 3. Home Fund pilot | Months 18 to 30 | One city, the Home Fund charity lending through a credit union partner, matching funds, CDFI application | 25 fund loans repaying on time |
 | 4. Grow | Year 3 onward | More cover types and states; members' own reciprocal insurer; shared-equity homes | — |
 
@@ -473,10 +486,11 @@ Start with cars and requests paid by people you know: it exercises the whole req
 - Which state to launch in first (lien recording, licensing and partner availability vary by state).
 - Which credit union or community development lender to approach for the Home Fund pilot.
 - Which licensed insurer to partner with for the car pool, and whether to set up Kinfold's own reciprocal exchange later.
-- The subscription formula (floor, share of earnings, cap), which needs actuarial work.
+- The dues formula (floor, share of earnings, cap), which needs actuarial work, and the partner's group rates for the Basic and Standard plans.
+- Whether the repair fund sits in the Home Fund charity (so gifts are deductible) under the same charitable class.
 - Which AI model scores requests, how it's evaluated before launch, and where evidence is stored.
 - Legal form of the cooperative and its subsidiaries; needs a lawyer experienced in cooperatives and consumer finance. Choose a cooperative statute with no investor members (for example, not Minnesota 308B).
 - The Home Fund charity: its Form 1023 timeline and public-support test, the services agreement with the cooperative, and how it is licensed as a lender in the launch state.
 - Which target market to define for CDFI certification (low-income households, or the pilot city's qualifying census tracts) so that 60% of Home Fund lending meets it.
 - Whether a 0% forgivable family loan counts as a "subsidized loan" when HUD calculates disaster-rebuilding grants (HUD excludes only private loans on typical commercial terms, 84 FR 28836).
-- How the community pool's yearly bias audit gets demographics: the pool is insurance, not credit, so it is a state insurance-law question; estimating race from surname and geography (the CFPB's BISG method) avoids asking.
+- How the community pool's yearly bias audit gets demographics: the cover is insurance, not credit, so it is a state insurance-law question; estimating race from surname and geography (the CFPB's BISG method) avoids asking.

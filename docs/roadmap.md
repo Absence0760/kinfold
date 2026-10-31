@@ -35,22 +35,23 @@ Goal: the whole request flow, funded only by family and friends. Car damage and 
 
 **Gate to Stage 2:** legal review passed. 500 requests scored, and reviewers agree with the score at least 9 times in 10. No significant score gap by neighbourhood, age or language. Every payout reconciles with the payment partner. Kinfold never held funds.
 
-## Stage 2: Community car pool (months 9 to 18)
+## Stage 2: Community car cover (months 9 to 18)
 
-Goal: earnings-based subscriptions fund a protection pool for own-damage car requests in one state, with the cover issued by a licensed partner insurer.
+Goal: in one state (Vermont first), earnings-based dues pay a group deductible policy issued to the cooperative by a licensed partner insurer, alongside a gift-funded repair fund and 0% repair loans. Why this shape and not one earnings-priced pool: [feasibility.md](feasibility.md#community-car-pool).
 
 | Step | Build |
 | --- | --- |
-| 2a | **Partner integration**: fronting insurer and reinsurance contracts, custody account, statements feed |
-| 2b | **Subscriptions**: `verify-income` (bank link; earnings leave out disaster aid, gifts, pool payouts and loan proceeds), formula pricing, collection, the 80/20 split into fund journals, allocation preferences (to a fund, never a named request) |
-| 2c | **Pool runs**: weekly `run-pool`, reserve held, pool contributions captured on funding. The pool pays its covered amount first and people fund the rest (design.md, "Funded"), which changes `run_pool_allocation` from "need = amount minus raised" |
-| 2d | **Members-only board** (schema done: confirmed summaries, bands, month, Census division) and the **public transparency dashboard** built on `open_books` (per fund money in and out, reserve, pool runs and shortfalls, fees, expense share, the help-reaching measures). Schedule `publish_open_books` monthly. Any new breakdown follows design.md's small-numbers rules |
-| 2e | **Cover terms**: per-request caps by vehicle value, the member's share rising with `pool_requests_paid_3y`, waiting periods (already enforced); in declared disasters a decision and a payment statement or decline letter within 30 days, outside the weekly run; pointers to state and federal repair help |
+| 2a | **Partner integration**: fronting insurer with a filed group rate per vehicle class and plan (Basic, Standard), reinsurance and aggregate stop-loss, the insurer's claims and statements feed; insurance-regulatory counsel's written view (ideally the regulator's) on rebating and the group definition |
+| 2b | **Dues**: `verify-income` (bank link; earnings leave out disaster aid, gifts, pool payouts and loan proceeds), the marginal dues formula, collection, the cooperative paying each member's premium (never called premium on the member's side), Basic paid in full below the floor, proof of liability cover, one premium per covered vehicle |
+| 2c | **Claims under the group policy**: deductible claims paid in full, less the member's share, on the state's deadline; the evidence score sets speed and scrutiny, never the amount; denials only by a person, with appeal; in declared disasters a decision with a payment statement or decline letter within 30 days |
+| 2d | **Repair fund and board**: the gift-funded repair fund's weekly run (`run_pool_allocation`, bands and reserve, money stacking after insured cover); the members-only board (schema done: confirmed summaries, bands, month, Census division); the **public transparency dashboard** on `open_books`. Schedule `publish_open_books` monthly. Any new breakdown follows design.md's small-numbers rules |
+| 2e | **0% repair loans** through a partner credit union or CDFI, paid to the shop, with a gift-funded loss reserve; pointers to state and federal repair help |
 | 2f | **Fraud v2**: cross-request, cross-vehicle and cross-shop pattern checks; in-person inspection workflow for large requests |
-| 2g | **Subrogation**: when another driver is at fault, the member assigns recovery; the partner claims from their insurer and refunds the pool |
+| 2g | **Subrogation**: when another driver is at fault, the member assigns recovery; the partner claims from their insurer |
 | 2h | **Daily reconciliation** (`reconcile`) with alerts; quarterly open-books report |
+| 2i | **Gap cover** (own damage up to $1,000 a year for members without collision cover), only once a year of loss data supports it |
 
-**Gate to Stage 3:** requests paid within 7 days on average, fraud losses below the agreed target, books reconcile every day, regulator relationship in good standing, a credit union partner signed that is a Home Loan Bank member willing to run the AHP set-aside, and the Home Fund formed as a 501(c)(3) the cooperative controls (it owns the loans, needs a services agreement at fair market value, and must exist before the CDFI application).
+**Gate to Stage 3:** covered claims paid within the state's deadline and repair-fund requests within 7 days on average, a loss ratio inside the partner's filed range, fraud losses below the agreed target, books reconcile every day, regulator relationship in good standing, a credit union partner signed that is a Home Loan Bank member willing to run the AHP set-aside, and the Home Fund formed as a 501(c)(3) the cooperative controls (it owns the loans, needs a services agreement at fair market value, and must exist before the CDFI application).
 
 ## Stage 3: Home Fund (months 18 to 30)
 
@@ -63,7 +64,7 @@ Goal: zero-interest home help for people with no family to lend, through a partn
 | 3c | Mortgage-gap bridging, plus referral to HUD-approved housing counselors |
 | 3d | Matching funds and program-related investments from foundations, employers and local government, tracked per source, with federally funded loans as their own pot (2 CFR 200); CDFI Technical Assistance application, then certification after the Fund has lent on its own books for one full fiscal year (loan-level reporting with "Do Not Know" where no data was collected) |
 | 3e | Mortgage matching with fair lenders, with **no referral fees** (RESPA section 8) |
-| 3f | Home cover in the protection pool (repairs), if loss data supports it |
+| 3f | Home repair deductible cover under the group policy, and home grants from the repair fund, if loss data supports it |
 | 3g | FHLB down-payment grants through the partner credit union; state housing finance agency and city programmes in the pilot city. Every public lien stays in the funder's own name (Kinfold never administers HOME or CDBG paper); offer the city HOME match credit for the Fund's 0% loans (24 CFR 92.220); one counseling agency certified under 24 CFR part 214 for every applicant and for 3c |
 | 3h | Fair-lending data: the government monitoring form on home-purchase and refinance loans (Reg B 1002.13, on the credit union's behalf), and a voluntary self-test with its disclosures for other Fund loans (1002.5(b)(1)), stored where scoring and review can't read it |
 
@@ -71,7 +72,7 @@ Goal: zero-interest home help for people with no family to lend, through a partn
 
 ## Stage 4: Grow (year 3 onward)
 
-More cover types and states. A reciprocal exchange so members insure each other directly. Shared-equity homes. Paying members' mandatory liability premiums from the pool. Portable reliability records that landlords can accept.
+More cover types and states. A reciprocal exchange so members insure each other directly. Shared-equity homes. Paying members' mandatory liability premiums from dues. Portable reliability records that landlords can accept.
 
 ## In every stage
 
