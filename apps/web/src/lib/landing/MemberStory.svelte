@@ -18,7 +18,7 @@
 	];
 </script>
 
-<section class="section" id="story">
+<section class="section section-alt" id="story">
 	<div class="container story">
 		<div>
 			<p class="eyebrow">A member's journey</p>

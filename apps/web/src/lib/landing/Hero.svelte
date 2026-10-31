@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { formatUsd } from '$lib/core/format';
 
-	// A sample damage request, as it would appear on the public board.
+	// A sample damage request, as it would appear on the members-only board.
 	const request = {
 		title: 'Rear-ended at a stop light',
 		kind: 'Auto damage',

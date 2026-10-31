@@ -7,18 +7,28 @@
     "node": ">=22"
   },
   "scripts": {
-    "//-- setup --": "One-time bootstrap after a fresh clone. No Docker or cloud account needed yet.",
+    "//-- setup --": "One-time bootstrap after a fresh clone. The backend (dev:db:*, test:backend:db, gen:types) also needs Docker running and the Supabase CLI on PATH.",
     "setup": "pnpm install && pre-commit install",
-    "//-- web --": "SvelteKit 5 prerendered marketing site on port 7790 (docs/STACK.md). No backend; every page is static HTML.",
+    "//-- db --": "Local Supabase stack (apps/backend, Postgres 17): API 54721, DB 54722, Studio 54723, Mailpit 54724. Needs Docker. Migrations + pgTAP tests in apps/backend/supabase.",
+    "dev:db:up": "pnpm -C apps/backend db:up",
+    "dev:db:down": "pnpm -C apps/backend db:down",
+    "dev:db:reset": "pnpm -C apps/backend db:reset",
+    "dev:db:status": "pnpm -C apps/backend db:status",
+    "dev:db:psql": "pnpm -C apps/backend db:psql",
+    "dev:db:studio": "pnpm -C apps/backend db:studio",
+    "//-- web --": "SvelteKit 5 prerendered marketing site on port 7790 (docs/STACK.md). Does not use the backend; every page is static HTML.",
     "dev:run:web": "pnpm -C apps/web dev",
     "build:web": "pnpm -C apps/web build",
     "preview:web": "pnpm -C apps/web preview",
     "//-- check --": "Typecheck every workspace.",
     "check": "pnpm run check:web",
     "check:web": "pnpm -C apps/web check",
-    "//-- test --": "Vitest unit tests beside the modules they cover, plus the root-scripts guard.",
-    "test": "pnpm run test:web && pnpm run test:scripts",
+    "//-- test --": "Vitest unit tests beside the modules they cover, the root-scripts guard, and pgTAP (schema, invariants, RLS). test:backend:db needs dev:db:up first.",
+    "test": "pnpm run test:web && pnpm run test:scripts && pnpm run test:backend:db",
     "test:web": "pnpm -C apps/web test",
-    "test:scripts": "node scripts/check_root_scripts.mjs"
+    "test:scripts": "node scripts/check_root_scripts.mjs",
+    "test:backend:db": "pnpm -C apps/backend test:db",
+    "//-- gen --": "Regenerate apps/backend/supabase/database.types.ts from the live local schema (needs dev:db:up). Commit the result.",
+    "gen:types": "pnpm -C apps/backend gen:types"
   }
 }

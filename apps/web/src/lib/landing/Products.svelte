@@ -19,7 +19,7 @@
 			points: [
 				'Pay a small share of your earnings, nothing if you earn little',
 				'Choose where your monthly payment goes',
-				'Public board, ranked by legitimacy score',
+				'Members-only board, ranked by legitimacy score',
 				'Repair shop paid directly, so quotes can’t be gamed'
 			],
 			holds: 'Pool held by a licensed partner, never mixed with loan money.'

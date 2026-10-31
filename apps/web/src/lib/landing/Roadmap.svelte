@@ -3,31 +3,31 @@
 		{
 			name: 'Requests between people',
 			when: 'Months 0 to 9',
-			scope: 'Post a request, upload evidence, get a score; family and friends pay it. Car damage and home help. No pooled money.',
-			gate: 'Legal review passed, 500 requests scored, score accuracy checked by people'
+			scope: 'The member app, evidence and scoring; family and friends pay as gifts or zero-interest loans. Car damage and home help. No pooled money.',
+			gate: 'Legal review passed, 500 requests scored, reviewers agree with the score 9 times in 10'
 		},
 		{
 			name: 'Community car pool',
 			when: 'Months 9 to 18',
-			scope: 'Earnings-based payments, the public board, damage requests only, one state, a licensed partner.',
-			gate: 'Requests paid within 7 days and fraud below target'
+			scope: 'Earnings-based payments, a members-only board, own-damage car requests, one state, a licensed partner insurer.',
+			gate: 'Requests paid within 7 days, fraud below target, books reconcile daily'
 		},
 		{
-			name: 'Home Fund pilot',
+			name: 'Home Fund',
 			when: 'Months 18 to 30',
-			scope: 'One city, a credit union partner, and matching funds.',
+			scope: 'Zero-interest home loans through a credit union, mortgage-gap bridging, and matching funds.',
 			gate: '25 fund loans repaying on time'
 		},
 		{
 			name: 'Grow',
 			when: 'Year 3 onward',
-			scope: 'More kinds of cover and more states, then shared-equity homes.',
+			scope: "More cover types and states, a members' own reciprocal insurer, and shared-equity homes.",
 			gate: null
 		}
 	];
 </script>
 
-<section class="section" id="roadmap">
+<section class="section section-alt" id="roadmap">
 	<div class="container">
 		<p class="eyebrow">Roadmap</p>
 		<h2 class="section-title">Each step starts only when the last one proves safe.</h2>

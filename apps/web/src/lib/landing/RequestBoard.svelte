@@ -30,7 +30,8 @@
 		<p class="eyebrow">The request board</p>
 		<h2 class="section-title">Ranked by evidence, not by who tells the saddest story.</h2>
 		<p class="section-lead">
-			Every request is public, with personal details removed. The pool fills the highest band first
+			The board is visible to verified members only, and shows each request's state and week, never
+			names or towns. The pool fills the highest band first
 			(90% and up), every request in it at the same time, then moves down. Below 70%, a person
 			reviews it and asks for more evidence. Move the slider to see how this month's pool is shared
 			out.

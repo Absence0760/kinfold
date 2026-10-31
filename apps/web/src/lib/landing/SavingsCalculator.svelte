@@ -13,7 +13,7 @@
 	const savedPerMonth = $derived(result.bankOnly.monthly - result.withKinfold.monthly);
 </script>
 
-<section class="section section-alt" id="calculator">
+<section class="section" id="calculator">
 	<div class="container">
 		<p class="eyebrow">Savings calculator</p>
 		<h2 class="section-title">Every dollar your family lends is a dollar the bank can't charge interest on.</h2>

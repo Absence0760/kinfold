@@ -5,13 +5,13 @@
 		{ title: 'No profit from hardship', text: 'No late fees. A missed payment starts a plan, not a charge.' },
 		{ title: 'Evidence, not popularity', text: 'The pool pays by legitimacy score and need, never by who goes viral.' },
 		{ title: 'The home comes first', text: 'Foreclosure is the very last resort, after every other option.' },
-		{ title: 'Public, except you', text: 'Requests, scores, payouts and fees are public. Personal details never are.' },
+		{ title: 'Open books, private people', text: 'Members see every request, score, payout and fee. Names and towns never show.' },
 		{ title: 'Members own it', text: 'One member, one vote. Surplus goes back to members.' },
 		{ title: 'AI advises, people decide', text: 'Every score is explained. Only a person can turn a request down, and you can appeal.' }
 	];
 </script>
 
-<section class="section section-alt" id="principles">
+<section class="section" id="principles">
 	<div class="container">
 		<p class="eyebrow">Our principles</p>
 		<h2 class="section-title">Written into our bylaws, not just our marketing.</h2>

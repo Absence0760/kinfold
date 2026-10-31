@@ -6,7 +6,7 @@
 		},
 		{
 			title: 'Upload evidence',
-			text: 'Photos, a police report, a repair estimate, a loan statement. Kinfold blurs names, plates and faces, and you check it before anything goes public.'
+			text: 'Photos, a police report, a repair estimate, a loan statement. Kinfold blurs names, plates and faces, and you check it before anything reaches the board.'
 		},
 		{
 			title: 'Get a legitimacy score',
