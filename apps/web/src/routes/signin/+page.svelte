@@ -6,7 +6,9 @@
 	import { isConfigured, supabaseUrl } from '#lib/supabase/client.ts';
 
 	const configured = isConfigured();
-	const showDemo = demoSignInAllowed(dev, supabaseUrl);
+	// `dev &&` first: `dev` is a build-time constant, so a production build drops
+	// the demo list (and its password) entirely.
+	const showDemo = dev && demoSignInAllowed(dev, supabaseUrl);
 
 	let email = $state('');
 	let password = $state('');
