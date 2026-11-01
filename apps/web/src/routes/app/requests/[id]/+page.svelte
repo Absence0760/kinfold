@@ -7,13 +7,15 @@
 	import {
 		confirmSummary,
 		submitRequest,
+		updateDraft,
 		withdrawRequest,
 		type FormContext,
 		type RequestDetail,
 		type ReviewRow
 	} from '#lib/requests/data.ts';
 	import { poolProblems, usesPool } from '#lib/requests/eligibility.ts';
-	import { draftToInput, fundForKind, payeeKindLabel } from '#lib/requests/form.ts';
+	import { asPeopleOnly, draftToInput, fundForKind, payeeKindLabel } from '#lib/requests/form.ts';
+	import { payoutText } from '#lib/requests/payout.ts';
 	import { minScoreFor, reviewSinceScore, scoreBand } from '#lib/requests/score-band.ts';
 	import {
 		appealState,
@@ -21,8 +23,10 @@
 		canConfirmSummary,
 		canEdit,
 		canWithdraw,
-		submitBlockers,
+		reviewerAsk,
+		submitBlockerList,
 		whatHappensNext,
+		type Blocker,
 		type RequestState
 	} from '#lib/requests/next.ts';
 	import Badge from '../Badge.svelte';
@@ -96,15 +100,24 @@
 				)
 			: []
 	);
-	const blockers = $derived(
+	const blockers = $derived<Blocker[]>(
 		rs && canChangeEvidence(rs)
 			? [
-					...(active ? [] : ['Verify your identity first. Kinfold checks every member once before a request can go out.']),
-					...submitBlockers(rs),
-					...pool
+					...(active
+						? []
+						: [{ who: 'member' as const, text: 'Verify your identity first. Kinfold checks every member once before a request can go out.' }]),
+					...submitBlockerList(rs),
+					...pool.map((text) => ({ who: 'member' as const, text }))
 				]
 			: []
 	);
+	// Kinfold's own pending steps go last, under their own heading, so the
+	// member's list is only what they can do.
+	const memberBlockers = $derived(blockers.filter((b) => b.who === 'member'));
+	const kinfoldBlockers = $derived(blockers.filter((b) => b.who === 'kinfold'));
+	// The pool can't take this draft as it stands; family and friends can.
+	const canSwitchToPeople = $derived(r != null && r.status === 'draft' && r.funding !== 'people' && pool.length > 0);
+	const ask = $derived(r?.status === 'needs_evidence' && detail ? reviewerAsk(detail.reviews) : null);
 	const appeal = $derived(rs ? appealState(rs) : 'not_refused');
 	// No status line until the fund's minimum is read (and none if that read
 	// fails): just the score and its reasons, never a guessed minimum. The
@@ -128,15 +141,38 @@
 	let noticeBox = $state<HTMLElement>();
 	let actionError = $state<string | null>(null);
 	let errorBox = $state<HTMLElement>();
-	let busy = $state<'submit' | 'withdraw' | 'summary' | null>(null);
+	let busy = $state<'submit' | 'withdraw' | 'summary' | 'switch' | null>(null);
 	let confirmingWithdraw = $state(false);
 
 	async function askWithdraw(open: boolean) {
+		if (open && busy) return;
 		confirmingWithdraw = open;
 		await tick();
 		document.getElementById(open ? 'withdraw-confirm' : 'withdraw-btn')?.focus();
 	}
 	let editing = $state(false);
+
+	/** Open the edit form with focus on its heading; Cancel returns focus to "Edit draft". */
+	async function setEditing(open: boolean) {
+		if (open && (busy || !ctx)) return;
+		editing = open;
+		await tick();
+		document.getElementById(open ? 'edit-h' : 'edit-btn')?.focus();
+	}
+
+	function submit() {
+		// aria-disabled keeps the button (and its reasons) in the Tab order, so
+		// the guard lives here.
+		if (busy || blockers.length > 0 || !r) return;
+		const id = r.id;
+		act('submit', () => submitRequest(id), 'Submitted. Your evidence is being read and scored; the result will show here.');
+	}
+
+	function switchToPeople() {
+		if (busy || !r) return;
+		const values = asPeopleOnly(r);
+		act('switch', () => updateDraft(r.id, values), 'Switched to family and friends. The pool’s limits no longer apply to this draft.');
+	}
 
 	$effect(() => {
 		if (notice && noticeBox) noticeBox.focus();
@@ -157,7 +193,19 @@
 		noticeBox?.focus();
 	}
 
-	async function act(kind: 'submit' | 'withdraw' | 'summary', fn: () => Promise<void>, message: string) {
+	/** Re-read quietly: the evidence panel announces and places focus itself. */
+	async function reload() {
+		await invalidate('app:request');
+		try {
+			await data.detail;
+		} catch {
+			// The error state shows it.
+		}
+		await tick();
+	}
+
+	async function act(kind: NonNullable<typeof busy>, fn: () => Promise<void>, message: string) {
+		if (busy) return;
 		actionError = null;
 		busy = kind;
 		try {
@@ -174,12 +222,17 @@
 	}
 
 	async function retry() {
+		if (retrying) return;
 		retrying = true;
 		try {
 			await invalidate('app:request');
 			await data.detail.catch(() => {});
 		} finally {
 			retrying = false;
+			// The retry button goes with the error block. Every state below has
+			// one h1 with this id; park focus there, as Home does.
+			await tick();
+			document.getElementById('request-h1')?.focus();
 		}
 	}
 
@@ -202,9 +255,9 @@
 
 {#if loadError && detail === undefined}
 	<div class="panel error" role="alert">
-		<h1>We couldn’t load this request</h1>
+		<h1 id="request-h1" tabindex="-1">We couldn’t load this request</h1>
 		<p>{loadError} Nothing on your request has changed.</p>
-		<button type="button" class="btn btn-primary" onclick={retry} disabled={retrying}>
+		<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying ? 'true' : undefined}>
 			{retrying ? 'Trying again…' : 'Try again'}
 		</button>
 	</div>
@@ -213,17 +266,34 @@
 		<span class="visually-hidden">Loading your request…</span>
 		{#each [1, 2, 3] as i (i)}<div class="skeleton" aria-hidden="true"></div>{/each}
 	</div>
+{:else if !data.viewer.member}
+	<!-- No members row: RLS hides every request, so "not found" would mislead.
+	     Same wording as Home, which can't fix it either, so no link back to it. -->
+	<section class="panel" aria-labelledby="request-h1">
+		<h1 id="request-h1" tabindex="-1">Your member profile isn’t set up yet</h1>
+		<p>
+			You’re signed in, but this account doesn’t have a Kinfold member profile yet, so requests
+			aren’t open to you. A profile can’t be created from this page yet.
+		</p>
+		<p>
+			Membership is by invitation for now. Ask the member who invited you to contact the Kinfold
+			team, who will finish setting up your profile. Then sign in again.
+		</p>
+	</section>
 {:else if detail === null || !r || !rs || !status || !next}
 	<div class="panel">
-		<h1>We couldn’t find this request</h1>
-		<p>It isn’t on your account. If someone sent you this link, ask them to invite you instead.</p>
-		<a class="btn btn-ghost" href="/app">Back to your home</a>
+		<h1 id="request-h1" tabindex="-1">We couldn’t find this request</h1>
+		<p>
+			It isn’t on your account. If it’s a relative’s request, open the invite link they sent you.
+			Your own requests are listed on your home page.
+		</p>
+		<a class="btn btn-ghost" href="/app">See your requests</a>
 	</div>
 {:else}
 	<header class="page-head">
 		<p class="eyebrow">Your request</p>
 		<div class="title-row">
-			<h1>{r.title}</h1>
+			<h1 id="request-h1" tabindex="-1">{r.title}</h1>
 			<Badge tone={status.tone} label={status.label} />
 		</div>
 		<dl class="facts">
@@ -256,7 +326,7 @@
 
 	{#if editing && ctx}
 		<section class="block" aria-labelledby="edit-h">
-			<h2 id="edit-h">Edit your draft</h2>
+			<h2 id="edit-h" tabindex="-1">Edit your draft</h2>
 			<RequestForm
 				{ctx}
 				{uid}
@@ -268,13 +338,19 @@
 					editing = false;
 					await refresh('Changes saved.');
 				}}
-				oncancel={() => (editing = false)}
+				oncancel={() => setEditing(false)}
 			/>
 		</section>
 	{:else}
 		<section class="block now" aria-labelledby="now-h">
 			<h2 id="now-h">Where it is now</h2>
 			<p class="now-line">{next.now}</p>
+			{#if ask}
+				<div class="ask">
+					<p><strong>What the reviewer asked for:</strong></p>
+					<blockquote>{ask}</blockquote>
+				</div>
+			{/if}
 			<h3 class="small-h">What happens next</h3>
 			<ol class="steps">
 				{#each next.steps as step (step)}<li>{step}</li>{/each}
@@ -282,8 +358,29 @@
 
 			{#if canChangeEvidence(rs) && blockers.length}
 				<div class="blockers" role="note" aria-labelledby="blockers-h">
-					<p id="blockers-h"><strong>Before you can submit:</strong></p>
-					<ul id="blockers-list">{#each blockers as b (b)}<li>{b}</li>{/each}</ul>
+					<p id="blockers-h"><strong>Before this can be submitted:</strong></p>
+					{#if memberBlockers.length}
+						<ul id="blockers-list">{#each memberBlockers as b (b.text)}<li>{b.text}</li>{/each}</ul>
+					{/if}
+					{#if kinfoldBlockers.length}
+						<ul id="blockers-kinfold" class="kinfold">
+							{#each kinfoldBlockers as b (b.text)}<li>{b.text}</li>{/each}
+						</ul>
+					{/if}
+					{#if canSwitchToPeople}
+						<p class="switch-note">
+							Family and friends don’t have the pool’s limits. You can switch this draft to ask only them,
+							and change it back later while it’s still a draft.
+						</p>
+						<button
+							type="button"
+							class="btn btn-ghost"
+							onclick={switchToPeople}
+							aria-disabled={busy !== null ? 'true' : undefined}
+						>
+							{busy === 'switch' ? 'Switching…' : 'Switch to family and friends'}
+						</button>
+					{/if}
 				</div>
 			{/if}
 
@@ -293,24 +390,41 @@
 
 			<div class="actions">
 				{#if canChangeEvidence(rs)}
+					<!-- aria-disabled, not disabled: the button stays in the Tab order and
+					     its reasons are read on focus. `submit` guards the click. -->
 					<button
 						type="button"
 						class="btn btn-primary"
-						disabled={busy !== null || blockers.length > 0}
-						aria-describedby={blockers.length ? 'blockers-h blockers-list' : undefined}
-						onclick={() =>
-							act('submit', () => submitRequest(r.id), 'Submitted. Your evidence is being read and scored; the result will show here.')}
+						aria-disabled={busy !== null || blockers.length > 0 ? 'true' : undefined}
+						aria-describedby={blockers.length
+							? ['blockers-h', memberBlockers.length ? 'blockers-list' : '', kinfoldBlockers.length ? 'blockers-kinfold' : '']
+									.filter(Boolean)
+									.join(' ')
+							: undefined}
+						onclick={submit}
 					>
 						{busy === 'submit' ? 'Submitting…' : r.status === 'draft' ? 'Submit request' : 'Submit again'}
 					</button>
 				{/if}
 				{#if canEdit(rs)}
-					<button type="button" class="btn btn-ghost" disabled={busy !== null || !ctx} onclick={() => (editing = true)}>
+					<button
+						id="edit-btn"
+						type="button"
+						class="btn btn-ghost"
+						aria-disabled={busy !== null || !ctx ? 'true' : undefined}
+						onclick={() => setEditing(true)}
+					>
 						Edit draft
 					</button>
 				{/if}
 				{#if canWithdraw(rs) && !confirmingWithdraw}
-					<button id="withdraw-btn" type="button" class="btn btn-ghost" disabled={busy !== null} onclick={() => askWithdraw(true)}>
+					<button
+						id="withdraw-btn"
+						type="button"
+						class="btn btn-ghost"
+						aria-disabled={busy !== null ? 'true' : undefined}
+						onclick={() => askWithdraw(true)}
+					>
 						Withdraw
 					</button>
 				{/if}
@@ -327,7 +441,7 @@
 						<button
 							type="button"
 							class="btn btn-primary"
-							disabled={busy !== null}
+							aria-disabled={busy !== null ? 'true' : undefined}
 							onclick={() => act('withdraw', () => withdrawRequest(r.id), 'Withdrawn. Any pledges were released.')}
 						>
 							{busy === 'withdraw' ? 'Withdrawing…' : 'Yes, withdraw it'}
@@ -379,7 +493,9 @@
 				Reviewers are trained members from another state. Their names aren’t shown, so each decision
 				stays about the evidence.
 			</p>
-			<ul class="list">
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="list" role="list">
 				{#each detail.reviews as rv, i (i)}
 					<li class="panel">
 						<p><strong>{decisionLabels[rv.decision]}</strong> <span class="sub-inline">· {when(rv.created_at)}</span></p>
@@ -398,8 +514,11 @@
 		<h2 id="words-h">What you wrote, and what others see</h2>
 		<div class="two">
 			<div class="panel">
-				<h3 class="small-h">Private</h3>
-				<p class="sub">Only you, the scorer and your reviewer read this.</p>
+				<h3 class="small-h">Not on the board</h3>
+				<p class="sub">
+					Read by you, the scorer, reviewers, and family or friends you invite to support this request.
+					Leave other people’s names, plates and addresses out of it.
+				</p>
 				<p class="private-title"><strong>{r.title}</strong></p>
 				{#if r.description}
 					<p class="desc">{r.description}</p>
@@ -437,7 +556,7 @@
 						<button
 							type="button"
 							class="btn btn-primary"
-							disabled={busy !== null}
+							aria-disabled={busy !== null ? 'true' : undefined}
 							onclick={() =>
 								act('summary', () => confirmSummary(r.id), 'Summary confirmed. It can now show on the members-only board.')}
 						>
@@ -450,13 +569,34 @@
 		</div>
 	</section>
 
+	{#if detail.payouts.length}
+		{@const payee = detail.payee?.legal_name ?? payeeWord(r.kind)}
+		<section class="block" aria-labelledby="payouts-h">
+			<h2 id="payouts-h">Payment to {payee}</h2>
+			<p class="note">The payment partner sends the money straight to {payee}. Kinfold never holds it, and it never goes to you.</p>
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="list" role="list">
+				{#each detail.payouts as p (p.id)}
+					{@const t = payoutText(p, payee)}
+					<li class="panel">
+						<div class="title-row">
+							<p><strong>{formatCents(p.amount_cents)}</strong></p>
+							<Badge tone={t.tone} label={t.label} />
+						</div>
+						<p>{t.line}</p>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
 	<EvidencePanel
 		evidence={detail.evidence}
 		requestId={r.id}
 		{uid}
 		kind={r.kind}
 		editable={canChangeEvidence(rs)}
-		onchanged={refresh}
+		onreload={reload}
 	/>
 
 	<!-- Family and friends: create_invite works until the request closes. -->
@@ -469,7 +609,8 @@
 	{#if detail.events.length}
 		<section class="block" aria-labelledby="history-h">
 			<h2 id="history-h">History</h2>
-			<ol class="history">
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ol class="history" role="list">
 				{#each detail.events as ev (ev.id)}
 					<li>
 						<span class="when">{when(ev.at)}</span>
@@ -628,6 +769,27 @@
 		padding-left: 20px;
 	}
 
+	/* Kinfold's own pending step: set apart from the member's to-dos. */
+	.blockers ul.kinfold {
+		margin-top: 10px;
+		padding: 8px 12px 8px 30px;
+		background: var(--surface);
+		border-radius: 8px;
+		color: var(--muted);
+	}
+
+	.switch-note {
+		margin: 10px 0 8px;
+		font-size: 15px;
+	}
+
+	.ask {
+		max-width: 680px;
+		margin-top: 12px;
+		display: grid;
+		gap: 6px;
+	}
+
 	.notice {
 		background: var(--accent-soft);
 		border-left: 4px solid var(--accent);
@@ -652,7 +814,7 @@
 		min-height: 44px;
 	}
 
-	.btn:disabled {
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}

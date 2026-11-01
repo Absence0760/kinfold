@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { goto, invalidate } from '$app/navigation';
 	import type { DraftInput } from '#lib/requests/form.ts';
 	import RequestForm from '../RequestForm.svelte';
@@ -19,12 +20,19 @@
 	const active = $derived(data.viewer.member?.status === 'active');
 	let retrying = $state(false);
 
+	let heading = $state<HTMLElement>();
+
 	async function retry() {
+		if (retrying) return;
 		retrying = true;
 		try {
 			await invalidate('app:request-form');
 		} finally {
 			retrying = false;
+			// The retry button goes with the error block; park focus on the
+			// heading (as Home does) instead of letting it fall to <body>.
+			await tick();
+			heading?.focus();
 		}
 	}
 </script>
@@ -35,10 +43,10 @@
 
 <header class="page-head">
 	<p class="eyebrow">New request</p>
-	<h1>Ask for help</h1>
+	<h1 tabindex="-1" bind:this={heading}>Ask for help</h1>
 	<p class="lead">
-		Start a draft. Only you can see it until you submit. Then add your evidence, check what will be
-		blurred out, and send it.
+		Start a draft. Only you, and family or friends you invite to support it, can see it until you
+		submit. Then add your evidence, check what will be blurred out, and send it.
 	</p>
 	<ol class="path" aria-label="How a request works">
 		<li><strong>Draft</strong> what you need and who should be paid.</li>
@@ -55,11 +63,19 @@
 {/if}
 
 {#if !data.viewer.member}
-	<div class="error" role="alert">
-		<h2>Finish joining first</h2>
-		<p>Your member profile isn’t set up yet, so a request can’t be started.</p>
-		<a class="btn btn-ghost" href="/app">Back to your home</a>
-	</div>
+	<!-- Signed in, but no members row. Same wording as the home page, and no
+	     "back home" button: home can't fix it either, so a link would loop. -->
+	<section class="error" aria-labelledby="setup-h">
+		<h2 id="setup-h">Your member profile isn’t set up yet</h2>
+		<p>
+			You’re signed in, but this account doesn’t have a Kinfold member profile yet, so a request
+			can’t be started. A profile can’t be created from this page yet.
+		</p>
+		<p>
+			Membership is by invitation for now. Ask the member who invited you to contact the Kinfold
+			team, who will finish setting up your profile. Then sign in again.
+		</p>
+	</section>
 {:else}
 	{#await data.ctx}
 		<div class="loading" role="status">
@@ -79,7 +95,7 @@
 		<div class="error" role="alert">
 			<h2>We couldn’t load the form</h2>
 			<p>{err instanceof Error ? err.message : 'Check your connection and try again.'} Nothing was saved.</p>
-			<button type="button" class="btn btn-primary" onclick={retry} disabled={retrying}>
+			<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying ? 'true' : undefined}>
 				{retrying ? 'Trying again…' : 'Try again'}
 			</button>
 		</div>

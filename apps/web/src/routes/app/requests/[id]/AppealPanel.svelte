@@ -54,7 +54,9 @@
 	<h2 id="{base}-h">Appeal</h2>
 
 	{#if appeals.length > 0}
-		<ul class="list">
+		<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+		<!-- svelte-ignore a11y_no_redundant_roles -->
+		<ul class="list" role="list">
 			{#each appeals as a (a.id)}
 				<li class="item">
 					<div class="item-head">
@@ -79,7 +81,9 @@
 			</p>
 			<label for="{base}-reason">Why should the panel look again?</label>
 			<p class="hint" id="{base}-hint">
-				Say what the reviewer may have missed, and any evidence you can add. 10 to {APPEAL_MAX.toLocaleString('en-US')} characters.
+				Explain in writing what the reviewer may have missed. Files can’t be added to a refused request,
+				so if you have a document you couldn’t upload, say what it shows. If the panel upholds your
+				appeal, the reviewer it goes back to can ask you for more evidence. 10 to {APPEAL_MAX.toLocaleString('en-US')} characters.
 			</p>
 			<textarea
 				id="{base}-reason"
@@ -92,7 +96,7 @@
 			<p class="hint" id="{base}-count">{charCount(reason.trim()).toLocaleString('en-US')} of {APPEAL_MAX.toLocaleString('en-US')} characters</p>
 			{#if problem}<p class="problem" id="{base}-problem" role="alert">{problem}</p>{/if}
 			<div>
-				<button type="submit" class="btn btn-primary" disabled={sending}>
+				<button type="submit" class="btn btn-primary" aria-disabled={sending ? 'true' : undefined}>
 					{sending ? 'Sending your appeal…' : 'Send appeal'}
 				</button>
 			</div>
@@ -193,7 +197,7 @@
 		min-height: 44px;
 	}
 
-	.btn:disabled {
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: progress;
 	}

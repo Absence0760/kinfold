@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
-	import { parseDollars } from '#lib/board/board.ts';
+	import { amountCents, amountEcho } from '#lib/requests/amount.ts';
 	import { fundingLabel, payeeWord, poolName, poolRule, type FundingMode, type RequestKind } from '#lib/dashboard/labels.ts';
 	import { createDraft, proposePayee, updateDraft, type FormContext, type PayeeRow } from '#lib/requests/data.ts';
 	import { poolProblems, poolRulesText, usesPool } from '#lib/requests/eligibility.ts';
@@ -81,7 +81,7 @@
 			{
 				kind,
 				funding,
-				amountCents: parseDollars(form.amount),
+				amountCents: amountCents(form.amount),
 				incidentOn: form.incidentOn || null,
 				assetId: form.assetId || null
 			},
@@ -265,7 +265,8 @@
 	<div class="field">
 		<label for={id('title')}>Title</label>
 		<p class="hint" id={id('title-hint')}>
-			A few words for you and the reviewer. It never goes on the board; a redacted summary does.
+			A few words for you and the reviewer. Family or friends you invite to support the request see it
+			too. It never goes on the board; a redacted summary does.
 		</p>
 		<input
 			id={id('title')}
@@ -282,8 +283,9 @@
 	<div class="field">
 		<label for={id('description')}>What happened <span class="opt">(optional)</span></label>
 		<p class="hint" id={id('description-hint')}>
-			Private: only you, the scorer and the reviewer read this. Include anything that helps explain
-			the evidence.
+			Read by you, the scorer, the reviewer, and family or friends you invite to support the
+			request. It never goes on the board. Include anything that helps explain the evidence, but
+			leave out other people’s names, plates and addresses: the evidence can show those privately.
 		</p>
 		<textarea
 			id={id('description')}
@@ -301,7 +303,7 @@
 	<div class="row">
 		<div class="field">
 			<label for={id('amount')}>How much you need</label>
-			<p class="hint" id={id('amount-hint')}>In dollars, as on the estimate or bill.</p>
+			<p class="hint" id={id('amount-hint')}>In dollars, as on the estimate or bill. Use a dot for cents, like 1,250.50.</p>
 			<div class="money">
 				<span aria-hidden="true">$</span>
 				<input
@@ -310,9 +312,11 @@
 					inputmode="decimal"
 					autocomplete="off"
 					aria-invalid={problems.amount ? 'true' : undefined}
-					aria-describedby={describedBy('amount', id('amount-hint'))}
+					aria-describedby={describedBy('amount', id('amount-hint'), id('amount-echo'))}
 				/>
 			</div>
+			<!-- What the form understood, so "12,50" can't silently become $1,250. -->
+			<p class="count" id={id('amount-echo')}>{amountEcho(form.amount) ?? ''}</p>
 			{#if problems.amount}<p class="problem" id={id('amount-problem')}>{problems.amount}</p>{/if}
 		</div>
 
@@ -380,7 +384,7 @@
 					id={id('payee-name')}
 					bind:value={newPayee.legalName}
 					onkeydown={nameKey}
-					autocomplete="organization"
+					autocomplete="off"
 					aria-invalid={payeeProblems.legalName ? 'true' : undefined}
 					aria-describedby={payeeProblems.legalName ? id('payee-name-problem') : undefined}
 				/>
@@ -409,7 +413,11 @@
 
 	{#if isCarKind(kind)}
 		<div class="field">
-			<label for={id('assetId')}>Which car</label>
+			{#if cars.length === 0}
+				<p class="label">Which car</p>
+			{:else}
+				<label for={id('assetId')}>Which car</label>
+			{/if}
 			<p class="hint" id={id('assetId-hint')}>
 				{usesPool(funding)
 					? 'The repair fund only helps with a car registered with Kinfold.'
@@ -436,7 +444,7 @@
 	{/if}
 
 	<div class="actions">
-		<button type="submit" class="btn btn-primary" disabled={saving}>
+		<button type="submit" class="btn btn-primary" aria-disabled={saving ? 'true' : undefined}>
 			{saving ? 'Saving your draft…' : requestId ? 'Save changes' : 'Save draft'}
 		</button>
 		{#if oncancel}
@@ -444,7 +452,10 @@
 		{/if}
 	</div>
 	<span class="visually-hidden" role="status">{saving ? 'Saving your draft…' : ''}</span>
-	<p class="hint">Saving keeps it as a private draft. Nothing is sent until you submit it.</p>
+	<p class="hint">
+		Saving keeps it as a draft that only you, and family or friends you invite to support it, can see.
+		Nothing is sent for scoring until you submit it.
+	</p>
 </form>
 
 <style>
@@ -462,9 +473,11 @@
 	}
 
 	legend,
-	label {
+	label,
+	.label {
 		font-weight: 700;
 		font-size: 16px;
+		margin: 0;
 	}
 
 	legend {
@@ -646,7 +659,8 @@
 		min-height: 44px;
 	}
 
-	.btn:disabled {
+	.btn:disabled,
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: progress;
 	}

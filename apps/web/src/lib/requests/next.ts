@@ -11,7 +11,11 @@ export interface RequestState {
 	kind: RequestKind;
 	funding: FundingMode;
 	hasPayee: boolean;
-	evidence: readonly { redaction_status: RedactionStatus }[];
+	/**
+	 * `stored: false` marks an evidence row whose file never reached storage
+	 * (an upload that didn't finish); absent or true means it is there.
+	 */
+	evidence: readonly { redaction_status: RedactionStatus; stored?: boolean }[];
 	publicSummary: string | null;
 	summaryConfirmed: boolean;
 	/** The member's appeals on this request, oldest first. */
@@ -29,19 +33,55 @@ export const canChangeEvidence = (s: Pick<RequestState, 'status'>): boolean =>
 export const canWithdraw = (s: Pick<RequestState, 'status'>): boolean =>
 	s.status === 'draft' || s.status === 'needs_evidence' || s.status === 'open';
 
+const pieces = (n: number) => (n === 1 ? '1 piece' : `${n} pieces`);
+
+/** One thing still stopping `submit_request`, and whose move it is. */
+export interface Blocker {
+	text: string;
+	/** `kinfold`: a step Kinfold has to take, with nothing for the member to do. */
+	who: 'member' | 'kinfold';
+}
+
 /**
  * What still stops `submit_request`, in its order, leaving out the pool
- * checks (see `poolProblems`). Empty when it can be sent.
+ * checks (see `poolProblems`). Empty when it can be sent. Evidence still
+ * waiting for automatic redaction is Kinfold's step, and is said to be.
  */
-export function submitBlockers(s: RequestState): string[] {
+export function submitBlockerList(s: RequestState): Blocker[] {
 	if (!canChangeEvidence(s)) return [];
-	const out: string[] = [];
-	if (!s.hasPayee) out.push(`Choose who should be paid: ${payeeWord(s.kind)}. The money goes to them, never to you.`);
-	if (s.evidence.length === 0) out.push('Add at least one piece of evidence.');
-	else if (s.evidence.some((e) => e.redaction_status !== 'confirmed'))
-		out.push('Every piece of evidence needs its redacted copy checked and confirmed by you.');
+	const out: Blocker[] = [];
+	const member = (text: string) => out.push({ text, who: 'member' });
+	if (!s.hasPayee) member(`Choose who should be paid: ${payeeWord(s.kind)}. The money goes to them, never to you.`);
+	if (s.evidence.length === 0) {
+		member('Add at least one piece of evidence.');
+		return out;
+	}
+	const unfinished = s.evidence.filter((e) => e.stored === false).length;
+	const stored = s.evidence.filter((e) => e.stored !== false);
+	const count = (st: RedactionStatus) => stored.filter((e) => e.redaction_status === st).length;
+	if (unfinished) {
+		member(
+			unfinished === 1
+				? 'Remove the upload that didn’t finish, then add that file again.'
+				: `Remove the ${unfinished} uploads that didn’t finish, then add those files again.`
+		);
+	}
+	const rejected = count('rejected');
+	if (rejected) member(`Remove ${pieces(rejected)} of evidence whose redacted copy wasn’t usable, and add a clearer copy.`);
+	const toCheck = count('auto_done');
+	if (toCheck) member(`Check the redacted copy of ${pieces(toCheck)} of evidence and confirm nothing private shows.`);
+	const pending = count('pending');
+	if (pending) {
+		out.push({
+			who: 'kinfold',
+			text: `Waiting on Kinfold, not you: Kinfold has to blur private details in ${pieces(pending)} of evidence before the request can be submitted. That step isn’t switched on yet, so there’s nothing for you to do on ${pending === 1 ? 'it' : 'them'} for now.`
+		});
+	}
 	return out;
 }
+
+/** The blockers as plain lines. */
+export const submitBlockers = (s: RequestState): string[] => submitBlockerList(s).map((b) => b.text);
 
 /**
  * Where the request's appeal stands. One appeal per refusal: a request
@@ -78,7 +118,7 @@ export function whatHappensNext(s: RequestState): NextStep {
 		case 'draft': {
 			const blockers = submitBlockers(s);
 			return {
-				now: 'This is a draft. Nobody else can see it yet.',
+				now: 'This is a draft. Only you, and family or friends you invite to support it, can see it.',
 				steps: [
 					...(blockers.length ? blockers : ['Everything’s ready. Submit it when you are.']),
 					'When you submit, your evidence is read and given a legitimacy score, usually within minutes.',
@@ -96,11 +136,12 @@ export function whatHappensNext(s: RequestState): NextStep {
 			};
 		case 'needs_evidence':
 			return {
-				now: 'Nothing has been refused. The evidence so far doesn’t back the request strongly enough yet.',
+				now: 'Your move: add evidence. Nothing has been refused; the evidence so far doesn’t back the request strongly enough yet.',
 				steps: [
-					'Read the reasons under the score: they say what’s missing.',
-					'Add the missing evidence, check its redacted copy, then submit again.',
-					...submitBlockers(s)
+					'Read what’s missing: the reasons under the score, and any reviewer’s note, say what would help.',
+					'Add that evidence, then press Submit again.',
+					...submitBlockers(s),
+					'It’s scored again. If the evidence still looks thin, a trained member reviewer looks at it. A score alone never refuses.'
 				]
 			};
 		case 'in_review':
@@ -155,4 +196,14 @@ export function whatHappensNext(s: RequestState): NextStep {
 		case 'expired':
 			return { now: 'This request ran out of time.', steps: ['Any pledges were released. You can start a new request.'] };
 	}
+}
+
+/**
+ * The note a reviewer wrote when they last asked for more evidence, if that is
+ * the latest decision on the request: shown under "Where it is now" so the
+ * member doesn't have to scroll to find what to add.
+ */
+export function reviewerAsk(reviews: readonly { decision: string; reason: string; created_at: string }[]): string | null {
+	const latest = [...reviews].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
+	return latest?.decision === 'needs_evidence' ? latest.reason : null;
 }

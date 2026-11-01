@@ -3,7 +3,14 @@ import { supabase } from '#lib/supabase/client.ts';
 import type { Database } from '../../../../backend/supabase/database.types.ts';
 import type { AssetRow, FundSettings } from './eligibility.ts';
 import { EVIDENCE_LOCKED, NOT_EDITABLE, explainRequestError, type DbError } from './errors.ts';
-import { evidencePath, sha256Hex, type EvidenceKind } from './evidence.ts';
+import {
+	evidencePath,
+	evidenceType,
+	originalFolders,
+	sha256Hex,
+	unfinishedUploads,
+	type EvidenceKind
+} from './evidence.ts';
 import type { DraftValues, PayeeKind } from './form.ts';
 
 type Tables = Database['public']['Tables'];
@@ -12,7 +19,11 @@ export type PayeeRow = Pick<Tables['payees']['Row'], 'id' | 'kind' | 'legal_name
 export type EvidenceRow = Pick<
 	Tables['evidence']['Row'],
 	'id' | 'kind' | 'original_path' | 'redacted_path' | 'redaction_status' | 'captured_in_app' | 'created_at'
->;
+> & {
+	/** False when the original never reached storage (an upload that didn't finish). */
+	stored: boolean;
+};
+export type PayoutRow = Pick<Tables['payouts']['Row'], 'id' | 'status' | 'amount_cents' | 'sent_at' | 'created_at'>;
 export type AppealRow = Pick<Tables['appeals']['Row'], 'id' | 'reason' | 'status' | 'created_at' | 'decided_at'>;
 export type EventRow = Pick<Tables['request_events']['Row'], 'id' | 'from_status' | 'to_status' | 'at'>;
 export interface ReviewRow {
@@ -75,6 +86,26 @@ export interface RequestDetail {
 	appeals: AppealRow[];
 	reviews: ReviewRow[];
 	events: EventRow[];
+	/** Payouts to the payee, oldest first (the "owners read payouts" policy). */
+	payouts: PayoutRow[];
+}
+
+/**
+ * Which of a request's evidence rows have no original in storage. The member
+ * may list their own folder of `evidence-original` ("members read their
+ * originals"). A folder that can't be listed marks nothing.
+ */
+async function findUnfinished(rows: readonly { id: string; original_path: string }[]): Promise<Set<string>> {
+	if (rows.length === 0) return new Set();
+	const bucket = supabase().storage.from('evidence-original');
+	const listed = new Map<string, Set<string>>();
+	await Promise.all(
+		originalFolders(rows.map((r) => r.original_path)).map(async (folder) => {
+			const { data, error } = await bucket.list(folder, { limit: 1000 });
+			if (!error && data) listed.set(folder, new Set(data.map((o) => o.name)));
+		})
+	);
+	return unfinishedUploads(rows, listed);
 }
 
 /** One of the member's own requests with everything the detail page shows, or null. */
@@ -89,7 +120,7 @@ export async function loadRequest(id: string): Promise<RequestDetail | null> {
 	if (!req.data) return null;
 	const r = req.data;
 
-	const [payee, asset, scores, evidence, appeals, reviews, events] = await Promise.all([
+	const [payee, asset, scores, evidence, appeals, reviews, events, payouts] = await Promise.all([
 		r.payee_id ? db.from('payees').select(PAYEE_COLUMNS).eq('id', r.payee_id).maybeSingle() : null,
 		r.asset_id ? db.from('covered_assets').select(ASSET_COLUMNS).eq('id', r.asset_id).maybeSingle() : null,
 		db.from('scores').select('request_id, score, reasons, model, model_version, created_at').eq('request_id', id),
@@ -100,19 +131,26 @@ export async function loadRequest(id: string): Promise<RequestDetail | null> {
 			.order('created_at'),
 		db.from('appeals').select('id, reason, status, created_at, decided_at').eq('request_id', id).order('created_at'),
 		db.rpc('my_request_reviews', { p_request: id }),
-		db.from('request_events').select('id, from_status, to_status, at').eq('request_id', id).order('id')
+		db.from('request_events').select('id, from_status, to_status, at').eq('request_id', id).order('id'),
+		db.from('payouts').select('id, status, amount_cents, sent_at, created_at').eq('request_id', id).order('created_at')
 	]);
-	for (const res of [payee, asset, scores, evidence, appeals, reviews, events]) if (res?.error) fail(res.error);
+	for (const res of [payee, asset, scores, evidence, appeals, reviews, events, payouts]) if (res?.error) fail(res.error);
+
+	// Only evidence that can still change can be removed and re-added, so only
+	// there is an unfinished upload worth finding.
+	const rows = evidence.data ?? [];
+	const unfinished = r.status === 'draft' || r.status === 'needs_evidence' ? await findUnfinished(rows) : new Set<string>();
 
 	return {
 		request: r,
 		payee: payee?.data ?? null,
 		asset: asset?.data ?? null,
 		score: latestScores(scores.data ?? []).get(id) ?? null,
-		evidence: evidence.data ?? [],
+		evidence: rows.map((e) => ({ ...e, stored: !unfinished.has(e.id) })),
 		appeals: appeals.data ?? [],
 		reviews: reviews.data ?? [],
-		events: events.data ?? []
+		events: events.data ?? [],
+		payouts: payouts.data ?? []
 	};
 }
 
@@ -152,12 +190,18 @@ export async function proposePayee(
  * Add one piece of evidence: the row first (its policy checks the request is
  * still a draft or needs evidence), then the file into the member's own
  * folder of the private `evidence-original` bucket. If the upload fails the
- * row is removed again, so a row never points at a missing file. Gallery
- * uploads are marked `captured_in_app = false`; in-app capture with content
- * credentials comes with the mobile app.
+ * row is removed again. If the tab dies between the two (or that removal
+ * fails), `loadRequest` finds the row with no file and marks it `stored:
+ * false`, and the page asks the member to remove it and add the file again.
+ *
+ * The row goes first on purpose: the other order would leave an original the
+ * member can't delete (there is no storage delete policy) whenever the row is
+ * refused. Gallery uploads are marked `captured_in_app = false`; in-app
+ * capture with content credentials comes with the mobile app.
  */
 export async function addEvidence(uid: string, requestId: string, kind: EvidenceKind, file: File): Promise<void> {
 	const db = supabase();
+	const contentType = evidenceType(file) ?? file.type;
 	const sha256 = await sha256Hex(new Uint8Array(await file.arrayBuffer()));
 	const path = evidencePath(uid, requestId, crypto.randomUUID(), file.name);
 
@@ -168,7 +212,7 @@ export async function addEvidence(uid: string, requestId: string, kind: Evidence
 		.single();
 	if (row.error) fail(row.error);
 
-	const up = await db.storage.from('evidence-original').upload(path, file, { contentType: file.type, upsert: false });
+	const up = await db.storage.from('evidence-original').upload(path, file, { contentType, upsert: false });
 	if (up.error) {
 		await db.from('evidence').delete().eq('id', row.data.id);
 		fail(up.error);

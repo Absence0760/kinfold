@@ -6,6 +6,8 @@ import {
 	canConfirmSummary,
 	canEdit,
 	canWithdraw,
+	reviewerAsk,
+	submitBlockerList,
 	submitBlockers,
 	whatHappensNext,
 	type RequestState
@@ -44,11 +46,50 @@ describe('what the member can do, by status', () => {
 });
 
 describe('submitBlockers (mirrors submit_request)', () => {
-	it('lists a missing payee and unconfirmed redactions', () => {
-		const out = submitBlockers(draft);
+	it('lists a missing payee, and says evidence waiting for redaction is Kinfold’s step', () => {
+		const out = submitBlockerList(draft);
 		expect(out).toHaveLength(2);
-		expect(out[0]).toMatch(/the contractor/);
-		expect(out[1]).toMatch(/confirmed by you/);
+		expect(out[0]).toEqual({ who: 'member', text: expect.stringMatching(/the contractor/) });
+		expect(out[1].who).toBe('kinfold');
+		expect(out[1].text).toMatch(/^Waiting on Kinfold, not you/);
+		expect(out[1].text).toMatch(/1 piece of evidence/);
+		expect(out[1].text).toMatch(/isn’t switched on yet/);
+		expect(out[1].text).toMatch(/nothing for you to do on it/);
+		expect(out[1].text).not.toMatch(/by you/);
+	});
+
+	it('words each evidence state as its own step, member steps before Kinfold’s', () => {
+		const out = submitBlockerList({
+			...draft,
+			hasPayee: true,
+			evidence: [
+				{ redaction_status: 'pending' },
+				{ redaction_status: 'pending' },
+				{ redaction_status: 'auto_done' },
+				{ redaction_status: 'rejected' },
+				{ redaction_status: 'confirmed' },
+				{ redaction_status: 'pending', stored: false }
+			]
+		});
+		expect(out.map((b) => b.who)).toEqual(['member', 'member', 'member', 'kinfold']);
+		expect(out[0].text).toMatch(/Remove the upload that didn’t finish/);
+		expect(out[1].text).toMatch(/Remove 1 piece .* wasn’t usable/);
+		expect(out[2].text).toMatch(/Check the redacted copy of 1 piece/);
+		// The unfinished upload isn't counted as waiting for Kinfold.
+		expect(out[3].text).toMatch(/2 pieces of evidence/);
+		expect(out[3].text).toMatch(/on them for now/);
+	});
+
+	it('counts several unfinished uploads', () => {
+		const out = submitBlockers({
+			...draft,
+			hasPayee: true,
+			evidence: [
+				{ redaction_status: 'pending', stored: false },
+				{ redaction_status: 'pending', stored: false }
+			]
+		});
+		expect(out).toEqual(['Remove the 2 uploads that didn’t finish, then add those files again.']);
 	});
 
 	it('asks for evidence when there is none', () => {
@@ -102,7 +143,10 @@ describe('whatHappensNext', () => {
 
 	it('leads a draft with what still stops it', () => {
 		const n = whatHappensNext(draft);
-		expect(n.now).toMatch(/Nobody else can see it/);
+		// Invited supporters can read the request row, drafts included (the
+		// "supporters read requests they back" policy), so the copy says so.
+		expect(n.now).toMatch(/Only you, and family or friends you invite/);
+		expect(n.now).not.toMatch(/Nobody else/);
 		expect(n.steps[0]).toMatch(/Choose who should be paid/);
 	});
 
@@ -113,6 +157,14 @@ describe('whatHappensNext', () => {
 
 	it('never calls needing evidence a refusal', () => {
 		expect(whatHappensNext({ ...draft, status: 'needs_evidence' }).now).toMatch(/Nothing has been refused/);
+	});
+
+	it('says whose turn it is when more evidence is needed: the member’s, then a reviewer’s', () => {
+		const n = whatHappensNext({ ...draft, status: 'needs_evidence', hasPayee: true, evidence: [] });
+		expect(n.now).toMatch(/^Your move: add evidence/);
+		expect(n.steps[1]).toMatch(/press Submit again/);
+		expect(n.steps.at(-1)).toMatch(/trained member reviewer looks at it/);
+		expect(n.steps.at(-1)).toMatch(/never refuses/);
 	});
 
 	it('says a person refused, and how the appeal stands', () => {
@@ -133,5 +185,28 @@ describe('whatHappensNext', () => {
 		expect(whatHappensNext(open).steps.join(' ')).toMatch(/Confirm the public summary/);
 		expect(whatHappensNext({ ...open, summaryConfirmed: true }).steps.join(' ')).toMatch(/on the members-only board/);
 		expect(whatHappensNext({ ...open, funding: 'people' }).steps.join(' ')).toMatch(/Invite family and friends/);
+	});
+});
+
+describe('reviewerAsk', () => {
+	const at = (d: string) => `2026-10-${d}T12:00:00Z`;
+
+	it('is the latest note when the latest decision asked for evidence', () => {
+		expect(
+			reviewerAsk([
+				{ decision: 'escalate', reason: 'Second opinion.', created_at: at('01') },
+				{ decision: 'needs_evidence', reason: 'Add the shop’s estimate.', created_at: at('03') }
+			])
+		).toBe('Add the shop’s estimate.');
+	});
+
+	it('is null when a later decision replaced it, or there are no reviews', () => {
+		expect(
+			reviewerAsk([
+				{ decision: 'needs_evidence', reason: 'Add the estimate.', created_at: at('01') },
+				{ decision: 'approve', reason: 'Estimate matches.', created_at: at('04') }
+			])
+		).toBe(null);
+		expect(reviewerAsk([])).toBe(null);
 	});
 });

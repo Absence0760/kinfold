@@ -1,7 +1,7 @@
-import { parseDollars } from '#lib/board/board.ts';
 import { localToday } from '#lib/dashboard/format.ts';
 import type { FundingMode, RequestKind } from '#lib/dashboard/labels.ts';
 import type { Database } from '../../../../backend/supabase/database.types.ts';
+import { parseAmount } from './amount.ts';
 
 type Enums = Database['public']['Enums'];
 export type PayeeKind = Enums['payee_kind'];
@@ -128,9 +128,9 @@ export function validateDraft(
 	if (charCount(description) > DESCRIPTION_MAX)
 		problems.description = `Keep the description to ${DESCRIPTION_MAX.toLocaleString('en-US')} characters. It’s ${charCount(description).toLocaleString('en-US')} now.`;
 
-	const cents = parseDollars(input.amount);
-	if (input.amount.trim() === '') problems.amount = 'Enter how much you need, in dollars.';
-	else if (cents == null) problems.amount = 'Enter the amount in dollars and cents, like 1200 or 1,250.50.';
+	const amount = parseAmount(input.amount);
+	const cents = amount.ok ? amount.cents : null;
+	if (!amount.ok) problems.amount = amount.problem;
 
 	if (input.incidentOn === '') problems.incidentOn = 'Enter the date it happened (or the bill arrived).';
 	else if (!isIsoDate(input.incidentOn)) problems.incidentOn = 'Enter a real date.';
@@ -152,6 +152,24 @@ export function validateDraft(
 			// Only cars are covered assets on a request; switching kind drops it.
 			asset_id: isCarKind(kind) ? input.assetId || null : null
 		}
+	};
+}
+
+/**
+ * The same draft asking family and friends only: everything else unchanged.
+ * Offered when the pool can't help (no cover yet, over its cap, an
+ * unregistered car), since family and friends have none of those limits.
+ */
+export function asPeopleOnly(row: DraftValues): DraftValues {
+	return {
+		kind: row.kind,
+		funding: 'people',
+		title: row.title,
+		description: row.description,
+		amount_cents: row.amount_cents,
+		incident_on: row.incident_on,
+		payee_id: row.payee_id,
+		asset_id: row.asset_id
 	};
 }
 

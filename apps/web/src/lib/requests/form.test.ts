@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	appealReasonProblem,
+	asPeopleOnly,
 	charCount,
 	draftToInput,
 	isIsoDate,
@@ -21,6 +22,25 @@ const good: DraftInput = {
 	payeeId: '',
 	assetId: 'car-1'
 };
+
+describe('asPeopleOnly', () => {
+	it('changes only who is asked, and keeps no extra row columns', () => {
+		const row = {
+			kind: 'car_damage' as const,
+			funding: 'both' as const,
+			title: 'Bumper',
+			description: '',
+			amount_cents: 90000,
+			incident_on: '2026-10-20',
+			payee_id: 'p1',
+			asset_id: null,
+			status: 'draft',
+			member_id: 'm1'
+		};
+		const { status: _s, member_id: _m, ...draft } = row;
+		expect(asPeopleOnly(row)).toEqual({ ...draft, funding: 'people' });
+	});
+});
 
 describe('validateDraft', () => {
 	it('turns a good draft into the row, dollars into cents', () => {
@@ -69,6 +89,12 @@ describe('validateDraft', () => {
 		}
 		const r = validateDraft({ ...good, amount: '$2,400' }, '2026-10-31');
 		expect(r.ok && r.values.amount_cents).toBe(240000);
+	});
+
+	it('refuses a comma decimal instead of reading 12,50 as $1,250', () => {
+		const r = validateDraft({ ...good, amount: '12,50' }, '2026-10-31');
+		expect(r.ok).toBe(false);
+		expect(r.ok === false && r.problems.amount).toMatch(/dot for cents/);
 	});
 
 	it('refuses an incident date after the latest the table accepts', () => {
