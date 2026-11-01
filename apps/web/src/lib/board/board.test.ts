@@ -29,6 +29,7 @@ function item(over: Partial<BoardItem> = {}): BoardItem {
 		bandMinCents: 100_000,
 		bandMaxCents: 250_000,
 		scoreBand: 80,
+		minScore: 70,
 		area: 'Pacific',
 		monthOf: '2026-10-01',
 		raisedCents: 0,
@@ -63,6 +64,12 @@ describe('toItems', () => {
 		expect(i.own).toBe(false);
 	});
 
+	it('takes each request’s minimum score from its fund, null when not read', () => {
+		expect(toItems([row()], new Set(), new Map())[0].minScore).toBeNull();
+		const [i] = toItems([row({ kind: 'home_repair' })], new Set(), new Map(), (k) => (k === 'home_repair' ? 65 : 80));
+		expect(i.minScore).toBe(65);
+	});
+
 	it('drops rows without a summary or id', () => {
 		expect(toItems([row({ public_summary: null }), row({ id: null })], new Set(), new Map())).toEqual([]);
 	});
@@ -70,7 +77,7 @@ describe('toItems', () => {
 	it('carries only what the view exposes', () => {
 		const [i] = toItems([row()], new Set(), new Map());
 		expect(Object.keys(i).sort()).toEqual(
-			['amountCents', 'area', 'bandMaxCents', 'bandMinCents', 'id', 'kind', 'monthOf', 'own',
+			['amountCents', 'area', 'bandMaxCents', 'bandMinCents', 'id', 'kind', 'minScore', 'monthOf', 'own',
 				'raisedCents', 'scoreBand', 'status', 'summary'].sort()
 		);
 	});

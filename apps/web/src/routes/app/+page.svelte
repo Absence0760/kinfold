@@ -10,6 +10,7 @@
 		type Tone
 	} from '#lib/dashboard/labels.ts';
 	import { showsRaised } from '#lib/dashboard/requests.ts';
+	import { scoreBand } from '#lib/requests/score-band.ts';
 
 	let { data } = $props();
 
@@ -109,6 +110,8 @@
 							{/if}
 
 							{#if r.score}
+								<!-- Home doesn't read reviews, so the line follows the status alone, never today's minimum. -->
+								{@const band = scoreBand(r.score.score, { status: r.status, minScore: null })}
 								<section class="score" aria-label="Legitimacy score">
 									<p class="score-line">
 										<span class="score-num">{r.score.score}</span>
@@ -117,6 +120,12 @@
 											<span class="sub">How well the evidence backs the request</span>
 										</span>
 									</p>
+									{#if band}
+										<p class="band" class:needs={band.tone === 'needs-evidence'}>
+											<strong>{band.status}</strong> <span class="band-range">(band {band.label})</span>
+											<span class="band-detail">{band.detail}</span>
+										</p>
+									{/if}
 									{#if r.score.reasons.length}
 										<p class="why">Why this score:</p>
 										<ul class="reasons">
@@ -525,6 +534,31 @@
 	.sub {
 		display: block;
 		color: var(--muted);
+		font-size: 14px;
+	}
+
+	/* Status in words, so the colour is never the only signal. Warm only below the minimum. */
+	.band {
+		margin-top: 10px;
+		padding-left: 10px;
+		border-left: 4px solid var(--border);
+		font-size: 15px;
+	}
+
+	.band.needs {
+		border-left-color: var(--warm);
+	}
+
+	.band.needs strong {
+		color: var(--warm);
+	}
+
+	.band-range {
+		color: var(--muted);
+	}
+
+	.band-detail {
+		display: block;
 		font-size: 14px;
 	}
 

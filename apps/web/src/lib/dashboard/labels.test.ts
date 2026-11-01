@@ -4,6 +4,7 @@ import {
 	defaultPlanText,
 	fundingLabel,
 	loanStatusText,
+	poolRule,
 	requestKindLabel,
 	requestSortRank,
 	requestStatusText
@@ -85,5 +86,24 @@ describe('requestSortRank', () => {
 		expect(requestSortRank('draft')).toBeLessThan(requestSortRank('open'));
 		expect(requestSortRank('open')).toBeLessThan(requestSortRank('paid'));
 		expect(requestSortRank('paid')).toBeLessThan(requestSortRank('refused'));
+	});
+});
+
+describe('poolRule', () => {
+	it('claims band payment only for the repair fund; the Home Fund uses its needs formula', () => {
+		for (const kind of KINDS) {
+			const car = kind === 'car_damage' || kind === 'car_deductible';
+			expect(poolRule(kind)).toBe(car ? 'pays by score band' : 'chooses under its needs formula, which isn’t live yet');
+		}
+	});
+
+	it('no Home Fund status hint says it pays by band', () => {
+		for (const kind of KINDS.filter((k) => !k.startsWith('car_'))) {
+			for (const status of REQUEST_STATUSES) {
+				for (const funding of ['people', 'pool', 'both'] as const) {
+					expect(requestStatusText(status, kind, funding).hint).not.toMatch(/band/i);
+				}
+			}
+		}
 	});
 });

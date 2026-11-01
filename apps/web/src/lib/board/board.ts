@@ -1,4 +1,5 @@
 import type { Database } from '../../../../backend/supabase/database.types.ts';
+export { scoreBandLabel } from '#lib/requests/score-band.ts';
 
 // Pure helpers for the members-only request board (/app/board). Everything
 // here works on what the `board_requests` view exposes and nothing more: no
@@ -21,6 +22,8 @@ export interface BoardItem {
 	bandMaxCents: number | null;
 	/** 10-point legitimacy score band: 80 means 80 to 89. */
 	scoreBand: number | null;
+	/** The minimum score of the fund this request draws on (`fund_settings.min_score`); null when not read. */
+	minScore: number | null;
 	/** State, or Census division where the state is small. */
 	area: string | null;
 	/** First day of the month it was posted, `YYYY-MM-DD`. */
@@ -76,7 +79,8 @@ export const statusLabel = (status: RequestStatus): string => STATUS_LABELS[stat
 export function toItems(
 	rows: BoardRow[],
 	ownIds: ReadonlySet<string>,
-	raised: ReadonlyMap<string, number>
+	raised: ReadonlyMap<string, number>,
+	minScoreOf: (kind: RequestKind) => number | null = () => null
 ): BoardItem[] {
 	const items: BoardItem[] = [];
 	for (const r of rows) {
@@ -90,6 +94,7 @@ export function toItems(
 			bandMinCents: r.amount_band_min_cents,
 			bandMaxCents: r.amount_band_max_cents,
 			scoreBand: r.score_band,
+			minScore: minScoreOf(r.kind),
 			area: r.area,
 			monthOf: r.month_of,
 			raisedCents: raised.get(r.id) ?? null,
@@ -199,11 +204,6 @@ export function progress(item: BoardItem): Progress | null {
 			? `${formatCents(raised)} raised of ${formatCents(item.amountCents)}, fully pledged`
 			: `${formatCents(raised)} raised of ${formatCents(item.amountCents)}, ${formatCents(left)} still needed`;
 	return { raisedCents: raised, leftCents: left, percent, text };
-}
-
-/** "80 to 89"; the top band runs to 100. */
-export function scoreBandLabel(band: number): string {
-	return band >= 90 ? `${band} to 100` : `${band} to ${band + 9}`;
 }
 
 const MONTHS = [

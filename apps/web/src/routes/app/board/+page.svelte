@@ -8,7 +8,6 @@
 		monthLabel,
 		payeeLabel,
 		progress,
-		scoreBandLabel,
 		SORT_LABELS,
 		sortItems,
 		statusLabel,
@@ -18,6 +17,9 @@
 		type StatusFilter
 	} from '#lib/board/board.ts';
 	import { loadBoard } from '#lib/board/data.ts';
+	import { poolRule } from '#lib/dashboard/labels.ts';
+	import { fundForKind } from '#lib/requests/form.ts';
+	import { boardBand, scoreBandLabel } from '#lib/requests/score-band.ts';
 	import PledgeForm from './PledgeForm.svelte';
 
 	let { data } = $props();
@@ -94,7 +96,12 @@
 		</button>
 	</div>
 {:else if items === null}
-	<p class="loading" role="status">Loading the board…</p>
+	<div class="loading" role="status" aria-busy="true">
+		<span class="visually-hidden">Loading the board…</span>
+		{#each [1, 2, 3] as i (i)}
+			<div class="skeleton" aria-hidden="true"></div>
+		{/each}
+	</div>
 {:else if items.length === 0}
 	<div class="notice">
 		<p class="notice-title">No requests on the board right now.</p>
@@ -152,6 +159,7 @@
 		<ul class="board">
 			{#each shown as item (item.id)}
 				{@const p = progress(item)}
+				{@const band = item.scoreBand != null ? boardBand(item.scoreBand, fundForKind(item.kind), item.minScore) : null}
 				<li class={item.status}>
 					<div class="top">
 						<span class="kind">{kindLabel(item.kind)}</span>
@@ -167,9 +175,13 @@
 							<dd>{amountText(item)}</dd>
 						</div>
 						{#if item.scoreBand != null}
-							<div>
+							<div class="band">
 								<dt>Legitimacy score</dt>
 								<dd>{scoreBandLabel(item.scoreBand)}</dd>
+								{#if band}
+									<dd class="band-status">{band.status}</dd>
+									<dd class="band-detail">{band.detail}</dd>
+								{/if}
 							</div>
 						{/if}
 						<div>
@@ -196,7 +208,7 @@
 					{/if}
 
 					<p class="paid-to">
-						Pool request: {fundLabel(item.kind)} pays by score band, and members can give on top.
+						Pool request: {fundLabel(item.kind)} {poolRule(item.kind)}, and members can give on top.
 						Paid to {payeeLabel(item.kind)}, never to the member.
 					</p>
 
@@ -234,9 +246,10 @@
 		<p>
 			The legitimacy score, 0 to 100, measures how well a request's evidence supports it: photos
 			that match the estimate, report dates that line up. It isn't a judgement of the person. The
-			board shows it in 10-point bands. The repair fund fills the highest band first, every request
-			in it at the same time, then moves down. A score never refuses a request; only a person can,
-			in writing, with an appeal.
+			board shows it in 10-point bands. The community repair fund fills the highest band first, every
+			request in it at the same time, then moves down as far as its minimum score. The Community Home
+			Fund will choose by a published needs formula, which isn’t live yet, not by band. A request
+			under its fund's current minimum relies on gifts. A score never refuses a request; only a person can, in writing, with an appeal.
 		</p>
 	</details>
 {/if}
@@ -280,7 +293,13 @@
 
 	.loading {
 		margin-top: 24px;
-		color: var(--muted);
+		display: grid;
+		gap: 12px;
+	}
+
+	/* Roughly one request card tall. */
+	.loading .skeleton {
+		height: 180px;
 	}
 
 	.controls {
@@ -406,6 +425,21 @@
 
 	.amount {
 		grid-column: 1 / -1;
+	}
+
+	/* The band's status in words, neutral for every band: a board request is already open, funded or paid. */
+	.band {
+		grid-column: 1 / -1;
+	}
+
+	.facts .band-status {
+		font-weight: 700;
+	}
+
+	.facts .band-detail {
+		font-weight: 400;
+		font-size: 14px;
+		color: var(--muted);
 	}
 
 	.amount dd {

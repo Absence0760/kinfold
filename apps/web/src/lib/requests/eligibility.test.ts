@@ -97,4 +97,11 @@ describe('poolRulesText', () => {
 		expect(t).toMatch(/members-only board/);
 		expect(poolRulesText('home_repair', homeFund)).not.toMatch(/car/);
 	});
+
+	it('says the repair fund pays by band and the Home Fund by its needs formula', () => {
+		expect(poolRulesText('car_damage', protection)).toMatch(/pays by score band/);
+		expect(poolRulesText('down_payment', homeFund)).not.toMatch(/band/);
+		expect(poolRulesText('down_payment', homeFund)).toMatch(/needs formula, which isn’t live yet/);
+		expect(poolRulesText('down_payment', null)).not.toMatch(/band/);
+	});
 });

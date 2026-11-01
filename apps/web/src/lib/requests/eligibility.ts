@@ -1,5 +1,5 @@
 import { formatCents, formatDay, parseDay } from '#lib/dashboard/format.ts';
-import { poolName, requestKindLabel, type FundingMode, type RequestKind } from '#lib/dashboard/labels.ts';
+import { poolName, poolRule, requestKindLabel, type FundingMode, type RequestKind } from '#lib/dashboard/labels.ts';
 import type { Database } from '../../../../backend/supabase/database.types.ts';
 import { fundForKind } from './form.ts';
 
@@ -92,10 +92,10 @@ export function poolProblems(req: PoolCheck, ctx: PoolContext): string[] {
 /** One line on the pool's rules, for the funding choice. */
 export function poolRulesText(kind: RequestKind, settings: FundSettings | null): string {
 	const pool = poolName(kind);
-	if (!settings) return `${cap(pool)} pays requests by legitimacy-score band at each run.`;
+	if (!settings) return `${cap(pool)} ${poolRule(kind)} at each run.`;
 	const car = fundForKind(kind) === 'protection';
 	return [
-		`${cap(pool)} pays by legitimacy-score band at each run, up to ${formatCents(settings.max_request_cents)} per request.`,
+		`${cap(pool)} ${poolRule(kind)} at each run, up to ${formatCents(settings.max_request_cents)} per request.`,
 		`It covers what happens at least ${settings.waiting_days} days after your first dues payment${car ? ', to a car registered with Kinfold at least that long' : ''}.`,
 		'Your request goes on the members-only board, without your name or town.'
 	].join(' ');

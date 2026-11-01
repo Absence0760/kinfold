@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { parseDollars } from '#lib/board/board.ts';
-	import { fundingLabel, payeeWord, poolName, type FundingMode, type RequestKind } from '#lib/dashboard/labels.ts';
+	import { fundingLabel, payeeWord, poolName, poolRule, type FundingMode, type RequestKind } from '#lib/dashboard/labels.ts';
 	import { createDraft, proposePayee, updateDraft, type FormContext, type PayeeRow } from '#lib/requests/data.ts';
 	import { poolProblems, poolRulesText, usesPool } from '#lib/requests/eligibility.ts';
 	import {
@@ -104,7 +104,7 @@
 			case 'pool':
 				return poolRulesText(kind, settings);
 			case 'both':
-				return `Your people and ${poolName(kind)} together. The pool pays by score band at its run; your people can cover the rest.`;
+				return `Your people and ${poolName(kind)} together. The pool ${poolRule(kind)} at its run; your people can cover the rest.`;
 		}
 	}
 

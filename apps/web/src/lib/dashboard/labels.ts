@@ -35,6 +35,15 @@ const isCar = (kind: RequestKind) => kind === 'car_damage' || kind === 'car_dedu
 /** The pooled fund a request of this kind draws on (mirrors `fund_for_kind`). */
 export const poolName = (kind: RequestKind): string => (isCar(kind) ? 'the repair fund' : 'the Home Fund');
 
+/**
+ * How that fund chooses what to pay, to follow its name: the repair fund pays
+ * by legitimacy-score band; the Home Fund is meant to choose by a published
+ * needs formula plus the score (design.md § Product 3), which isn't live yet,
+ * so it gets neither a band claim nor a formula claim.
+ */
+export const poolRule = (kind: RequestKind): string =>
+	isCar(kind) ? 'pays by score band' : 'chooses under its needs formula, which isn’t live yet';
+
 /** Who a request's money goes to, in words. */
 export const payeeWord = (kind: RequestKind): string =>
 	isCar(kind) ? 'the shop' : kind === 'home_repair' ? 'the contractor' : 'the lender or seller';
@@ -71,7 +80,7 @@ export function requestStatusText(status: RequestStatus, kind: RequestKind, fund
 				hint:
 					funding === 'people'
 						? 'Family and friends you invited can pledge to it.'
-						: `It’s on the members’ board, and ${poolName(kind)} pays by score band at its next run.`,
+						: `It’s on the members’ board, and ${poolName(kind)} ${poolRule(kind)} at its next run.`,
 				tone: 'progress'
 			};
 		case 'funded':

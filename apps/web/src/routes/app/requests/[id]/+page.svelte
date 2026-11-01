@@ -14,6 +14,7 @@
 	} from '#lib/requests/data.ts';
 	import { poolProblems, usesPool } from '#lib/requests/eligibility.ts';
 	import { draftToInput, fundForKind, payeeKindLabel } from '#lib/requests/form.ts';
+	import { minScoreFor, reviewSinceScore, scoreBand } from '#lib/requests/score-band.ts';
 	import {
 		appealState,
 		canChangeEvidence,
@@ -105,6 +106,19 @@
 			: []
 	);
 	const appeal = $derived(rs ? appealState(rs) : 'not_refused');
+	// No status line until the fund's minimum is read (and none if that read
+	// fails): just the score and its reasons, never a guessed minimum. The
+	// member's reviews say whether a person has decided yet.
+	const minScore = $derived(r && ctx ? minScoreFor(ctx.settings, fundForKind(r.kind)) : null);
+	const band = $derived(
+		detail?.score && r && minScore != null
+			? scoreBand(detail.score.score, {
+					status: r.status,
+					minScore,
+					review: reviewSinceScore(detail.reviews, detail.score.scoredAt)
+				})
+			: null
+	);
 
 	// --- confirmations ------------------------------------------------------------------
 	// svelte-ignore state_referenced_locally
@@ -331,6 +345,12 @@
 		{#if detail.score}
 			<div class="panel score">
 				<p class="score-line"><span class="score-num">{detail.score.score}</span> <span>out of 100</span></p>
+				{#if band}
+					<p class="band" class:needs={band.tone === 'needs-evidence'}>
+						<strong>{band.status}</strong> <span class="band-range">(band {band.label})</span>
+						<span class="band-detail">{band.detail}</span>
+					</p>
+				{/if}
 				<p class="sub">A score explains the evidence; it isn’t a verdict. A person can still look at it.</p>
 				{#if detail.score.reasons.length}
 					<p class="why">Why this score:</p>
@@ -648,6 +668,29 @@
 		font-weight: 800;
 		color: var(--text);
 		line-height: 1;
+	}
+
+	/* Status in words, so the colour is never the only signal. Warm only below the minimum. */
+	.band {
+		padding-left: 10px;
+		border-left: 4px solid var(--border);
+	}
+
+	.band.needs {
+		border-left-color: var(--warm);
+	}
+
+	.band.needs strong {
+		color: var(--warm);
+	}
+
+	.band-range {
+		color: var(--muted);
+	}
+
+	.band-detail {
+		display: block;
+		font-size: 15px;
 	}
 
 	.why {

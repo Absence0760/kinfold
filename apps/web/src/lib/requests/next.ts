@@ -1,4 +1,4 @@
-import { payeeWord, poolName, type FundingMode, type RequestKind, type RequestStatus } from '#lib/dashboard/labels.ts';
+import { payeeWord, poolName, poolRule, type FundingMode, type RequestKind, type RequestStatus } from '#lib/dashboard/labels.ts';
 import type { Database } from '../../../../backend/supabase/database.types.ts';
 import type { RedactionStatus } from './evidence.ts';
 import { usesPool } from './eligibility.ts';
@@ -121,7 +121,7 @@ export function whatHappensNext(s: RequestState): NextStep {
 					...(usesPool(s.funding)
 						? [
 								s.summaryConfirmed
-									? `It’s on the members-only board, and ${pool} pays by score band at its next run.`
+									? `It’s on the members-only board, and ${pool} ${poolRule(s.kind)} at its next run.`
 									: 'Confirm the public summary below so it can go on the members-only board.'
 							]
 						: []),
