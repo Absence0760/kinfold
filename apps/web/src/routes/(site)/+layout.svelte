@@ -6,7 +6,7 @@
 </script>
 
 <SiteNav />
-<main id="main">
+<main id="main" tabindex="-1">
 	{@render children()}
 </main>
 <SiteFooter />

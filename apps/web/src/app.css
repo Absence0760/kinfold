@@ -14,6 +14,7 @@
 	--shadow: 0 1px 2px rgb(40 30 15 / 6%), 0 8px 24px rgb(40 30 15 / 6%);
 	--radius: 14px;
 	--max: 1120px;
+	--nav-h: 64px;
 
 	color-scheme: light dark;
 }
@@ -41,6 +42,14 @@
 
 html {
 	scroll-behavior: smooth;
+	/* Anchor jumps land below the sticky nav, not under it. */
+	scroll-padding-top: var(--nav-h);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
 }
 
 html,
@@ -144,4 +153,9 @@ a {
 	.section {
 		padding: 64px 0;
 	}
+}
+
+/* The skip link focuses <main>; it is a jump target, not a control. */
+main:focus {
+	outline: none;
 }

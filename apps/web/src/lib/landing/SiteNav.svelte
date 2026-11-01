@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { dev } from '$app/env';
+	import { navSections } from './sections.ts';
 
-	const links = [
-		{ href: '#requests', label: 'How it works' },
-		{ href: '#board', label: 'Requests' },
-		{ href: '#calculator', label: 'Savings' },
-		{ href: '#principles', label: 'Principles' },
-		{ href: '#roadmap', label: 'Roadmap' }
-	];
+	// On phones the links live in a <details> menu, so it opens without
+	// JavaScript on the prerendered page; picking a link closes it again.
+	let menuOpen = $state(false);
 </script>
+
+<a class="skip" href="#main">Skip to content</a>
 
 <header class="nav">
 	<div class="container nav-inner">
@@ -16,9 +15,9 @@
 			<img src="/favicon.svg" alt="" width="30" height="30" />
 			<span>Kinfold</span>
 		</a>
-		<nav aria-label="Sections">
-			{#each links as link (link.href)}
-				<a href={link.href}>{link.label}</a>
+		<nav class="links" aria-label="Sections">
+			{#each navSections as s (s.id)}
+				<a href="#{s.id}">{s.label}</a>
 			{/each}
 		</nav>
 		<span class="badge">Design preview</span>
@@ -27,10 +26,43 @@
 		{#if dev}
 			<a class="signin" href="/signin">Sign in</a>
 		{/if}
+		<details class="menu" bind:open={menuOpen}>
+			<summary aria-label="Menu">
+				<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+					{#if menuOpen}
+						<path d="M6 6l12 12M18 6L6 18" />
+					{:else}
+						<path d="M4 7h16M4 12h16M4 17h16" />
+					{/if}
+				</svg>
+			</summary>
+			<nav aria-label="Sections, menu">
+				{#each navSections as s (s.id)}
+					<a href="#{s.id}" onclick={() => (menuOpen = false)}>{s.label}</a>
+				{/each}
+			</nav>
+		</details>
 	</div>
 </header>
 
 <style>
+	.skip {
+		position: absolute;
+		left: 12px;
+		top: -60px;
+		z-index: 20;
+		padding: 10px 16px;
+		border-radius: 999px;
+		background: var(--accent);
+		color: var(--accent-contrast);
+		font-weight: 600;
+		text-decoration: none;
+	}
+
+	.skip:focus {
+		top: 12px;
+	}
+
 	.nav {
 		position: sticky;
 		top: 0;
@@ -44,7 +76,7 @@
 		display: flex;
 		align-items: center;
 		gap: 28px;
-		height: 64px;
+		height: var(--nav-h);
 	}
 
 	.brand {
@@ -57,7 +89,7 @@
 		text-decoration: none;
 	}
 
-	nav {
+	.links {
 		display: flex;
 		gap: 22px;
 		margin-left: auto;
@@ -90,13 +122,75 @@
 		white-space: nowrap;
 	}
 
-	@media (max-width: 760px) {
-		nav {
+	.menu {
+		display: none;
+	}
+
+	summary {
+		list-style: none;
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		border-radius: 10px;
+		cursor: pointer;
+		color: var(--text);
+	}
+
+	summary::-webkit-details-marker {
+		display: none;
+	}
+
+	summary:hover {
+		background: var(--surface-2);
+	}
+
+	summary path {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 2;
+		stroke-linecap: round;
+	}
+
+	.menu nav {
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: var(--nav-h);
+		display: grid;
+		padding: 8px 20px 16px;
+		background: var(--bg);
+		border-bottom: 1px solid var(--border);
+		box-shadow: var(--shadow);
+	}
+
+	.menu nav a {
+		padding: 12px 0;
+		font-size: 17px;
+		color: var(--text);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.menu nav a:last-child {
+		border-bottom: 0;
+	}
+
+	@media (max-width: 860px) {
+		.links {
 			display: none;
 		}
 
 		.badge {
 			margin-left: auto;
+		}
+
+		.menu {
+			display: block;
+			margin-right: -10px;
+		}
+
+		.nav-inner {
+			gap: 12px;
 		}
 	}
 </style>
