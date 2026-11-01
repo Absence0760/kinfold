@@ -85,7 +85,7 @@
 		<p>Finish setting up your Kinfold account first, then open this link again.</p>
 	</div>
 {:else if phase.step === 'ready' || phase.step === 'accepting'}
-	<section class="block card" aria-labelledby="what-heading">
+	<section class="block card" aria-labelledby="what-heading" aria-busy={phase.step === 'accepting'}>
 		<h2 id="what-heading">What accepting means</h2>
 		<ul class="terms">
 			<li>You'll see the request: what happened, how much is needed and who gets paid.</li>
@@ -97,6 +97,10 @@
 			<li>
 				Money only ever goes to the shop, contractor or lender doing the work, never to the member
 				and never to Kinfold. Nothing is collected until the whole amount is pledged.
+			</li>
+			<li>
+				If you lend, the schedule and what happens if repayments stop (forgive it, repay it when the home is sold if the loan is secured, or
+				talk it through) are agreed and signed by both of you. There is never interest or a late fee.
 			</li>
 			<li>What you give is private. The member sees your pledge; no one else does, and no one is ranked.</li>
 			<li>The link works once, for you. Accepting uses it up.</li>
@@ -202,6 +206,11 @@
 
 	.after {
 		margin-top: 12px;
+	}
+
+	.btn {
+		min-height: 44px;
+		justify-content: center;
 	}
 
 	.btn:disabled {

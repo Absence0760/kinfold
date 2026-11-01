@@ -175,8 +175,14 @@
 	.jump {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 16px;
+		gap: 4px 20px;
 		font-weight: 600;
+	}
+
+	.jump a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
 	}
 
 	.confirmation {
@@ -224,6 +230,10 @@
 		border-radius: var(--radius);
 		padding: 20px;
 		color: var(--muted);
+	}
+
+	.error .btn {
+		min-height: 44px;
 	}
 
 	.error {

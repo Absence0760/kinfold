@@ -92,6 +92,8 @@
 		} catch (err) {
 			error = explainInviteError(err as { message?: string; code?: string });
 			step = 'confirm';
+			await tick();
+			confirmHeading?.focus();
 		}
 	}
 </script>
@@ -362,7 +364,8 @@
 		display: flex;
 		gap: 10px;
 		align-items: flex-start;
-		padding: 10px 12px;
+		padding: 12px;
+		min-height: 44px;
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		background: var(--surface);
@@ -370,7 +373,11 @@
 	}
 
 	.option input {
-		margin-top: 4px;
+		margin-top: 2px;
+		flex: none;
+		width: 20px;
+		height: 20px;
+		accent-color: var(--accent);
 	}
 
 	.option:focus-within {
@@ -387,7 +394,8 @@
 	.chip {
 		font: inherit;
 		font-size: 14px;
-		padding: 6px 12px;
+		padding: 6px 14px;
+		min-height: 44px;
 		border-radius: 999px;
 		border: 1px solid var(--border);
 		background: var(--surface);
@@ -412,6 +420,7 @@
 		background: transparent;
 		color: var(--text);
 		padding: 8px 0;
+		min-height: 42px;
 		width: 100%;
 		min-width: 0;
 	}
@@ -425,10 +434,14 @@
 		outline: none;
 	}
 
+	/* --warm text on --surface-2 is just under 4.5:1 in light mode, so the
+	   words use --text and the warm colour carries the edge. */
 	.problem {
 		font-size: 14px;
-		color: var(--warm);
+		color: var(--text);
 		font-weight: 600;
+		border-left: 4px solid var(--warm);
+		padding-left: 10px;
 	}
 
 	.terms {
@@ -448,6 +461,8 @@
 	.small {
 		padding: 8px 16px;
 		font-size: 14px;
+		min-height: 44px;
+		justify-content: center;
 	}
 
 	.btn:disabled {

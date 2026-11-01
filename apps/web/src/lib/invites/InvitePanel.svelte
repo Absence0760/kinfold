@@ -43,6 +43,7 @@
 	let createError = $state<string | null>(null);
 	let link = $state<{ url: string; relationship: string } | null>(null);
 	let copied = $state<'idle' | 'copied' | 'failed'>('idle');
+	let canShare = $state(false);
 
 	let linkHeading = $state<HTMLElement>();
 	let linkInput = $state<HTMLInputElement>();
@@ -59,7 +60,10 @@
 		}
 	}
 
-	onMount(refresh);
+	onMount(() => {
+		canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+		refresh();
+	});
 
 	async function make(e: SubmitEvent) {
 		e.preventDefault();
@@ -97,6 +101,15 @@
 		}
 	}
 
+	async function share() {
+		if (!link) return;
+		try {
+			await navigator.share({ title: 'Help with a request on Kinfold', url: link.url });
+		} catch {
+			// Closing the share sheet is not an error; the link and Copy button are still there.
+		}
+	}
+
 	function count(n: number, one: string, many: string) {
 		return `${n} ${n === 1 ? one : many}`;
 	}
@@ -107,7 +120,7 @@
 	<p class="lead">
 		Send a private link to someone you know. Once they accept, they can see this request and
 		<strong>give</strong> (a gift, never paid back) or <strong>lend at 0%</strong>: no interest and no
-		late fees, on a monthly schedule you both agree and sign. Every dollar goes to {payeeWord(kind)},
+		late fees, on a monthly schedule you both agree and sign, along with what happens if repayments stop. Every dollar goes to {payeeWord(kind)},
 		never to you or to Kinfold, and nothing is collected until the whole amount is pledged and any
 		loans are signed.
 	</p>
@@ -118,7 +131,7 @@
 			<select
 				id="{uid}-who"
 				bind:value={choice}
-				aria-describedby="{uid}-who-hint{touched && problem ? ` ${uid}-problem` : ''}"
+				aria-describedby="{uid}-who-hint{touched && problem ? ` ${uid}-problem` : ''}{createError ? ` ${uid}-create-error` : ''}"
 				aria-invalid={touched && problem && choice !== 'other' ? 'true' : undefined}
 			>
 				<option value="" disabled>Choose one</option>
@@ -145,7 +158,7 @@
 				<p class="problem" id="{uid}-problem" role="alert">{problem}</p>
 			{/if}
 			{#if createError}
-				<p class="problem" role="alert">{createError}</p>
+				<p class="problem" id="{uid}-create-error" role="alert">{createError}</p>
 			{/if}
 			<div>
 				<button type="submit" class="btn btn-primary small" disabled={creating}>
@@ -162,10 +175,15 @@
 			<p class="link-title" id="{uid}-link-heading" tabindex="-1" bind:this={linkHeading}>
 				Your link for your {link.relationship} is ready
 			</p>
-			<label for="{uid}-link" class="sr">Invite link</label>
+			<label for="{uid}-link" class="visually-hidden">Invite link</label>
 			<div class="link-row">
 				<input id="{uid}-link" readonly value={link.url} bind:this={linkInput} onfocus={(e) => e.currentTarget.select()} />
-				<button type="button" class="btn btn-ghost small" onclick={copy}>Copy link</button>
+				<button type="button" class="btn btn-ghost small" onclick={copy}>
+						{copied === 'copied' ? 'Copied' : 'Copy link'}
+					</button>
+					{#if canShare}
+						<button type="button" class="btn btn-ghost small" onclick={share}>Share…</button>
+					{/if}
 			</div>
 			<p class="hint" role="status">
 				{#if copied === 'copied'}
@@ -291,6 +309,7 @@
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		padding: 8px 10px;
+		min-height: 44px;
 		max-width: 100%;
 		min-width: 0;
 	}
@@ -318,7 +337,7 @@
 	}
 
 	.link-row input {
-		flex: 1 1 220px;
+		flex: 1 1 200px;
 		font-size: 14px;
 	}
 
@@ -370,6 +389,8 @@
 	.small {
 		padding: 8px 16px;
 		font-size: 14px;
+		min-height: 44px;
+		justify-content: center;
 	}
 
 	.btn:disabled {
@@ -377,12 +398,4 @@
 		cursor: progress;
 	}
 
-	.sr {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip: rect(0 0 0 0);
-		white-space: nowrap;
-	}
 </style>
