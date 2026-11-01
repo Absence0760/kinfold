@@ -3,9 +3,9 @@
 		{ title: 'No interest, ever', text: 'Members repay what they borrowed and nothing more.' },
 		{ title: 'Lenders are protected too', text: "Nobody lends money they can't afford to lose." },
 		{ title: 'No profit from hardship', text: 'No late fees. A missed payment starts a plan, not a charge.' },
-		{ title: 'Evidence, not popularity', text: 'Community money is shared by evidence and need, never by who goes viral.' },
+		{ title: 'Evidence, not popularity', text: 'Community money is shared by evidence score (and, for the Home Fund, need), never by who goes viral.' },
 		{ title: 'The home comes first', text: 'Foreclosure is the very last resort, after every other option.' },
-		{ title: 'Open books, private people', text: 'Members see every request, score, payout and fee. Names and towns never show.' },
+		{ title: 'Open books, private people', text: 'Members see every pool request, its score band and outcome. Anyone can see fees and reserves. Names and towns never show.' },
 		{ title: 'Members own it', text: 'One member, one vote. Surplus goes back to members.' },
 		{ title: 'AI advises, people decide', text: 'Every score is explained. Only a person can turn a request down, and you can appeal.' }
 	];
@@ -14,15 +14,15 @@
 <section class="section" id="principles">
 	<div class="container">
 		<p class="eyebrow">Our principles</p>
-		<h2 class="section-title">Written into our bylaws, not just our marketing.</h2>
+		<h2 class="section-title">Going into our bylaws, not just our marketing.</h2>
 		<p class="section-lead">
-			Every feature has to pass all eight. Changing any of them takes a supermajority vote of every
-			member.
+			Every feature has to pass all eight. Changing "no interest" or "no late fees" will take a
+			supermajority vote of all members.
 		</p>
 		<div class="grid">
 			{#each principles as p, i (p.title)}
 				<article>
-					<span class="num">{String(i + 1).padStart(2, '0')}</span>
+					<span class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
 					<h3>{p.title}</h3>
 					<p>{p.text}</p>
 				</article>

@@ -13,8 +13,8 @@
 			text: 'An AI model checks the evidence and explains its score. A low score asks for more evidence; only a person can turn a request down.'
 		},
 		{
-			title: 'Get paid',
-			text: 'Your cover, the community, your people, or all three. Money goes straight to the repair shop or lender, never through a middleman taking a cut.'
+			title: 'Get it paid',
+			text: 'Your cover, the community, your people, or all three. Money goes straight to the repair shop, lender or seller, never to you, so it can only go to the job.'
 		}
 	];
 
@@ -25,7 +25,7 @@
 		},
 		{
 			title: 'The community',
-			text: 'Members pay dues of a small share of their earnings, which buy deductible cover that pays every covered claim in full. A gift-funded repair fund helps with the rest, highest-scoring requests first.'
+			text: 'Members pay dues, a small share of earnings (nothing if you earn little). They buy deductible cover from a licensed partner insurer that pays every covered claim in full. A gift-funded repair fund helps with the rest, highest score band first.'
 		}
 	];
 
@@ -42,8 +42,9 @@
 		<p class="eyebrow">How a request works</p>
 		<h2 class="section-title">One way to ask for help, whatever went wrong.</h2>
 		<p class="section-lead">
-			Insurance claims and home loans work the same way on Kinfold. The only difference is whether
-			the money is a gift, an insured payout, a repair grant, or a zero-interest loan you pay back.
+			Car damage and home help follow the same steps. The only difference is where the money comes
+			from: a gift, cover from a licensed partner insurer, a repair grant, or a zero-interest loan
+			you pay back.
 		</p>
 
 		<ol class="steps">

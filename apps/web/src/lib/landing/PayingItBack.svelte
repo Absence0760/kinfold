@@ -13,7 +13,7 @@
 		},
 		{
 			title: 'Pause',
-			text: 'Pause up to 3 months a year, no permission needed. The schedule moves back; the total never changes.'
+			text: 'Pause up to 3 months in any 12 (the usual allowance), no permission needed. The schedule moves back; the total never changes.'
 		},
 		{
 			title: 'Restructure',
@@ -21,7 +21,7 @@
 		},
 		{
 			title: 'Ask for help',
-			text: 'Post a hardship request so friends or the pool can cover installments.'
+			text: 'Post a hardship request so friends, and later the community, can help with installments.'
 		},
 		{
 			title: 'Forgive part',

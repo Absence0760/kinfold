@@ -4,18 +4,18 @@
 			name: 'Requests between people',
 			when: 'Months 0 to 9',
 			scope: 'The member app, evidence and scoring; family and friends pay as gifts or zero-interest loans. Car damage and home help. No pooled money.',
-			gate: 'Legal review passed, 500 requests scored, reviewers agree with the score 9 times in 10'
+			gate: 'Legal review passed, 500 requests scored, people agree with the score at least 9 times in 10'
 		},
 		{
 			name: 'Community car cover',
 			when: 'Months 9 to 18',
 			scope: 'Dues based on earnings pay for deductible cover from a licensed partner insurer, alongside a gift-funded repair fund and zero-interest repair loans. One state.',
-			gate: 'Claims paid on time, fraud below target, books reconcile daily'
+			gate: 'Requests paid within 7 days, fraud below target, books reconcile daily'
 		},
 		{
 			name: 'Home Fund',
 			when: 'Months 18 to 30',
-			scope: 'Zero-interest home loans through a credit union, mortgage-gap bridging, and matching funds.',
+			scope: 'One city. The Home Fund charity lends at zero interest through a credit union, bridges mortgage gaps, and adds matching funds.',
 			gate: '25 fund loans repaying on time'
 		},
 		{
@@ -37,7 +37,7 @@
 		</p>
 		<ol class="phases">
 			{#each phases as phase, i (phase.name)}
-				<li class:current={i === 0}>
+				<li class:current={i === 0} aria-current={i === 0 ? 'step' : undefined}>
 					<span class="step">Phase {i + 1}{i === 0 ? ' · now' : ''}</span>
 					<h3>{phase.name}</h3>
 					<p class="when">{phase.when}</p>

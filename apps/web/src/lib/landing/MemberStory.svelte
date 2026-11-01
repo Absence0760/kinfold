@@ -1,6 +1,6 @@
 <script lang="ts">
 	const steps = [
-		{ when: 'Day one', text: 'Maria rents and has a thin credit file. She joins Kinfold and pays 1% of her earnings in dues, which buy her deductible cover.' },
+		{ when: 'Day one', text: 'Maria rents and has a thin credit file. She joins Kinfold and pays dues of about 1% of her earnings above a small floor (a design target), which help pay for her deductible cover.' },
 		{
 			when: 'Buying',
 			text: 'She posts a home request and shares it with family. Her aunt lends $30,000 at zero interest, with a written agreement recorded on the home.'
@@ -8,13 +8,13 @@
 		{ when: 'Moving in', text: 'A smaller bank mortgage means Maria pays thousands less in interest.' },
 		{
 			when: 'Year two',
-			text: 'Someone rear-ends her car. She posts a damage request with photos and the police report, scores 96%, and her deductible cover pays the shop in three days.'
+			text: 'Someone rear-ends her car. She posts a damage request with photos and the police report, scores 96%, and her deductible cover pays the shop within days.'
 		},
 		{
 			when: 'Year four',
 			text: 'Her on-time repayments to her aunt build a record that replaces a credit score, and open the Community Home Fund for a roof repair.'
 		},
-		{ when: 'Today', text: 'Maria points her monthly payment at home requests, helping the next family.' }
+		{ when: 'Today', text: 'Maria gives a little each month to the Home Fund, helping the next family.' }
 	];
 </script>
 
@@ -27,6 +27,7 @@
 				Every request you post, every payment you make and every loan you repay adds to one record.
 				That record replaces a credit score and opens help to people banks overlook.
 			</p>
+			<p class="example">An example of how it could go. Maria is made up, and cover starts in Phase 2.</p>
 		</div>
 		<ol>
 			{#each steps as step (step.when)}
@@ -84,6 +85,12 @@
 	li:last-child::before {
 		background: var(--warm);
 		border-color: var(--warm);
+	}
+
+	.example {
+		margin-top: 14px;
+		font-size: 14px;
+		color: var(--muted);
 	}
 
 	.when {

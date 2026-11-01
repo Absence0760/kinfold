@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { allocatePool, type AllocationStatus } from '#lib/requests/allocation.ts';
 	import { formatUsd } from '#lib/core/format.ts';
 
@@ -23,6 +24,19 @@
 	let pool = $state(8_000);
 	const result = $derived(allocatePool(requests, pool));
 	const grants = $derived(new Map(result.allocations.map((a) => [a.id, a])));
+
+	// One short summary for screen readers, settled after the slider stops moving,
+	// so dragging doesn't read out every step.
+	const summary = $derived.by(() => {
+		const count = (s: AllocationStatus) => result.allocations.filter((a) => a.status === s).length;
+		return `With a ${formatUsd(pool)} fund: ${count('funded')} funded, ${count('partial')} partly funded, ${count('waiting')} waiting, ${count('needs-review')} needing more evidence. ${formatUsd(result.remainingPool)} left in the fund.`;
+	});
+	let announcement = $state(untrack(() => summary));
+	$effect(() => {
+		const next = summary;
+		const timer = setTimeout(() => (announcement = next), 700);
+		return () => clearTimeout(timer);
+	});
 </script>
 
 <section class="section section-alt" id="board">
@@ -38,16 +52,27 @@
 		</p>
 
 		<label class="pool">
-			<span>This month's repair fund <strong>{formatUsd(pool)}</strong></span>
-			<input type="range" min="0" max="25000" step="500" bind:value={pool} />
+			<span>This month's repair fund <strong aria-hidden="true">{formatUsd(pool)}</strong></span>
+			<input
+				type="range"
+				min="0"
+				max="25000"
+				step="500"
+				bind:value={pool}
+				aria-valuetext={formatUsd(pool)}
+			/>
 		</label>
 
-		<ul class="board" aria-live="polite">
+		<p class="visually-hidden" aria-live="polite" aria-atomic="true">{announcement}</p>
+
+		<ul class="board" aria-label="Sample requests, highest score first">
 			{#each requests as r (r.id)}
 				{@const a = grants.get(r.id)!}
 				{@const raised = r.funded + a.grant}
 				<li class={a.status}>
-					<span class="score">{r.score}%</span>
+					<span class="score"
+						><span class="visually-hidden">Legitimacy score: </span>{r.score}%</span
+					>
 					<div class="body">
 						<p class="title">{r.title}</p>
 						<div class="bar">
@@ -87,6 +112,9 @@
 
 	input[type='range'] {
 		accent-color: var(--accent);
+		width: 100%;
+		min-height: 44px;
+		margin: 0;
 	}
 
 	.board {
@@ -115,7 +143,7 @@
 	}
 
 	.needs-review .score {
-		color: var(--muted);
+		color: var(--warm);
 	}
 
 	.title {
@@ -143,6 +171,7 @@
 	.meta {
 		font-size: 13px;
 		color: var(--muted);
+		font-variant-numeric: tabular-nums;
 	}
 
 	.status {
@@ -161,7 +190,8 @@
 		color: var(--accent);
 	}
 
-	.partial .status {
+	.partial .status,
+	.needs-review .status {
 		background: var(--warm-soft);
 		color: var(--warm);
 	}
@@ -177,9 +207,15 @@
 			grid-template-columns: 48px 1fr;
 		}
 
+		.board li {
+			padding: 14px 16px;
+			gap: 8px 12px;
+		}
+
 		.status {
 			grid-column: 2;
 			justify-self: start;
+			white-space: normal;
 		}
 	}
 </style>

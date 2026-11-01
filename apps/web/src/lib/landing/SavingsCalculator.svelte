@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { compareSavings } from '#lib/finance/amortization.ts';
 	import { formatUsd } from '#lib/core/format.ts';
 
@@ -11,6 +12,19 @@
 		compareSavings({ loanAmount, annualRatePct: rate, years, zeroInterestAmount: familyAmount })
 	);
 	const savedPerMonth = $derived(result.bankOnly.monthly - result.withKinfold.monthly);
+	const shown = $derived(Math.min(familyAmount, loanAmount));
+
+	// Screen readers get one short summary that settles after the sliders stop
+	// moving, instead of every figure re-read on each step of a drag.
+	const summary = $derived(
+		`You keep ${formatUsd(result.interestSaved)} of interest in the family. Monthly payment ${formatUsd(result.withKinfold.monthly)} with Kinfold, ${formatUsd(result.bankOnly.monthly)} with the bank only.`
+	);
+	let announcement = $state(untrack(() => summary));
+	$effect(() => {
+		const next = summary;
+		const timer = setTimeout(() => (announcement = next), 700);
+		return () => clearTimeout(timer);
+	});
 </script>
 
 <section class="section" id="calculator">
@@ -25,24 +39,53 @@
 		<div class="calc">
 			<div class="inputs">
 				<label>
-					<span>Home loan needed <strong>{formatUsd(loanAmount)}</strong></span>
-					<input type="range" min="50000" max="1000000" step="5000" bind:value={loanAmount} />
+					<span>Home loan needed <strong aria-hidden="true">{formatUsd(loanAmount)}</strong></span>
+					<input
+						type="range"
+						min="50000"
+						max="1000000"
+						step="5000"
+						bind:value={loanAmount}
+						aria-valuetext={formatUsd(loanAmount)}
+					/>
 				</label>
 				<label>
-					<span>Bank interest rate <strong>{rate.toFixed(2)}%</strong></span>
-					<input type="range" min="2" max="10" step="0.05" bind:value={rate} />
+					<span>Bank interest rate <strong aria-hidden="true">{rate.toFixed(2)}%</strong></span>
+					<input
+						type="range"
+						min="2"
+						max="10"
+						step="0.05"
+						bind:value={rate}
+						aria-valuetext="{rate.toFixed(2)}%"
+					/>
 				</label>
 				<label>
-					<span>Term <strong>{years} years</strong></span>
-					<input type="range" min="10" max="30" step="5" bind:value={years} />
+					<span>Term <strong aria-hidden="true">{years} years</strong></span>
+					<input
+						type="range"
+						min="10"
+						max="30"
+						step="5"
+						bind:value={years}
+						aria-valuetext="{years} years"
+					/>
 				</label>
 				<label>
-					<span>From family and community, at 0% <strong>{formatUsd(Math.min(familyAmount, loanAmount))}</strong></span>
-					<input type="range" min="0" max={loanAmount} step="1000" bind:value={familyAmount} />
+					<span>From family and community, at 0% <strong aria-hidden="true">{formatUsd(shown)}</strong></span>
+					<input
+						type="range"
+						min="0"
+						max={loanAmount}
+						step="1000"
+						bind:value={familyAmount}
+						aria-valuetext={formatUsd(shown)}
+					/>
 				</label>
 			</div>
 
-			<div class="results" aria-live="polite">
+			<div class="results">
+				<p class="visually-hidden" aria-live="polite" aria-atomic="true">{announcement}</p>
 				<div class="result-main">
 					<p class="label">Interest you keep in the family</p>
 					<p class="big">{formatUsd(result.interestSaved)}</p>
@@ -109,6 +152,8 @@
 
 	input[type='range'] {
 		width: 100%;
+		min-height: 44px;
+		margin: 0;
 		accent-color: var(--accent);
 	}
 
@@ -128,7 +173,7 @@
 	}
 
 	.big {
-		font-size: clamp(44px, 6vw, 64px);
+		font-size: clamp(36px, 6vw, 64px);
 		font-weight: 800;
 		letter-spacing: -0.03em;
 		line-height: 1.1;
@@ -176,6 +221,17 @@
 
 	@media (max-width: 860px) {
 		.calc {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.inputs,
+		.results {
+			padding: 20px;
+		}
+
+		.compare {
 			grid-template-columns: 1fr;
 		}
 	}

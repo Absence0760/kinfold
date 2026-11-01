@@ -6,9 +6,9 @@
 			lead: 'Share a request with family and friends: a car repair, a down payment, help with a loan.',
 			points: [
 				'They give it, or lend it at zero interest',
-				'Plain-language agreement, with a lien on the home for big loans',
+				'Plain-language agreement, with a lien on the home for bigger loans where the mortgage allows it',
 				'Shared balance, automatic repayments, gentle reminders',
-				'Gift letters your mortgage lender will accept'
+				'Gift letters in the form mortgage lenders ask for'
 			],
 			holds: 'Money moves between people through a payment partner. Kinfold never holds it.'
 		},

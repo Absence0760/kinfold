@@ -36,24 +36,27 @@
 		<aside class="request-card" aria-label="Example request">
 			<div class="row">
 				<span class="kind">{request.kind}</span>
-				<span class="score" title="Legitimacy score">{request.score}<small>%</small></span>
+				<span class="score"
+					><span class="visually-hidden">Legitimacy score: </span>{request.score}<small>%</small></span
+				>
 			</div>
-			<h2>{request.title}</h2>
+			<p class="card-title">{request.title}</p>
 			<p class="amount">{formatUsd(request.amount)} requested</p>
-			<ul class="evidence">
+			<ul class="evidence" aria-label="Evidence uploaded">
 				{#each request.evidence as item (item)}
 					<li>{item}</li>
 				{/each}
 			</ul>
-			<div class="bar" role="img" aria-label="Fully funded">
+			<div class="bar" role="img"
+				aria-label="Fully funded: {formatUsd(raised)} of {formatUsd(request.amount)}">
 				<span style:width="{(raised / request.amount) * 100}%"></span>
 			</div>
-			<ul class="sources">
+			<ul class="sources" aria-label="Where the money came from">
 				{#each request.sources as s (s.label)}
 					<li><span>{s.label}</span><strong>{formatUsd(s.amount)}</strong></li>
 				{/each}
 			</ul>
-			<p class="foot">Funded in 3 days. Paid straight to the repair shop.</p>
+			<p class="foot">Example: funded in 3 days, paid straight to the repair shop.</p>
 		</aside>
 	</div>
 </section>
@@ -126,8 +129,10 @@
 		font-size: 16px;
 	}
 
-	h2 {
+	.card-title {
 		font-size: 22px;
+		font-weight: 700;
+		line-height: 1.2;
 		margin-top: 14px;
 	}
 
@@ -178,6 +183,11 @@
 	.sources li {
 		display: flex;
 		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.sources strong {
+		font-variant-numeric: tabular-nums;
 	}
 
 	.sources span {
@@ -200,6 +210,12 @@
 		.hero-grid {
 			grid-template-columns: 1fr;
 			gap: 36px;
+		}
+	}
+
+	@media (max-width: 420px) {
+		.request-card {
+			padding: 20px;
 		}
 	}
 </style>
