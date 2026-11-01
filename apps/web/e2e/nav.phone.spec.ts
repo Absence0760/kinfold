@@ -32,6 +32,30 @@ test('the section links collapse into a menu that closes after a pick', async ({
 	await expect(page.locator(`#${target.id} h2`)).toBeInViewport();
 });
 
+test('Escape closes the menu and returns focus to its button', async ({ page }) => {
+	await gotoHydrated(page, '/');
+	const summary = page.getByLabel('Menu', { exact: true });
+	const details = page.locator('details.menu');
+
+	await summary.click();
+	await expect(details).toHaveAttribute('open', '');
+	await menuLinks(page).getByRole('link').first().focus();
+	await page.keyboard.press('Escape');
+	await expect(details).not.toHaveAttribute('open');
+	await expect(summary).toBeFocused();
+});
+
+test('tabbing out of the open menu closes it', async ({ page }) => {
+	await gotoHydrated(page, '/');
+	const details = page.locator('details.menu');
+
+	await page.getByLabel('Menu', { exact: true }).click();
+	await expect(details).toHaveAttribute('open', '');
+	await menuLinks(page).getByRole('link').last().focus();
+	await page.keyboard.press('Tab');
+	await expect(details).not.toHaveAttribute('open');
+});
+
 test.describe('without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 

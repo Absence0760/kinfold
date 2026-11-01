@@ -311,7 +311,8 @@
 			<div class="empty">
 				<p><strong>Nothing here yet.</strong></p>
 				<p>
-					Your monthly membership dues, the gifts and loans you give, and any help you receive add up
+					Your monthly membership dues (a small share of what you earn, nothing below a floor, which
+					pays for the group car cover), the gifts and loans you give, and any help you receive add up
 					here once the payment partner has collected the money.
 				</p>
 				<div class="next">

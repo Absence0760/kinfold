@@ -5,7 +5,24 @@
 	// On phones the links live in a <details> menu, so it opens without
 	// JavaScript on the prerendered page; picking a link closes it again.
 	let menuOpen = $state(false);
+	let summary: HTMLElement | undefined = $state();
+
+	// Escape closes the menu and returns focus to its button; tabbing out of
+	// it closes it too, so it never stays open over the page.
+	function onkeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && menuOpen) {
+			menuOpen = false;
+			summary?.focus();
+		}
+	}
+
+	function onfocusout(e: FocusEvent) {
+		const menu = e.currentTarget as HTMLElement;
+		if (!menu.contains(e.relatedTarget as Node | null)) menuOpen = false;
+	}
 </script>
+
+<svelte:window {onkeydown} />
 
 <a class="skip-link" href="#main">Skip to content</a>
 
@@ -26,8 +43,8 @@
 		{#if dev}
 			<a class="signin" href="/signin">Sign in</a>
 		{/if}
-		<details class="menu" bind:open={menuOpen}>
-			<summary aria-label="Menu">
+		<details class="menu" bind:open={menuOpen} {onfocusout}>
+			<summary aria-label="Menu" bind:this={summary}>
 				<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
 					{#if menuOpen}
 						<path d="M6 6l12 12M18 6L6 18" />

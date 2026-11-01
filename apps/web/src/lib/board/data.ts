@@ -2,6 +2,7 @@ import { fundForKind } from '#lib/requests/form.ts';
 import { minScoreFor } from '#lib/requests/score-band.ts';
 import { supabase } from '#lib/supabase/client.ts';
 import { toItems, type BoardItem } from './board.ts';
+import { explainInviteError } from '#lib/invites/errors.ts';
 import { BoardLoadError } from './errors.ts';
 
 /**
@@ -55,15 +56,7 @@ export async function pledgeGift(requestId: string, cents: number): Promise<void
 		p_amount_cents: cents,
 		p_source: 'gift'
 	});
-	if (error) throw new Error(pledgeErrorText(error.message));
-}
-
-/** The backend's messages are already plain; this keeps one fallback. */
-function pledgeErrorText(message: string): string {
-	if (/pledge must be between/.test(message)) {
-		return 'Someone pledged while you were deciding, so less is needed now. Refresh the board and try a smaller amount.';
-	}
-	return message ? `${message[0].toUpperCase()}${message.slice(1)}.` : 'The pledge did not go through.';
+	if (error) throw new Error(explainInviteError(error));
 }
 
 /** Re-read one open request's progress after a pledge. */
