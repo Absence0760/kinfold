@@ -165,7 +165,12 @@
 
 	.pool-share {
 		background: var(--accent);
-		transition: width 0.2s ease;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.pool-share {
+			transition: width 0.2s ease;
+		}
 	}
 
 	.meta {
