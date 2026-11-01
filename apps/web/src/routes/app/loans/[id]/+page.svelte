@@ -34,6 +34,7 @@
 	let detail = $state<LoanDetail | null | undefined>(undefined);
 	let failed = $state(false);
 	let retrying = $state(false);
+	let reloading = $state(false);
 	$effect(() => {
 		let live = true;
 		data.detail.then(
@@ -55,13 +56,16 @@
 	let noticeEl = $state<HTMLElement>();
 
 	async function refresh() {
-		await invalidate('app:loan');
-		// Wait for the reload itself, so the confirmation lands on fresh figures.
+		reloading = true;
 		try {
+			await invalidate('app:loan');
+			// Wait for the reload itself, so the confirmation lands on fresh figures.
 			detail = await data.detail;
 			failed = false;
 		} catch {
 			failed = true;
+		} finally {
+			reloading = false;
 		}
 	}
 
@@ -172,6 +176,7 @@
 		<p class="lead">{view.status.hint}</p>
 	</header>
 
+	<p class="visually-hidden" role="status">{reloading ? 'Updating the loan…' : ''}</p>
 	{#if notice}
 		<p class="notice" role="status" tabindex="-1" bind:this={noticeEl}>{notice}</p>
 	{/if}
@@ -386,7 +391,9 @@
 				No schedule yet. {l.status === 'proposed' ? 'Set one above: it has to add up to exactly the amount lent before you sign.' : ''}
 			</p>
 		{:else}
-			<div class="box table-wrap">
+			<!-- Focusable so keyboard users can scroll the table sideways on a narrow screen. -->
+			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+			<div class="box table-wrap" role="region" aria-label="Payment schedule" tabindex="0">
 				<table>
 					<caption>
 						{view.installments.length} payment{view.installments.length === 1 ? '' : 's'} adding up to
@@ -394,7 +401,7 @@
 					</caption>
 					<thead>
 						<tr>
-							<th scope="col">No.</th>
+							<th scope="col"><span aria-hidden="true">No.</span><span class="visually-hidden">Payment number</span></th>
 							<th scope="col">Due</th>
 							<th scope="col">Amount</th>
 							<th scope="col">Status</th>
@@ -404,9 +411,9 @@
 						{#each view.installments as i (i.seq)}
 							{@const st = installmentText(installmentState(i, l.status, view.missedSeqs.has(i.seq), today))}
 							<tr>
-								<td>{i.seq}</td>
+								<td class="num">{i.seq}</td>
 								<td>{formatDay(i.due_on)}</td>
-								<td>
+								<td class="num">
 									{formatCents(i.amount_cents)}
 									{#if i.paid_cents > 0 && i.paid_cents < i.amount_cents}
 										<span class="sub">{formatCents(i.paid_cents)} paid</span>
@@ -536,11 +543,18 @@
 		font-weight: 400;
 	}
 
+	.notice:focus-visible {
+		outline-offset: 2px;
+	}
+
 	.link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding-inline: 4px;
 		font: inherit;
 		background: none;
 		border: 0;
-		padding: 0;
 		color: var(--accent);
 		text-decoration: underline;
 		cursor: pointer;
@@ -562,6 +576,12 @@
 		text-transform: uppercase;
 	}
 
+	.facts > div:first-child dd strong {
+		display: block;
+		font-size: 26px;
+		line-height: 1.2;
+	}
+
 	.facts dd,
 	.terms-list dd {
 		margin: 2px 0 0;
@@ -572,6 +592,10 @@
 		margin: 0;
 		display: grid;
 		gap: 14px;
+	}
+
+	.num {
+		font-variant-numeric: tabular-nums;
 	}
 
 	.sub {
@@ -596,6 +620,10 @@
 	.table-wrap {
 		padding: 8px 12px;
 		overflow-x: auto;
+	}
+
+	td .sub {
+		white-space: nowrap;
 	}
 
 	table {
@@ -650,6 +678,10 @@
 	.loading {
 		display: grid;
 		gap: 14px;
+	}
+
+	.error .btn {
+		min-height: 44px;
 	}
 
 	.skeleton.tall {

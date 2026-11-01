@@ -44,9 +44,9 @@
 				{#each items as l (l.loan.id)}
 					{@const st = loanStatusText(l.loan.status)}
 					<li>
-						<a class="card" href="/app/loans/{l.loan.id}" aria-labelledby="loan-{l.loan.id}">
+						<a class="card" href="/app/loans/{l.loan.id}">
 							<div class="card-head">
-								<h3 id="loan-{l.loan.id}">
+								<h3>
 									{#if l.role === 'borrower'}
 										You borrowed {formatCents(l.loan.principal_cents)}{l.lenderRelationship
 											? ` from your ${l.lenderRelationship}`
@@ -68,7 +68,7 @@
 								{/if}
 							</p>
 							{#if l.behindCents > 0}
-								<p class="behind"><strong>Behind by {formatCents(l.behindCents)}</strong> · no fee, ever</p>
+								<p class="behind"><strong>Behind by {formatCents(l.behindCents)}.</strong> No fee, ever.</p>
 							{/if}
 							{#if l.loan.status === 'proposed'}
 								<p class="line">Terms, schedule and both signatures are still to agree.</p>
@@ -81,6 +81,8 @@
 		{/if}
 	</section>
 {/snippet}
+
+<p class="visually-hidden" role="status">{retrying ? 'Reloading your loans…' : ''}</p>
 
 {#await data.loans}
 	<div class="loading" role="status">
@@ -169,6 +171,10 @@
 		border-color: var(--accent);
 	}
 
+	.card:focus-visible {
+		border-color: var(--accent);
+	}
+
 	.empty {
 		margin-top: 14px;
 		color: var(--muted);
@@ -208,6 +214,7 @@
 	.line {
 		font-size: 15px;
 		margin-top: 8px;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.behind {
@@ -222,6 +229,7 @@
 	.more {
 		display: inline-block;
 		margin-top: 12px;
+		padding-block: 8px;
 		color: var(--accent);
 		font-weight: 600;
 		font-size: 15px;
@@ -238,4 +246,7 @@
 		gap: 14px;
 	}
 
+	.error .btn {
+		min-height: 44px;
+	}
 </style>
