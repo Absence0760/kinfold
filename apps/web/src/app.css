@@ -9,7 +9,8 @@
 	--accent: #1f6b4f;
 	--accent-soft: #e3efe8;
 	--accent-contrast: #ffffff;
-	--warm: #b4532a;
+	/* AA (≥4.5:1) on --bg, --surface, --surface-2 and --warm-soft. */
+	--warm: #a4471f;
 	--warm-soft: #f7e6dc;
 	--shadow: 0 1px 2px rgb(40 30 15 / 6%), 0 8px 24px rgb(40 30 15 / 6%);
 	--radius: 14px;
@@ -131,6 +132,9 @@ a {
 	border: 1px solid transparent;
 	cursor: pointer;
 	font-size: 15px;
+	/* A comfortable tap target on phones. */
+	min-height: 44px;
+	justify-content: center;
 }
 
 .btn-primary {
