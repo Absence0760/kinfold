@@ -48,7 +48,7 @@ These come from `design.md` and apply to every line of code:
 - **The app never holds member money.** In Phase 1 money moves between people through a payment partner; Kinfold stores records, documents and schedules. Pooled money (community pool, Home Fund) only ever sits with a licensed partner, reached through their API.
 - **Pay the payee, not the member.** Damage requests pay the named shop against its invoice; home requests pay the lender or seller. No code path sends request money to the requester's own account.
 - **Scores are explained and never refuse.** Every legitimacy score stores the model version, inputs and reasons. Code may route a low score to review; only a person's recorded decision can refuse a request.
-- **Shared evidence is redacted; originals are private.** Nothing reaches the members-only board (state and week, never names or towns) without automatic redaction plus the member's confirmation.
+- **Shared evidence is redacted; originals are private.** Nothing reaches the members-only board (state or Census division and month, never names or towns) without automatic redaction plus the member's confirmation.
 - **The money pools stay separate.** Lending data and protection-reserve data live in separate schemas or services with no code path that moves funds between them.
 - **Financial and identity data is sensitive.** Treat loan amounts, income, hardship details and identity documents as PII: encrypted at rest, least-privilege access, audit-logged reads.
 - **Loans repay monthly by default, never with interest or late fees.** Hardship pauses push the schedule back without changing the total. What happens on default is agreed at signing (forgive / repay on sale (secured only) / mediate).

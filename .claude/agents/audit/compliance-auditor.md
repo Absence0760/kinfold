@@ -15,7 +15,7 @@ A member-owned cooperative (US, launch state undecided) where members post reque
 
 - **Identity**: `auth.users` email; `public.members.display_name`, `region` (US state); `private.member_identity` (KYC `provider`, `provider_ref`, `verified_at` — Kinfold keeps the reference, never the documents).
 - **Financial**: verified monthly earnings (via read-only bank link), subscription amounts, loan amounts, repayment history, the reliability record, lender savings (for the lending cap).
-- **Hardship and need**: hardship details and Home Fund need inputs — private. The members-only board (`board_requests`) shows only the redacted summary, kind, amount, score, state and week; the open site shows aggregates (`public_stats`).
+- **Hardship and need**: hardship details and Home Fund need inputs — private. The members-only board (`board_requests`) shows only the redacted summary, kind, amount, score, state (or Census division) and month; the open site shows aggregates (`public_stats`).
 - **Giving record**: what a member has paid in, given, lent and received (`my_giving_record()`) — private to the member.
 - **Evidence**: photos with metadata (location, device), police reports, estimates, contracts, statements; `evidence` rows hold hashes and perceptual hashes. Originals in the private `evidence-original` bucket; redacted copies in `evidence-redacted`, visible to verified members after confirmation. Third parties appear in photos (other drivers, plates, faces).
 - **Biometric-adjacent**: automatic face redaction and photo fingerprinting across requests — may be biometric processing under Illinois BIPA, Texas CUBI, Washington and similar.

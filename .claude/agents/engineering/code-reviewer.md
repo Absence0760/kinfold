@@ -37,7 +37,7 @@ These are the ones a generic reviewer misses. Anything touching money, loans, th
 - **The app never holds member money; pay the payee, not the member.** No code path sends request money to the requester's own account.
 - **The money pools stay separate.** Protection and Home Fund data and funds never cross in one code path.
 - **Scores never refuse.** Code may route a low score to review; only a recorded human decision refuses.
-- **Shared evidence is redacted; originals are private.** Nothing reaches the members-only board (`board_requests`: state and week, never names, towns or exact dates) without redaction plus member confirmation.
+- **Shared evidence is redacted; originals are private.** Nothing reaches the members-only board (`board_requests`: state (or Census division) and month, never names, towns or exact dates) without redaction plus member confirmation.
 - **The giving record is private** and never ranks or refuses requests.
 - **The database enforces the rules** (`docs/backend.md` § Principles 2). A rule from the § Where each rule is enforced table moved out of a constraint, trigger or grant into app or edge-function code is Critical, and each new rule gets a row there and a pgTAP test.
 
