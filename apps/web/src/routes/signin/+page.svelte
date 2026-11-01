@@ -48,127 +48,264 @@
 	<title>Sign in · Kinfold</title>
 </svelte:head>
 
-<main id="main" tabindex="-1" class="signin container">
-	<a class="brand" href="/">
-		<img src="/favicon.svg" alt="" width="30" height="30" />
-		<span>Kinfold</span>
-	</a>
+<div class="auth">
+	<main id="main" tabindex="-1" class="side-form">
+		<div class="form-box">
+			<a class="lockup" href="/" aria-label="Kinfold home">
+				<img src="/favicon.svg" alt="" width="36" height="36" />
+				<span>Kinfold</span>
+			</a>
 
-	<h1>Sign in</h1>
+			<h1>Sign in</h1>
+			<p class="intro">Welcome back. Your requests, loans and private giving record are here.</p>
 
-	{#if !configured}
-		<p class="notice" role="alert">
-			The member area has no Supabase key. Start it with <code>pnpm dev:run:web</code>, which
-			reads the key from the running local stack.
-		</p>
-	{:else}
-		{#if error}
-			<p class="notice" role="alert" id="signin-error">{error}</p>
-		{/if}
+			{#if !configured}
+				<p class="notice" role="alert">
+					The member area has no Supabase key. Start it with <code>pnpm dev:run:web</code>, which
+					reads the key from the running local stack.
+				</p>
+			{:else}
+				{#if error}
+					<p class="notice" role="alert" id="signin-error">{error}</p>
+				{/if}
 
-		{#if showDemo}
-			<section class="demo" aria-labelledby="demo-heading">
-				<h2 id="demo-heading">Demo accounts</h2>
-				<p class="hint">Local development only. Seeded by <code>pnpm dev:db:reset</code>.</p>
-				<ul>
-					{#each DEMO_ACCOUNTS as account (account.email)}
-						<li>
-							<button
-								type="button"
-								class="demo-account"
-								aria-disabled={busy !== null}
-								aria-busy={busy === account.email}
-								onclick={() => submit(account.email, DEMO_PASSWORD, account.email)}
-							>
-								<span class="who">
-									<span class="visually-hidden">Sign in as </span><strong>{account.name}</strong>
-									<span class="roles">{account.roles}</span>
-								</span>
-								<span class="summary">{account.summary}</span>
-								<span class="go" aria-hidden="true">
-									{busy === account.email ? 'Signing in…' : 'Sign in →'}
-								</span>
-							</button>
-						</li>
-					{/each}
-				</ul>
-			</section>
-		{/if}
+				<form
+					class="form"
+					aria-busy={busy === 'form'}
+					onsubmit={(e) => {
+						e.preventDefault();
+						submit(email, password, 'form');
+					}}
+				>
+					<label>
+						Email
+						<input
+							type="email"
+							autocomplete="email"
+							autocapitalize="off"
+							spellcheck="false"
+							required
+							bind:value={email}
+							readonly={busy !== null}
+							aria-invalid={error ? 'true' : undefined}
+							aria-describedby={error ? 'signin-error' : undefined}
+						/>
+					</label>
+					<label>
+						Password
+						<input
+							type="password"
+							autocomplete="current-password"
+							required
+							bind:value={password}
+							readonly={busy !== null}
+							aria-invalid={error ? 'true' : undefined}
+							aria-describedby={error ? 'signin-error' : undefined}
+						/>
+					</label>
+					<button class="btn btn-primary" type="submit" aria-disabled={busy !== null}>
+						{busy === 'form' ? 'Signing in…' : 'Sign in'}
+					</button>
+				</form>
 
-		<form
-			class="form"
-			aria-busy={busy === 'form'}
-			onsubmit={(e) => {
-				e.preventDefault();
-				submit(email, password, 'form');
-			}}
-		>
-			{#if showDemo}<h2>Or with an email</h2>{/if}
-			<label>
-				Email
-				<input
-					type="email"
-					autocomplete="email"
-					autocapitalize="off"
-					spellcheck="false"
-					required
-					bind:value={email}
-					readonly={busy !== null}
-					aria-invalid={error ? 'true' : undefined}
-					aria-describedby={error ? 'signin-error' : undefined}
-				/>
-			</label>
-			<label>
-				Password
-				<input
-					type="password"
-					autocomplete="current-password"
-					required
-					bind:value={password}
-					readonly={busy !== null}
-					aria-invalid={error ? 'true' : undefined}
-					aria-describedby={error ? 'signin-error' : undefined}
-				/>
-			</label>
-			<button class="btn btn-primary" type="submit" aria-disabled={busy !== null}>
-				{busy === 'form' ? 'Signing in…' : 'Sign in'}
-			</button>
-		</form>
-	{/if}
-</main>
+				<!-- Dev only, and kept out of the way: a collapsed strip under the
+				     form, so the page reads like the real sign-in. -->
+				{#if showDemo}
+					<details class="demo">
+						<summary>Dev: sign in as a demo account</summary>
+						<p class="hint">Seeded by <code>pnpm dev:db:reset</code>. Local development only.</p>
+						<ul>
+							{#each DEMO_ACCOUNTS as account (account.email)}
+								<li>
+									<span class="who">
+										<strong>{account.name}</strong>
+										<span class="roles">{account.roles}</span>
+										<span class="summary">{account.summary}</span>
+									</span>
+									<button
+										type="button"
+										class="use"
+										aria-disabled={busy !== null}
+										aria-busy={busy === account.email}
+										onclick={() => submit(account.email, DEMO_PASSWORD, account.email)}
+									>
+										{busy === account.email ? 'Signing in…' : 'Use'}<span class="visually-hidden">
+											{busy === account.email ? '' : ` ${account.name}'s account`}</span
+										>
+									</button>
+								</li>
+							{/each}
+						</ul>
+					</details>
+				{/if}
+			{/if}
+		</div>
+	</main>
+
+	<!-- After the form in the DOM so the page's h1 comes first; shown on the left. -->
+	<aside class="panel-brand" aria-label="About Kinfold">
+		<svg class="art" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+			<!-- Overlapping folds: many hands holding one load. -->
+			<path class="fold f1" d="M-20 300 L120 150 L260 300Z" />
+			<path class="fold f2" d="M80 300 L230 120 L380 300Z" />
+			<path class="fold f3" d="M200 300 L330 170 L460 300Z" />
+			<path class="roof" d="M196 172 L230 140 L264 172" />
+			<rect class="door" x="221" y="200" width="18" height="30" rx="2" />
+		</svg>
+		<div class="copy">
+			<p class="kicker">Kinfold</p>
+			<h2>Help paid by people, not profit.</h2>
+			<ul>
+				<li>No interest and no late fees, ever.</li>
+				<li>Kinfold never holds your money. Requests pay the shop or lender.</li>
+				<li>Scores explain the evidence. Only a person can say no.</li>
+			</ul>
+		</div>
+	</aside>
+</div>
 
 <style>
-	.signin {
-		max-width: 560px;
-		padding-top: 48px;
-		padding-bottom: 64px;
+	.auth {
 		display: grid;
-		gap: 24px;
+		grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);
+		min-height: 100vh;
+		min-height: 100dvh;
 	}
 
-	.brand {
+	/* Contrast on the light ground (--accent-soft): heading and bullets use
+	   --text (≥12:1), the kicker --accent 5.4:1; dark: --accent 6.5:1. */
+	.panel-brand {
+		order: -1;
+		position: sticky;
+		top: 0;
+		max-height: 100dvh;
+		overflow: hidden;
+		background: var(--accent-soft);
+		color: var(--text);
+	}
+
+	.art {
+		position: absolute;
+		inset: auto 0 0 0;
+		width: 100%;
+		height: 60%;
+	}
+
+	.fold {
+		fill: var(--accent);
+	}
+
+	.f1 {
+		opacity: 0.18;
+	}
+
+	.f2 {
+		opacity: 0.3;
+	}
+
+	.f3 {
+		opacity: 0.14;
+	}
+
+	.roof {
+		fill: none;
+		stroke: var(--warm);
+		stroke-width: 6;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+
+	.door {
+		fill: var(--warm);
+		opacity: 0.85;
+	}
+
+	.copy {
+		position: relative;
+		max-width: 30rem;
+		padding: clamp(24px, 6vh, 64px) clamp(24px, 5vw, 64px);
+	}
+
+	.kicker {
+		margin-bottom: 12px;
+		font-weight: 700;
+		font-size: 14px;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--accent);
+	}
+
+	.copy h2 {
+		font-size: clamp(26px, 2.6vw, 36px);
+		line-height: 1.15;
+		margin-bottom: 20px;
+	}
+
+	.copy ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: 10px;
+	}
+
+	.copy li {
+		position: relative;
+		padding-left: 22px;
+	}
+
+	.copy li::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0.55em;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--accent);
+	}
+
+	/* The form starts on the brand copy's top line, so the title doesn't jump
+	   when an error appears above the form. */
+	.side-form {
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		padding: clamp(24px, 6vh, 64px) 20px 40px;
+		background: var(--surface);
+	}
+
+	.form-box {
+		width: 100%;
+		max-width: 440px;
+		display: grid;
+		gap: 20px;
+	}
+
+	.lockup {
 		display: inline-flex;
 		align-items: center;
 		gap: 10px;
+		justify-self: start;
 		font-weight: 700;
-		font-size: 18px;
+		font-size: 21px;
 		color: var(--text);
 		text-decoration: none;
-		justify-self: start;
+		margin-bottom: 8px;
 	}
 
 	h1 {
-		font-size: 32px;
+		font-size: 30px;
 	}
 
-	h2 {
-		font-size: 18px;
+	.intro {
+		color: var(--muted);
+		margin-top: -12px;
 	}
 
 	.hint {
 		color: var(--muted);
 		font-size: 14px;
-		margin-top: 4px;
 	}
 
 	.notice {
@@ -179,81 +316,21 @@
 		padding: 12px 16px;
 	}
 
-	.demo ul {
-		list-style: none;
-		padding: 0;
-		margin: 14px 0 0;
-		display: grid;
-		gap: 10px;
-	}
-
-	.demo-account {
-		width: 100%;
-		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 4px 16px;
-		text-align: left;
-		padding: 14px 16px;
-		background: var(--surface);
-		color: var(--text);
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		font: inherit;
-		cursor: pointer;
-	}
-
-	.demo-account:hover:not([aria-disabled='true']) {
-		border-color: var(--accent);
-	}
-
-	.demo-account[aria-disabled='true'] {
-		cursor: progress;
-		opacity: 0.7;
-	}
-
-	.who {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 4px 10px;
-	}
-
-	.roles {
-		color: var(--muted);
-		font-size: 14px;
-	}
-
-	.summary {
-		grid-column: 1;
-		color: var(--muted);
-		font-size: 14px;
-	}
-
-	.go {
-		grid-column: 2;
-		grid-row: 1 / span 2;
-		align-self: center;
-		color: var(--accent);
-		font-weight: 600;
-		font-size: 14px;
-		white-space: nowrap;
-	}
-
 	.form {
 		display: grid;
 		gap: 14px;
-		padding-top: 8px;
 	}
 
 	label {
 		display: grid;
 		gap: 6px;
 		font-weight: 600;
-		font-size: 14px;
+		font-size: 15px;
 	}
 
 	input {
 		font: inherit;
+		min-height: 44px;
 		padding: 10px 12px;
 		border-radius: 10px;
 		border: 1px solid var(--border);
@@ -261,37 +338,125 @@
 		color: var(--text);
 	}
 
-	input {
-		min-height: 44px;
-	}
-
 	input[aria-invalid='true'] {
 		border-color: var(--warm);
 	}
 
 	.form .btn {
-		justify-self: start;
-		min-height: 44px;
-		justify-content: center;
+		width: 100%;
+		margin-top: 6px;
+		font-size: 16px;
 	}
 
-	.form .btn[aria-disabled='true'] {
+	.form .btn[aria-disabled='true'],
+	.use[aria-disabled='true'] {
 		opacity: 0.7;
 		cursor: progress;
 	}
 
-	@media (max-width: 480px) {
-		.demo-account {
-			grid-template-columns: 1fr;
+	/* Dev shortcut: small, dashed, collapsed. */
+	.demo {
+		border: 1px dashed var(--border);
+		border-radius: var(--radius);
+		background: var(--surface-2);
+		color: var(--muted);
+		font-size: 14px;
+	}
+
+	.demo summary {
+		cursor: pointer;
+		padding: 10px 14px;
+		min-height: 44px;
+		display: flex;
+		align-items: center;
+		font-weight: 600;
+	}
+
+	.demo[open] summary {
+		border-bottom: 1px dashed var(--border);
+	}
+
+	.demo .hint {
+		padding: 10px 14px 0;
+	}
+
+	.demo ul {
+		list-style: none;
+		margin: 0;
+		padding: 6px 14px 10px;
+		display: grid;
+	}
+
+	.demo li {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 6px 0;
+	}
+
+	.demo li + li {
+		border-top: 1px solid var(--border);
+	}
+
+	.who {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0 8px;
+		min-width: 0;
+	}
+
+	.who strong {
+		color: var(--text);
+		font-weight: 600;
+	}
+
+	.summary {
+		flex-basis: 100%;
+	}
+
+	.use {
+		flex: none;
+		min-height: 44px;
+		min-width: 44px;
+		padding: 6px 12px;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		background: var(--surface);
+		color: var(--text);
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.use:hover:not([aria-disabled='true']) {
+		border-color: var(--accent);
+	}
+
+	/* Phones: the panel is a short band, so the title and first field stay
+	   above the keyboard. */
+	@media (max-width: 900px) {
+		.auth {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: auto 1fr;
 		}
 
-		.go {
-			grid-column: 1;
-			grid-row: auto;
+		.panel-brand {
+			position: relative;
+			height: 84px;
 		}
 
-		.form .btn {
-			justify-self: stretch;
+		.art {
+			height: 100%;
+		}
+
+		.copy {
+			display: none;
+		}
+
+		.side-form {
+			padding-top: 24px;
 		}
 	}
 </style>
