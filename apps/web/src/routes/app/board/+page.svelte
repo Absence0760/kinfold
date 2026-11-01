@@ -51,7 +51,12 @@
 	const shown = $derived(items ? sortItems(filterItems(items, kind, status), order) : []);
 	const openCount = $derived(items ? items.filter((i) => i.status === 'open').length : 0);
 
+	// Cards where this member just pledged. Their form stays mounted so the thank-you note
+	// (and focus) isn't removed when the pledge covers what was left.
+	let pledged = $state<Record<string, true>>({});
+
 	function setRaised(id: string, cents: number | null) {
+		pledged[id] = true;
 		if (!items) return;
 		items = items.map((i) => (i.id === id ? { ...i, raisedCents: cents } : i));
 	}
@@ -147,17 +152,17 @@
 		<ul class="board">
 			{#each shown as item (item.id)}
 				{@const p = progress(item)}
-				<li class={item.status} aria-labelledby="sum-{item.id}">
+				<li class={item.status}>
 					<div class="top">
 						<span class="kind">{kindLabel(item.kind)}</span>
 						<span class="status">{statusLabel(item.status)}</span>
 						{#if item.own}<span class="own">Your request</span>{/if}
 					</div>
 
-					<p class="summary" id="sum-{item.id}">{item.summary}</p>
+					<p class="summary">{item.summary}</p>
 
 					<dl class="facts">
-						<div>
+						<div class="amount">
 							<dt>{item.amountCents != null ? 'Asking for' : 'Amount'}</dt>
 							<dd>{amountText(item)}</dd>
 						</div>
@@ -202,16 +207,18 @@
 									This is your request, so you can't pledge to it. Family and friends you invite
 									can give, or lend at 0%.
 								</p>
-							{:else if p && p.leftCents > 0}
+							{:else if p && (p.leftCents > 0 || pledged[item.id])}
 								<PledgeForm
 									{item}
 									leftCents={p.leftCents}
 									onpledged={(cents) => setRaised(item.id, cents)}
 								/>
-								<p class="aside">
-									From the board you can give. Lending at 0% is only for family and friends the
-									member invites.
-								</p>
+								{#if p.leftCents > 0}
+									<p class="aside">
+										From the board you can give. Lending at 0% is only for family and friends the
+										member invites.
+									</p>
+								{/if}
 							{:else if p}
 								<p class="aside">Fully pledged. Thank you to everyone who gave.</p>
 							{/if}
@@ -249,7 +256,9 @@
 	}
 
 	.small {
-		padding: 8px 16px;
+		min-height: 44px;
+		justify-content: center;
+		padding: 8px 18px;
 		font-size: 14px;
 	}
 
@@ -299,6 +308,7 @@
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		padding: 8px 10px;
+		min-height: 44px;
 	}
 
 	.count {
@@ -352,9 +362,10 @@
 		white-space: nowrap;
 	}
 
+	/* Body text colour on the soft fill: warm text on warm-soft is under 4.5:1 at this size. */
 	.open .status {
 		background: var(--warm-soft);
-		color: var(--warm);
+		color: var(--text);
 	}
 
 	.funded .status,
@@ -390,6 +401,16 @@
 		margin: 0;
 		font-weight: 600;
 		overflow-wrap: anywhere;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.amount {
+		grid-column: 1 / -1;
+	}
+
+	.amount dd {
+		font-size: 22px;
+		line-height: 1.2;
 	}
 
 	.bar {
@@ -434,6 +455,7 @@
 
 	.explain summary {
 		cursor: pointer;
+		padding: 10px 0;
 		font-weight: 600;
 	}
 
@@ -449,6 +471,10 @@
 
 		.facts {
 			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+
+		.amount {
+			grid-column: auto;
 		}
 	}
 </style>

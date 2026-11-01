@@ -53,6 +53,12 @@
 		touched = true;
 	}
 
+	async function change() {
+		step = 'amount';
+		await tick();
+		amountInput?.focus();
+	}
+
 	async function review(e: SubmitEvent) {
 		e.preventDefault();
 		touched = true;
@@ -76,6 +82,8 @@
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'The pledge did not go through.';
 			step = 'confirm';
+			await tick();
+			confirmHeading?.focus();
 		}
 	}
 </script>
@@ -104,6 +112,7 @@
 				inputmode="decimal"
 				autocomplete="off"
 				aria-describedby="{uid}-hint{touched && problem ? ` ${uid}-problem` : ''}"
+				aria-errormessage={touched && problem ? `${uid}-problem` : undefined}
 				aria-invalid={touched && problem ? 'true' : undefined}
 			/>
 		</div>
@@ -117,7 +126,7 @@
 		</div>
 	</form>
 {:else if step === 'confirm' || step === 'sending'}
-	<div class="panel" role="group" aria-labelledby="{uid}-confirm">
+	<div class="panel" role="group" aria-labelledby="{uid}-confirm" aria-busy={step === 'sending'}>
 		<p class="confirm-title" id="{uid}-confirm" tabindex="-1" bind:this={confirmHeading}>
 			Give {formatCents(cents ?? 0)} to this request?
 		</p>
@@ -132,6 +141,9 @@
 		{#if error}
 			<p class="problem" role="alert">{error}</p>
 		{/if}
+		{#if step === 'sending'}
+			<p class="visually-hidden" role="status">Sending your pledge…</p>
+		{/if}
 		<div class="actions">
 			<button type="button" class="btn btn-primary small" onclick={send} disabled={step === 'sending'}>
 				{step === 'sending' ? 'Pledging…' : `Pledge ${formatCents(cents ?? 0)}`}
@@ -139,7 +151,7 @@
 			<button
 				type="button"
 				class="btn btn-ghost small"
-				onclick={() => (step = 'amount')}
+				onclick={change}
 				disabled={step === 'sending'}>Change amount</button
 			>
 			<button type="button" class="btn btn-ghost small" onclick={cancel} disabled={step === 'sending'}>
@@ -156,7 +168,9 @@
 
 <style>
 	.small {
-		padding: 8px 16px;
+		min-height: 44px;
+		justify-content: center;
+		padding: 8px 18px;
 		font-size: 14px;
 	}
 
@@ -187,7 +201,8 @@
 	.chip {
 		font: inherit;
 		font-size: 14px;
-		padding: 6px 12px;
+		padding: 8px 14px;
+		min-height: 44px;
 		border-radius: 999px;
 		border: 1px solid var(--border);
 		background: var(--surface);
@@ -211,7 +226,10 @@
 		border: 0;
 		background: transparent;
 		color: var(--text);
-		padding: 8px 0;
+		padding: 10px 0;
+		min-height: 44px;
+		box-sizing: border-box;
+		font-variant-numeric: tabular-nums;
 		width: 100%;
 		min-width: 0;
 	}
@@ -232,8 +250,10 @@
 
 	.problem {
 		font-size: 14px;
-		color: var(--warm);
+		color: var(--text);
 		font-weight: 600;
+		border-left: 4px solid var(--warm);
+		padding-left: 10px;
 	}
 
 	.terms {
@@ -252,7 +272,9 @@
 
 	.done {
 		font-size: 14px;
-		color: var(--accent);
+		color: var(--text);
+		border-left: 4px solid var(--accent);
+		padding-left: 10px;
 		font-weight: 600;
 	}
 </style>
