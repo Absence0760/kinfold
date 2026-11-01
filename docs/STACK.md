@@ -18,6 +18,7 @@ Code layout in `apps/web/src/lib`: `auth/` (session helpers, the dev demo accoun
 | Command | Does |
 | --- | --- |
 | `pnpm setup` | Install deps and the gitleaks pre-commit hook. The backend also needs Docker running and the Supabase CLI |
+| `pnpm setup:e2e` | Download the Chromium build Playwright drives (once per machine, and after a `@playwright/test` bump) |
 | `pnpm dev:db:up` / `dev:db:down` | Start / stop the local Supabase stack |
 | `pnpm dev:db:reset` | Re-apply every migration and `seed.sql` to the local DB |
 | `pnpm dev:db:status` | Local URLs, ports and keys of the running stack |
@@ -27,9 +28,20 @@ Code layout in `apps/web/src/lib`: `auth/` (session helpers, the dev demo accoun
 | `pnpm build:web` | Prerender to `apps/web/build/`. S3 + CloudFront must serve `200.html` for unknown paths so `/app/*` loads |
 | `pnpm preview:web` | Serve the production build on 7790 |
 | `pnpm check` | svelte-check typecheck |
-| `pnpm test` | Vitest unit tests + the root-scripts guard + pgTAP (needs `dev:db:up` first) |
+| `pnpm test` | Vitest unit tests + the root-scripts guard + pgTAP (needs `dev:db:up` first). Does not run the e2e tests |
+| `pnpm test:web:e2e` | Playwright end-to-end tests of the public site: builds it and serves it with `vite preview` on 7790 (reuses a server already on 7790 outside CI), then runs desktop Chrome and a Pixel 7 phone. Needs `setup:e2e` once |
 | `pnpm test:backend:db` | pgTAP only: schema, invariants, RLS |
 | `pnpm gen:types` | Regenerate `apps/backend/supabase/database.types.ts` from the local schema; commit the result |
+
+## End-to-end tests
+
+Playwright tests live in `apps/web/e2e/`, outside the Vitest glob (`src/**/*.{test,spec}.ts`); config in `apps/web/playwright.config.ts`. They run against the production build, so they see the prerendered HTML that ships. Two projects: `desktop` and `phone` (Pixel 7, under the 860px breakpoint where the nav becomes the "Menu" `<details>`). A `*.desktop.spec.ts` file runs only on desktop, `*.phone.spec.ts` only on the phone, and any other spec runs on both. `retries: 0`: a flaky test is a bug to fix (root `CLAUDE.md`).
+
+- **Wait on real signals.** The root layout sets `<html data-hydrated="true">` once the app hydrates; `gotoHydrated()` in `e2e/helpers.ts` waits for it before touching controls that need JavaScript (sliders, the phone menu closing after a pick). Content checks don't need it, since the HTML is prerendered.
+- **Expected figures come from the app's own pure modules** (`#lib/finance`, `#lib/core/format`, `#lib/landing/sections`), imported by relative path, so a test can't drift from the maths it checks.
+- **No-JS coverage** uses `test.use({ javaScriptEnabled: false })` and asserts that `data-hydrated` is absent.
+- **Not covered yet: the member area** (`/signin`, `/app/*`), because it needs the local Supabase stack. To add it: a separate Playwright project (or config) whose tests start with `pnpm dev:db:up && pnpm dev:db:reset`, run against a build pointed at the local stack (`PUBLIC_SUPABASE_URL` from `.env.development`, the anon key read from `supabase status` the way `bin/dev-run-web.sh` does it), sign in as a seeded demo account, and keep it out of the default `test:web:e2e` run so it still needs no Docker.
+- **No CI job yet.** No workflow runs the web tests today. When one is added, run `pnpm setup:e2e` (cache `~/.cache/ms-playwright` keyed on the `@playwright/test` version) and then `pnpm test:web:e2e`; with `CI` set, the config reuses no server, forbids `test.only` and writes an HTML report to `apps/web/playwright-report/`.
 
 ## Backend
 

@@ -53,13 +53,16 @@
 		background: color-mix(in srgb, var(--bg) 88%, transparent);
 		backdrop-filter: blur(10px);
 		border-bottom: 1px solid var(--border);
+		/* The whole bar, border included, is --nav-h tall, so the page's
+		   scroll-padding-top (app.css) lands anchors exactly below it. */
+		height: var(--nav-h);
 	}
 
 	.nav-inner {
 		display: flex;
 		align-items: center;
 		gap: 28px;
-		height: var(--nav-h);
+		height: 100%;
 	}
 
 	.brand {

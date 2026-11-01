@@ -7,8 +7,9 @@
     "node": ">=22.17"
   },
   "scripts": {
-    "//-- setup --": "One-time bootstrap after a fresh clone. The backend (dev:db:*, test:backend:db, gen:types) also needs Docker running and the Supabase CLI on PATH.",
+    "//-- setup --": "One-time bootstrap after a fresh clone; setup:e2e adds the Chromium build Playwright needs (test:web:e2e). The backend (dev:db:*, test:backend:db, gen:types) also needs Docker running and the Supabase CLI on PATH.",
     "setup": "pnpm install && pre-commit install",
+    "setup:e2e": "pnpm -C apps/web e2e:install",
     "//-- db --": "Local Supabase stack (apps/backend, Postgres 17): API 54721, DB 54722, Studio 54723, Mailpit 54724. Needs Docker. Migrations + pgTAP tests in apps/backend/supabase.",
     "dev:db:up": "pnpm -C apps/backend db:up",
     "dev:db:down": "pnpm -C apps/backend db:down",
@@ -23,9 +24,10 @@
     "//-- check --": "Typecheck every workspace.",
     "check": "pnpm run check:web",
     "check:web": "pnpm -C apps/web check",
-    "//-- test --": "Vitest unit tests beside the modules they cover, the root-scripts guard, and pgTAP (schema, invariants, RLS). test:backend:db needs dev:db:up first.",
+    "//-- test --": "Vitest unit tests beside the modules they cover, the root-scripts guard, and pgTAP (schema, invariants, RLS). test:backend:db needs dev:db:up first. test:web:e2e (Playwright, apps/web/e2e) builds the site and serves it on 7790, needs setup:e2e once, and is not part of `test`.",
     "test": "pnpm run test:web && pnpm run test:scripts && pnpm run test:backend:db",
     "test:web": "pnpm -C apps/web test",
+    "test:web:e2e": "pnpm -C apps/web test:e2e",
     "test:scripts": "node scripts/check_root_scripts.mjs",
     "test:backend:db": "pnpm -C apps/backend test:db",
     "//-- gen --": "Regenerate apps/backend/supabase/database.types.ts from the live local schema (needs dev:db:up). Commit the result.",
