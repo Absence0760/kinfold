@@ -3,14 +3,14 @@
 		{
 			name: 'Requests between people',
 			when: 'Months 0 to 9',
-			scope: 'The member app, evidence and scoring; family and friends pay as gifts or zero-interest loans. Car damage and home help. No pooled money.',
+			scope: 'The member app, evidence and scoring; family and friends pay as gifts or zero-interest loans. Car damage and home help. No pooled money (no shared pot of members’ money).',
 			gate: 'Legal review passed, 500 requests scored, people agree with the score at least 9 times in 10'
 		},
 		{
 			name: 'Community car cover',
 			when: 'Months 9 to 18',
-			scope: 'Dues based on earnings pay for deductible cover from a licensed partner insurer, alongside a gift-funded repair fund and zero-interest repair loans. One state.',
-			gate: 'Requests paid within 7 days, fraud below target, books reconcile daily'
+			scope: 'Dues based on earnings pay for deductible cover (a policy that pays the deductible, the part of a repair bill you pay first) from a licensed partner insurer, alongside a gift-funded repair fund and zero-interest repair loans. One state.',
+			gate: 'Requests paid within 7 days, fraud below target, every payment is checked against the payment partner’s records daily'
 		},
 		{
 			name: 'Home Fund',
@@ -33,17 +33,18 @@
 		<h2 class="section-title">Each step starts only when the last one proves safe.</h2>
 		<p class="section-lead">
 			We start with requests paid by people you know, which holds nobody's money, and add the
-			community pool only once scoring has proved fair.
+			community pool only once scoring has proved fair. Today Kinfold is in design: nothing on
+			this roadmap is running yet.
 		</p>
 		<ol class="phases">
 			{#each phases as phase, i (phase.name)}
 				<li class:current={i === 0} aria-current={i === 0 ? 'step' : undefined}>
-					<span class="step">Phase {i + 1}{i === 0 ? ' · now' : ''}</span>
+					<span class="step">Phase {i + 1}{i === 0 ? ' · in design' : ' · planned'}</span>
 					<h3>{phase.name}</h3>
 					<p class="when">{phase.when}</p>
 					<p>{phase.scope}</p>
 					{#if phase.gate}
-						<p class="gate"><span>Gate</span>{phase.gate}</p>
+						<p class="gate"><span>We move on when</span>{phase.gate}</p>
 					{/if}
 				</li>
 			{/each}

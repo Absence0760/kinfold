@@ -8,10 +8,18 @@
 	import MemberStory from '#lib/landing/MemberStory.svelte';
 	import Principles from '#lib/landing/Principles.svelte';
 	import Roadmap from '#lib/landing/Roadmap.svelte';
+	import Closing from '#lib/landing/Closing.svelte';
 </script>
 
 <svelte:head>
 	<title>Kinfold · Help paid by people, not profit</title>
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content="Kinfold" />
+	<meta property="og:title" content="Kinfold · Zero-interest help from the people around you" />
+	<meta property="og:description" content="A member-owned cooperative being built so families and communities can help each other without interest. Design preview, not open yet." />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Kinfold · Zero-interest help from the people around you" />
+	<meta name="twitter:description" content="A member-owned cooperative being built so families and communities can help each other without interest. Design preview, not open yet." />
 </svelte:head>
 
 <Hero />
@@ -23,3 +31,4 @@
 <MemberStory />
 <Principles />
 <Roadmap />
+<Closing />

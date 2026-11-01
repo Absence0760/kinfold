@@ -20,12 +20,20 @@
 <section class="hero">
 	<div class="container hero-grid">
 		<div>
-			<p class="eyebrow">A member-owned cooperative</p>
+			<p class="status" role="note">
+				<strong>Design preview.</strong> Kinfold isn't operating yet. Nothing here is an offer.
+			</p>
+			<p class="eyebrow">A member-owned cooperative, being built</p>
 			<h1>When life goes wrong, ask the people around you, not a profit margin.</h1>
 			<p class="lead">
 				Crashed your car? Need help with a home? Post a request, upload your evidence, and get a
-				legitimacy score. Then your family, friends or the Kinfold community pay it. No interest. No
-				late fees. Ever.
+				legitimacy score. Then your family and friends pay it, and later the Kinfold community too.
+				No interest. No late fees. Ever.
+			</p>
+			<p class="fine">
+				Membership will be by invitation while Kinfold is in design. Where tax law requires a
+				minimum rate on a family loan, Kinfold calculates and shows it, and sets it up to be
+				forgiven as a gift.
 			</p>
 			<div class="actions">
 				<a class="btn btn-primary" href="#requests">How a request works</a>
@@ -35,11 +43,19 @@
 
 		<aside class="request-card" aria-label="Example request">
 			<div class="row">
+				<span class="tag">Example · Phase 2</span>
 				<span class="kind">{request.kind}</span>
-				<span class="score"
-					><span class="visually-hidden">Legitimacy score: </span>{request.score}<small>%</small></span
-				>
 			</div>
+			<p class="score">
+				<span class="score-label">Legitimacy score</span>
+				<span class="score-value"
+					><strong>{request.score}</strong> out of 100</span
+				>
+			</p>
+			<p class="gloss">
+				An evidence score: how complete and consistent the evidence is. It never decides whether
+				you get help; only a person can say no.
+			</p>
 			<p class="card-title">{request.title}</p>
 			<p class="amount">{formatUsd(request.amount)} requested</p>
 			<ul class="evidence" aria-label="Evidence uploaded">
@@ -56,7 +72,11 @@
 					<li><span>{s.label}</span><strong>{formatUsd(s.amount)}</strong></li>
 				{/each}
 			</ul>
-			<p class="foot">Example: funded in 3 days, paid straight to the repair shop.</p>
+			<p class="foot">
+				Made-up example: funded in 3 days, paid straight to the repair shop. Deductible cover would
+				pay the part of the bill you pay first. Separate from the sample board below, so the
+				figures differ.
+			</p>
 		</aside>
 	</div>
 </section>
@@ -103,10 +123,38 @@
 		box-shadow: var(--shadow);
 	}
 
+	.status {
+		display: inline-block;
+		margin: 0 0 20px;
+		padding: 10px 14px;
+		border-left: 4px solid var(--warm);
+		border-radius: 0 8px 8px 0;
+		background: var(--warm-soft);
+		font-size: 15px;
+		max-width: 560px;
+	}
+
+	.fine {
+		color: var(--muted);
+		font-size: 14px;
+		margin-top: 16px;
+		max-width: 560px;
+	}
+
 	.row {
 		display: flex;
-		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 8px;
 		align-items: center;
+	}
+
+	.tag {
+		font-size: 12px;
+		font-weight: 700;
+		padding: 3px 10px;
+		border-radius: 999px;
+		background: var(--surface-2);
+		border: 1px solid var(--border);
 	}
 
 	.kind {
@@ -119,14 +167,35 @@
 	}
 
 	.score {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 4px 12px;
+		margin-top: 14px;
+	}
+
+	.score-label {
+		font-size: 13px;
+		font-weight: 700;
+		color: var(--muted);
+	}
+
+	.score-value {
+		font-size: 16px;
+		font-weight: 700;
+		color: var(--accent);
+	}
+
+	.score-value strong {
 		font-size: 30px;
 		font-weight: 800;
-		color: var(--accent);
 		letter-spacing: -0.02em;
 	}
 
-	.score small {
-		font-size: 16px;
+	.gloss {
+		font-size: 13px;
+		color: var(--muted);
+		margin-top: 2px;
 	}
 
 	.card-title {

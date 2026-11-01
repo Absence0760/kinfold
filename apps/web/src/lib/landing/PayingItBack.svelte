@@ -29,13 +29,13 @@
 		},
 		{
 			title: 'The plan you chose',
-			text: 'If it truly can’t be repaid, the plan both sides picked at signing applies: forgive the rest, repay from the home’s sale or refinance (secured loans; nobody forces a sale), or a mediator.'
+			text: 'If it truly can’t be repaid, the plan both sides picked at signing applies: forgive the rest, repay from the home’s sale or refinance (secured loans, meaning loans with a lien on the home; nobody forces a sale), or a mediator.'
 		}
 	];
 
 	const mortgageHelp = [
 		'Bridge missed payments with a zero-interest Home Fund loan',
-		'Connect you to a HUD-approved housing counselor for forbearance or a loan modification',
+		'Connect you to a HUD-approved housing counselor to ask your bank for forbearance (a pause your bank agrees to) or a loan modification (new, easier terms)',
 		'If selling is the only way out, sell before foreclosure so the family keeps its equity'
 	];
 </script>
@@ -58,6 +58,10 @@
 			{/each}
 		</ul>
 
+		<p class="fine">
+			Where tax law requires a minimum interest rate on a family loan, Kinfold calculates and shows
+			it, and sets it up to be forgiven as a gift.
+		</p>
 		<h3 class="sub ladder-title">If you can't pay</h3>
 		<ol class="ladder">
 			{#each ladder as step, i (step.title)}
@@ -170,6 +174,13 @@
 
 	.mortgage {
 		border-left: 4px solid var(--warm);
+	}
+
+	.fine {
+		color: var(--muted);
+		font-size: 15px;
+		margin-top: 20px;
+		max-width: 68ch;
 	}
 
 	.sub {

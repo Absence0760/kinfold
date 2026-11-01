@@ -1,31 +1,31 @@
 <script lang="ts">
 	const products = [
 		{
-			tag: 'Phase 1',
+			tag: 'Phase 1 · family and friends only',
 			name: 'Ask your people',
 			lead: 'Share a request with family and friends: a car repair, a down payment, help with a loan.',
 			points: [
 				'They give it, or lend it at zero interest',
-				'Plain-language agreement, with a lien on the home for bigger loans where the mortgage allows it',
+				'Plain-language agreement, with a lien (a legal claim that lets the lender be repaid if the home is sold) for bigger loans where the mortgage allows it',
 				'Shared balance, automatic repayments, gentle reminders',
-				'Gift letters in the form mortgage lenders ask for'
+				'Gift letters (the short note mortgage lenders ask for, saying money is a gift) in the form they want'
 			],
 			holds: 'Money moves between people through a payment partner. Kinfold never holds it.'
 		},
 		{
-			tag: 'Phase 2',
+			tag: 'Phase 2 · planned',
 			name: 'Community protection',
 			lead: 'Help with car damage, starting with the deductible you can’t afford.',
 			points: [
 				'Dues are a small share of your earnings, nothing if you earn little',
-				'Dues buy deductible cover that pays covered claims in full',
+				'Dues buy deductible cover (it pays your deductible, the part of a repair bill you pay first) and covered claims are paid in full, less your agreed share and within the cover limits',
 				'A gift-funded repair fund and zero-interest repair loans for the rest',
 				'Repair shop paid directly, so quotes can’t be gamed'
 			],
 			holds: 'Cover issued by a licensed partner insurer, never mixed with loan money.'
 		},
 		{
-			tag: 'Phase 3',
+			tag: 'Phase 3 · planned',
 			name: 'Community Home Fund',
 			lead: 'Zero-interest home help for people with no wealthy family to ask.',
 			points: [
@@ -46,7 +46,7 @@
 		<p class="section-lead">
 			You see one app and one request form. Behind it, each kind of money is held by whoever is
 			licensed to hold it, and the pools never mix, so a bad year for car claims can't drain the
-			home fund.
+			home fund. None of it is open yet: Phase 1 comes first, with no pooled money.
 		</p>
 
 		<div class="grid">
@@ -69,7 +69,7 @@
 			<div>
 				<h3>And your mortgage?</h3>
 				<p>
-					Kinfold doesn't write first mortgages. We make yours smaller, protect the payments, and
+					Kinfold won't write first mortgages. The aim is to make yours smaller, protect the payments, and
 					match you with fair lenders, starting with credit unions and community lenders.
 				</p>
 			</div>

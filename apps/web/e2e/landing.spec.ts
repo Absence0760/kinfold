@@ -34,14 +34,14 @@ test.describe('savings calculator', () => {
 		await gotoHydrated(page, '/#calculator');
 		const calc = page.locator('#calculator');
 		const figure = calc.locator('.big');
-		const family = calc.getByRole('slider', { name: /From family and community/ });
+		const family = calc.getByRole('slider', { name: /From family or friends/ });
 		const loan = calc.getByRole('slider', { name: /Home loan needed/ });
 
 		await expect(figure).toHaveText(saved(start));
 
 		await family.press('ArrowRight'); // step $1,000
 		await expect(family).toHaveValue('31000');
-		await expect(calc).toContainText('From family and community, at 0% $31,000');
+		await expect(calc).toContainText('From family or friends, at 0% $31,000');
 		await expect(figure).toHaveText(saved({ ...start, zeroInterestAmount: 31_000 }));
 
 		await family.press('ArrowLeft');
@@ -57,13 +57,13 @@ test.describe('savings calculator', () => {
 		await gotoHydrated(page, '/#calculator');
 		const calc = page.locator('#calculator');
 		const note = calc.locator('.note');
-		const family = calc.getByRole('slider', { name: /From family and community/ });
+		const family = calc.getByRole('slider', { name: /From family or friends/ });
 
-		await expect(note).not.toContainText('Add a family or community share');
+		await expect(note).not.toContainText('Add a family or friends share');
 		await family.press('Home');
 		await expect(family).toHaveValue('0');
 		await expect(calc.locator('.big')).toHaveText('$0');
-		await expect(note).toContainText('Add a family or community share to see the difference.');
+		await expect(note).toContainText('Add a family or friends share to see the difference.');
 	});
 });
 

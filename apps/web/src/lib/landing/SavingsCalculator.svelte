@@ -17,7 +17,7 @@
 	// Screen readers get one short summary that settles after the sliders stop
 	// moving, instead of every figure re-read on each step of a drag.
 	const summary = $derived(
-		`You keep ${formatUsd(result.interestSaved)} of interest in the family. Monthly payment ${formatUsd(result.withKinfold.monthly)} with Kinfold, ${formatUsd(result.bankOnly.monthly)} with the bank only.`
+		`You avoid paying the bank ${formatUsd(result.interestSaved)} of interest. Monthly payment ${formatUsd(result.withKinfold.monthly)} with Kinfold, ${formatUsd(result.bankOnly.monthly)} with the bank only.`
 	);
 	let announcement = $state(untrack(() => summary));
 	$effect(() => {
@@ -33,7 +33,7 @@
 		<h2 class="section-title">Every dollar your family lends is a dollar the bank can't charge interest on.</h2>
 		<p class="section-lead">
 			Move the sliders. The zero-interest share is repaid over the same term as the mortgage, so
-			your family gets back exactly what they lent.
+			your family gets back exactly what they lent. Where tax law requires a minimum rate on a family loan, Kinfold shows it and arranges for it to be forgiven as a gift. Your bank's rules still apply, and a repayable family loan can affect whether you qualify.
 		</p>
 
 		<div class="calc">
@@ -72,7 +72,7 @@
 					/>
 				</label>
 				<label>
-					<span>From family and community, at 0% <strong aria-hidden="true">{formatUsd(shown)}</strong></span>
+					<span>From family or friends, at 0% <strong aria-hidden="true">{formatUsd(shown)}</strong></span>
 					<input
 						type="range"
 						min="0"
@@ -87,7 +87,7 @@
 			<div class="results">
 				<p class="visually-hidden" aria-live="polite" aria-atomic="true">{announcement}</p>
 				<div class="result-main">
-					<p class="label">Interest you keep in the family</p>
+					<p class="label">Interest you don't pay the bank</p>
 					<p class="big">{formatUsd(result.interestSaved)}</p>
 				</div>
 				<div class="compare">
@@ -106,7 +106,7 @@
 					{#if savedPerMonth > 0.5}
 						{formatUsd(savedPerMonth)} less every month.
 					{:else}
-						Add a family or community share to see the difference.
+						Add a family or friends share to see the difference.
 					{/if}
 					An illustration only, not an offer or a quote.
 				</p>

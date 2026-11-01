@@ -8,11 +8,11 @@
 		{ when: 'Moving in', text: 'A smaller bank mortgage means Maria pays thousands less in interest.' },
 		{
 			when: 'Year two',
-			text: 'Someone rear-ends her car. She posts a damage request with photos and the police report, scores 96%, and her deductible cover pays the shop within days.'
+			text: 'Someone rear-ends her car. She posts a damage request with photos and the police report, scores 96 out of 100, and her deductible cover pays the shop within days.'
 		},
 		{
 			when: 'Year four',
-			text: 'Her on-time repayments to her aunt build a record that replaces a credit score, and open the Community Home Fund for a roof repair.'
+			text: 'Her on-time repayments to her aunt build a record of reliability that, as a goal, could stand in for a credit score, and open the Community Home Fund (Phase 3) for a roof repair.'
 		},
 		{ when: 'Today', text: 'Maria gives a little each month to the Home Fund, helping the next family.' }
 	];
@@ -25,9 +25,9 @@
 			<h2 class="section-title">One record, built by helping each other.</h2>
 			<p class="section-lead">
 				Every request you post, every payment you make and every loan you repay adds to one record.
-				That record replaces a credit score and opens help to people banks overlook.
+				The goal is for that record to stand in for a credit score and open help to people banks overlook.
 			</p>
-			<p class="example">An example of how it could go. Maria is made up, and cover starts in Phase 2.</p>
+			<p class="example">An example of how it could go. Maria is made up. Cover starts in Phase 2 and the Home Fund in Phase 3, and no lender accepts a Kinfold record today; that is a goal.</p>
 		</div>
 		<ol>
 			{#each steps as step (step.when)}

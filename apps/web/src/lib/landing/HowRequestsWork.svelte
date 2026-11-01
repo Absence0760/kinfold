@@ -6,34 +6,36 @@
 		},
 		{
 			title: 'Upload evidence',
-			text: 'Photos, a police report, a repair estimate, a loan statement. Kinfold blurs names, plates and faces, and you check it before anything reaches the board.'
+			text: 'Photos, a police report, a repair estimate, a loan statement. Kinfold will blur names, plates and faces, and you will check it before anything reaches the board.'
 		},
 		{
 			title: 'Get a legitimacy score',
-			text: 'An AI model checks the evidence and explains its score. A low score asks for more evidence; only a person can turn a request down.'
+			text: 'An AI model will check the evidence and explain its score, out of 100: how complete and consistent the evidence is. A low score asks for more evidence; only a person can turn a request down.'
 		},
 		{
 			title: 'Get it paid',
-			text: 'Your cover, the community, your people, or all three. Money goes straight to the repair shop, lender or seller, never to you, so it can only go to the job.'
+			text: 'Family and friends first. From Phase 2, deductible cover and the community repair fund can help too. Money will go straight to the repair shop, lender or seller, never to you, so it can only go to the job.'
 		}
 	];
 
 	const funders = [
 		{
 			title: 'Your people',
+			tag: 'Phase 1',
 			text: 'Share the request with family and friends. They can give it, or lend it at zero interest with a written agreement and repayment tracking.'
 		},
 		{
 			title: 'The community',
-			text: 'Members pay dues, a small share of earnings (nothing if you earn little). They buy deductible cover from a licensed partner insurer that pays every covered claim in full. A gift-funded repair fund helps with the rest, highest score band first.'
+			tag: 'Phase 2, not yet available',
+			text: 'Members will pay dues, a small share of earnings (nothing if you earn little). Dues buy deductible cover from a licensed partner insurer: a policy that pays the deductible, the part of a repair bill you pay first, up to $1,000. Covered claims are paid in full, less your agreed share and within the cover limits. A gift-funded repair fund helps with the rest, highest score band first (a band is a 10-point range of scores, like 90 and up).'
 		}
 	];
 
 	const fraud = [
-		'The shop or lender is paid directly, so a high quote can’t be swapped for a cheap repair',
-		'Photo metadata, damage patterns and police reports are cross-checked',
-		'Staged crashes show up as patterns across requests, people and vehicles',
-		'Identity is verified once; there are no anonymous requests'
+		'The shop or lender will be paid directly, so a high quote can’t be swapped for a cheap repair',
+		'Photo metadata, damage patterns and police reports will be cross-checked',
+		'Staged crashes should show up as patterns across requests, people and vehicles',
+		'Identity will be verified once; there will be no anonymous requests'
 	];
 </script>
 
@@ -43,8 +45,8 @@
 		<h2 class="section-title">One way to ask for help, whatever went wrong.</h2>
 		<p class="section-lead">
 			Car damage and home help follow the same steps. The only difference is where the money comes
-			from: a gift, cover from a licensed partner insurer, a repair grant, or a zero-interest loan
-			you pay back.
+			from: a gift or a zero-interest loan you pay back, and, from Phase 2, cover from a licensed
+			partner insurer or a repair grant.
 		</p>
 
 		<ol class="steps">
@@ -63,12 +65,13 @@
 				{#each funders as f (f.title)}
 					<article>
 						<h4>{f.title}</h4>
+						<p class="phase">{f.tag}</p>
 						<p>{f.text}</p>
 					</article>
 				{/each}
 			</div>
 			<div class="fraud">
-				<h3 class="sub">Built against fraud</h3>
+				<h3 class="sub">How we plan to prevent fraud</h3>
 				<ul>
 					{#each fraud as item (item)}
 						<li>{item}</li>
@@ -158,6 +161,13 @@
 	h4 {
 		font-size: 17px;
 		margin-bottom: 2px;
+	}
+
+	.funders .phase {
+		font-size: 12px;
+		font-weight: 700;
+		color: var(--accent);
+		margin-bottom: 4px;
 	}
 
 	.fraud ul {

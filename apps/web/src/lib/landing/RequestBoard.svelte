@@ -44,11 +44,11 @@
 		<p class="eyebrow">The request board</p>
 		<h2 class="section-title">Ranked by evidence, not by who tells the saddest story.</h2>
 		<p class="section-lead">
-			The board is visible to verified members only, and shows each request's state or region and
+			This sample shows how the Phase 2 board is planned to work. It will be visible to verified members only, and will show each request's state or region and
 			month, never names or towns. The community repair fund, paid for by gifts, fills the highest
-			band first (90% and up), every request in it at the same time, then moves down. Below 70%, a
-			person reviews it and asks for more evidence. Insured cover is different: a covered claim is
-			always paid in full. Move the slider to see how this month's repair fund is shared out.
+			band first (a band is a 10-point range of scores; the top one is 90 and up), every request in it at the same time, then moves down. Below 70, a
+			person reviews it and asks for more evidence. Scores are out of 100. Insured cover is different: a covered claim is
+			paid in full, less your agreed share and within the cover limits. Move the slider to see how this month's repair fund is shared out.
 		</p>
 
 		<label class="pool">
@@ -71,7 +71,11 @@
 				{@const raised = r.funded + a.grant}
 				<li class={a.status}>
 					<span class="score"
-						><span class="visually-hidden">Legitimacy score: </span>{r.score}%</span
+						><span class="visually-hidden">Legitimacy score: </span>{r.score}<span
+							class="visually-hidden"
+						>
+							out of 100</span
+						></span
 					>
 					<div class="body">
 						<p class="title">{r.title}</p>

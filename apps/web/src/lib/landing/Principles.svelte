@@ -1,12 +1,12 @@
 <script lang="ts">
 	const principles = [
-		{ title: 'No interest, ever', text: 'Members repay what they borrowed and nothing more.' },
+		{ title: 'No interest, ever', text: 'Members repay what they borrowed and nothing more. Where tax law requires a minimum rate on a family loan, Kinfold shows it and arranges for it to be forgiven as a gift.' },
 		{ title: 'Lenders are protected too', text: "Nobody lends money they can't afford to lose." },
 		{ title: 'No profit from hardship', text: 'No late fees. A missed payment starts a plan, not a charge.' },
 		{ title: 'Evidence, not popularity', text: 'Community money is shared by evidence score (and, for the Home Fund, need), never by who goes viral.' },
 		{ title: 'The home comes first', text: 'Foreclosure is the very last resort, after every other option.' },
 		{ title: 'Open books, private people', text: 'Members see every pool request, its score band and outcome. Anyone can see fees and reserves. Names and towns never show.' },
-		{ title: 'Members own it', text: 'One member, one vote. Surplus goes back to members.' },
+		{ title: 'Members will own it', text: 'One member, one vote. Surplus goes back to members.' },
 		{ title: 'AI advises, people decide', text: 'Every score is explained. Only a person can turn a request down, and you can appeal.' }
 	];
 </script>
