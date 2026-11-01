@@ -16,6 +16,7 @@
 		sideOf,
 		signatures
 	} from '#lib/loans/loan.ts';
+	import { define } from '#lib/board/terms.ts';
 	import { monthsWord, ordinal } from '#lib/loans/words.ts';
 	import Badge from '../Badge.svelte';
 	import ForgiveForm from './ForgiveForm.svelte';
@@ -83,14 +84,28 @@
 		noticeEl?.focus();
 	}
 
+	// Whichever <h1> is showing (error, not found, or the loan).
+	let heading = $state<HTMLElement>();
+
 	async function retry() {
+		if (retrying) return;
 		retrying = true;
 		try {
 			await refresh();
 		} finally {
 			retrying = false;
+			// The error (and the Try again button that had focus) is replaced or
+			// removed; park focus on the page heading, as Home does.
+			await tick();
+			heading?.focus();
 		}
 	}
+
+	// The one live region for loading: mounted empty, then its text changes, so it
+	// is announced (a region inserted already holding text often isn't).
+	const loadText = $derived(
+		retrying ? 'Trying again…' : detail === undefined && !failed ? 'Loading the loan…' : ''
+	);
 
 	const view = $derived.by(() => {
 		if (!detail) return null;
@@ -140,23 +155,24 @@
 
 <p class="back"><a href="/app/loans"><span aria-hidden="true">←</span> All your loans</a></p>
 
+<p class="visually-hidden" role="status">{loadText}</p>
+
 {#if failed && !detail}
 	<div class="box error" role="alert">
-		<h1>We couldn’t load this loan</h1>
+		<h1 bind:this={heading} tabindex="-1">We couldn’t load this loan</h1>
 		<p>Check your connection and try again. Nothing on the loan has changed.</p>
-		<button type="button" class="btn btn-primary" onclick={retry} disabled={retrying}>
+		<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying}>
 			{retrying ? 'Trying again…' : 'Try again'}
 		</button>
 	</div>
 {:else if detail === undefined}
-	<div role="status" class="loading">
-		<span class="visually-hidden">Loading the loan…</span>
+	<div class="loading" aria-hidden="true">
 		<div class="skeleton tall" aria-hidden="true"></div>
 		<div class="skeleton" aria-hidden="true"></div>
 	</div>
 {:else if detail === null || !view}
 	<div class="box">
-		<h1>Loan not found</h1>
+		<h1 bind:this={heading} tabindex="-1">Loan not found</h1>
 		<p>
 			This loan doesn’t exist, or it’s between other people. Only the borrower and the lender can see a loan.
 		</p>
@@ -168,7 +184,7 @@
 	<header class="page-head">
 		<p class="eyebrow">{view.side === 'borrower' ? 'Money you borrowed' : 'Money you lent'}</p>
 		<div class="title-row">
-			<h1>
+			<h1 bind:this={heading} tabindex="-1">
 				{#if view.side === 'borrower'}
 					You borrowed {formatCents(l.principal_cents)}{view.lenderRelationship
 						? ` from your ${view.lenderRelationship}`
@@ -190,7 +206,7 @@
 	{#if failed}
 		<p class="notice warn" role="alert">
 			We couldn’t refresh the loan, so what’s shown may be out of date.
-			<button type="button" class="link" onclick={retry} disabled={retrying}>Try again</button>
+			<button type="button" class="link" onclick={retry} aria-disabled={retrying}>Try again</button>
 		</p>
 	{/if}
 
@@ -240,7 +256,10 @@
 		<dl class="terms-list box">
 			<div>
 				<dt>Amount lent</dt>
-				<dd>{formatCents(l.principal_cents)}{l.request_id ? ', paid straight to the payee of the request, not to the borrower' : ''}.</dd>
+				<dd>
+					{formatCents(l.principal_cents)}{l.request_id ? ', paid straight to the payee of the request, not to the borrower' : ''}.
+					{#if l.request_id}<span class="sub">Payee: {define('payee')}</span>{/if}
+				</dd>
 			</div>
 			<div>
 				<dt>Interest and fees</dt>
@@ -470,7 +489,8 @@
 	{#if view.pauses.length > 0}
 		<section class="block" aria-labelledby="pauses-h">
 			<h2 id="pauses-h">Pauses</h2>
-			<ul class="history box">
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="history box" role="list">
 				{#each view.pauses as p (p.id)}
 					<li>
 						<strong>{monthsWord(p.months)}</strong> from {formatDay(p.started_on)}
@@ -484,7 +504,8 @@
 	{#if view.forgiveness.length > 0}
 		<section class="block" aria-labelledby="forgiven-h">
 			<h2 id="forgiven-h">Forgiven as gifts</h2>
-			<ul class="history box">
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="history box" role="list">
 				{#each view.forgiveness as f (f.id)}
 					<li>
 						<strong>{formatCents(f.amount_cents)}</strong> on {formatDay(f.created_at)}

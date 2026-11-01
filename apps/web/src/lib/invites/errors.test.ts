@@ -36,7 +36,13 @@ describe('explainInviteError', () => {
 				code: '23503',
 				message: 'insert or update on table "request_supporters" violates foreign key constraint'
 			})
-		).toMatch(/Finish setting up/);
+		).toMatch(/member profile isn’t set up yet.*contact the Kinfold team/);
+	});
+
+	it('explains that pool money is not pledged, without the "pool run" jargon', () => {
+		const msg = explainInviteError({ message: 'pool money is allocated by the pool run' });
+		expect(msg).toMatch(/isn’t pledged here/);
+		expect(msg).not.toMatch(/pool run/);
 	});
 
 	it('explains the relationship length check', () => {

@@ -22,7 +22,7 @@ export function explainInviteError(error: DbError | null | undefined): string {
 	if (/accept an invite to your own request/i.test(message))
 		return 'This is an invite to your own request. Send the link to the person you want to invite instead.';
 	if (code === '23503' && /request_supporters/i.test(message))
-		return 'Finish setting up your Kinfold account first, then open the link again.';
+		return 'Your member profile isn’t set up yet, so you can’t accept invites. Membership is by invitation for now: ask the member who invited you to contact the Kinfold team, who will finish setting up your profile. Then sign in again and open this link.';
 
 	// create_invite
 	if (/request_invites_relationship_check/i.test(message))
@@ -47,7 +47,7 @@ export function explainInviteError(error: DbError | null | undefined): string {
 			: 'Someone pledged while you were deciding, and the request is now fully pledged. Nothing was taken from you.';
 	}
 	if (/pool money is allocated by the pool run/i.test(message))
-		return 'Pool money is shared out by the pool’s own run, not pledged here.';
+		return 'Money from the pool isn’t pledged here: the pool shares out what it holds across the requests waiting, at each of its runs.';
 
 	// shared by create_invite and pledge
 	if (/^request not found$/i.test(message))

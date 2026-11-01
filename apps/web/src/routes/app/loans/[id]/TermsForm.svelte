@@ -77,12 +77,16 @@
 	}
 
 	async function close() {
+		// The buttons stay focusable while sending (aria-disabled), so guard here.
+		if (step === 'sending') return;
 		step = 'closed';
 		await tick();
 		openButton?.focus();
 	}
 
 	async function goBack() {
+		// The buttons stay focusable while sending (aria-disabled), so guard here.
+		if (step === 'sending') return;
 		step = 'edit';
 		await tick();
 		firstField?.focus();
@@ -176,7 +180,8 @@
 
 			{#if !changed}<p class="hint" id="{uid}-nochange">Change something to save new terms.</p>{/if}
 			<div class="actions">
-				<button type="submit" class="btn btn-primary" disabled={!changed} aria-describedby={changed ? undefined : `${uid}-nochange`}>Review the new terms</button>
+				<!-- aria-disabled, not disabled: the button stays in the Tab order so its reason is read. -->
+				<button type="submit" class="btn btn-primary" aria-disabled={!changed} aria-describedby={changed ? undefined : `${uid}-nochange`}>Review the new terms</button>
 				<button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
 			</div>
 		</form>
@@ -194,10 +199,10 @@
 			</ul>
 			{#if error}<p class="problem" role="alert">{error}</p>{/if}
 			<div class="actions">
-				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
+				<button type="button" class="btn btn-primary" onclick={save} aria-disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Saving…' : 'Save the terms'}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>
+				<button type="button" class="btn btn-ghost" onclick={goBack} aria-disabled={step === 'sending'}>
 					Go back
 				</button>
 			</div>

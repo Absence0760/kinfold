@@ -43,6 +43,8 @@
 	}
 
 	async function close() {
+		// The buttons stay focusable while sending (aria-disabled), so guard here.
+		if (step === 'sending') return;
 		step = 'closed';
 		await tick();
 		openButton?.focus();
@@ -111,10 +113,10 @@
 			</ul>
 			{#if error}<p class="problem" role="alert">{error}</p>{/if}
 			<div class="actions">
-				<button type="button" class="btn btn-primary" onclick={sign} disabled={step === 'sending'} aria-busy={step === 'sending'}>
+				<button type="button" class="btn btn-primary" onclick={sign} aria-disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Signing…' : 'Sign the loan'}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={close} disabled={step === 'sending'}>Not yet</button>
+				<button type="button" class="btn btn-ghost" onclick={close} aria-disabled={step === 'sending'}>Not yet</button>
 			</div>
 		</div>
 	{/if}

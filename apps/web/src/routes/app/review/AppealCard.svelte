@@ -78,7 +78,9 @@
 	{#if item.history.length > 1}
 		<details>
 			<summary>All reviews on this request ({item.history.length})</summary>
-			<ul class="history">
+<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="history" role="list">
 				{#each item.history as rv, i (i)}
 					<li>
 						<strong>{decidedLabel(rv.decision)}</strong>
@@ -120,7 +122,11 @@
 			{/if}
 
 			<button class="btn btn-primary" type="submit" aria-disabled={busy} aria-busy={busy}>
-				{busy ? 'Saving…' : 'Record decision'}
+				{busy ? 'Saving…' : 'Record decision'}<span class="visually-hidden">
+					on the appeal filed {formatDay(a.created_at)}{item.request
+						? `, ${kindLabel(item.request.kind)}, ${formatCents(item.request.amount_cents)}`
+						: ''}</span
+				>
 			</button>
 		</form>
 	{/if}

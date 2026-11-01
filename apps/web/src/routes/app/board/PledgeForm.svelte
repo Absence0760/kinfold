@@ -12,9 +12,16 @@
 
 	let {
 		item,
+		name,
 		leftCents,
 		onpledged
-	}: { item: BoardItem; leftCents: number; onpledged: (raisedCents: number | null) => void } = $props();
+	}: {
+		item: BoardItem;
+		/** A short form of the request's summary, added (visually hidden) to each button's name. */
+		name: string;
+		leftCents: number;
+		onpledged: (raisedCents: number | null) => void;
+	} = $props();
 
 	type Step = 'closed' | 'amount' | 'confirm' | 'sending' | 'done';
 	let step = $state<Step>('closed');
@@ -40,6 +47,7 @@
 	}
 
 	async function cancel() {
+		if (step === 'sending') return;
 		step = 'closed';
 		typed = '';
 		touched = false;
@@ -54,6 +62,7 @@
 	}
 
 	async function change() {
+		if (step === 'sending') return;
 		step = 'amount';
 		await tick();
 		amountInput?.focus();
@@ -69,7 +78,8 @@
 	}
 
 	async function send() {
-		if (cents == null) return;
+		// aria-disabled keeps the buttons focusable while sending, so guard here instead.
+		if (cents == null || step === 'sending') return;
 		step = 'sending';
 		error = null;
 		try {
@@ -90,7 +100,7 @@
 
 {#if step === 'closed'}
 	<button type="button" class="btn btn-primary small" bind:this={openButton} onclick={open}>
-		Pledge a gift
+		Pledge a gift<span class="visually-hidden"> to “{name}”</span>
 	</button>
 {:else if step === 'amount'}
 	<form class="panel" onsubmit={review} novalidate>
@@ -121,8 +131,12 @@
 			<p class="problem" id="{uid}-problem" role="alert">{problem}</p>
 		{/if}
 		<div class="actions">
-			<button type="submit" class="btn btn-primary small">Review pledge</button>
-			<button type="button" class="btn btn-ghost small" onclick={cancel}>Cancel</button>
+			<button type="submit" class="btn btn-primary small">
+				Review pledge<span class="visually-hidden"> to “{name}”</span>
+			</button>
+			<button type="button" class="btn btn-ghost small" onclick={cancel}>
+				Cancel<span class="visually-hidden"> the pledge to “{name}”</span>
+			</button>
 		</div>
 	</form>
 {:else if step === 'confirm' || step === 'sending'}
@@ -141,21 +155,25 @@
 		{#if error}
 			<p class="problem" role="alert">{error}</p>
 		{/if}
-		{#if step === 'sending'}
-			<p class="visually-hidden" role="status">Sending your pledge…</p>
-		{/if}
+		<!-- Mounted with the panel and empty, so the text change is announced. -->
+		<p class="visually-hidden" role="status">{step === 'sending' ? 'Sending your pledge…' : ''}</p>
 		<div class="actions">
-			<button type="button" class="btn btn-primary small" onclick={send} disabled={step === 'sending'}>
-				{step === 'sending' ? 'Pledging…' : `Pledge ${formatCents(cents ?? 0)}`}
-			</button>
 			<button
 				type="button"
-				class="btn btn-ghost small"
-				onclick={change}
-				disabled={step === 'sending'}>Change amount</button
+				class="btn btn-primary small"
+				onclick={send}
+				aria-disabled={step === 'sending'}
+				aria-busy={step === 'sending'}
 			>
-			<button type="button" class="btn btn-ghost small" onclick={cancel} disabled={step === 'sending'}>
-				Cancel
+				{step === 'sending' ? 'Pledging…' : `Pledge ${formatCents(cents ?? 0)}`}<span class="visually-hidden">
+					to “{name}”</span
+				>
+			</button>
+			<button type="button" class="btn btn-ghost small" onclick={change} aria-disabled={step === 'sending'}>
+				Change amount<span class="visually-hidden"> for “{name}”</span>
+			</button>
+			<button type="button" class="btn btn-ghost small" onclick={cancel} aria-disabled={step === 'sending'}>
+				Cancel<span class="visually-hidden"> the pledge to “{name}”</span>
 			</button>
 		</div>
 	</div>
@@ -174,7 +192,7 @@
 		font-size: 14px;
 	}
 
-	.btn:disabled {
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: progress;
 	}

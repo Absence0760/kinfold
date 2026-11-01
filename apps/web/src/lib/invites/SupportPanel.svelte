@@ -70,13 +70,15 @@
 	}
 
 	async function back() {
+		if (step === 'sending') return;
 		step = 'amount';
 		await tick();
 		amountInput?.focus();
 	}
 
 	async function send() {
-		if (cents == null) return;
+		// aria-disabled keeps the buttons focusable while sending, so guard here.
+		if (cents == null || step === 'sending') return;
 		step = 'sending';
 		error = null;
 		try {
@@ -177,7 +179,7 @@
 				</label>
 			</fieldset>
 			{#if source === 'loan' && !verified}
-				<p class="problem" role="alert">
+				<p class="problem" id="{uid}-needs-verify" role="alert">
 					Lending needs a verified identity, so the loan papers are legally sound. You can give now,
 					or finish verifying and come back to this page to lend.
 				</p>
@@ -209,8 +211,14 @@
 				<p class="problem" id="{uid}-problem" role="alert">{problem}</p>
 			{/if}
 			<div class="actions">
-				<button type="submit" class="btn btn-primary small" disabled={source === 'loan' && !verified}>
-					Review
+				<!-- aria-disabled, not disabled: the button stays in the Tab order so its reason is read. -->
+				<button
+					type="submit"
+					class="btn btn-primary small"
+					aria-disabled={source === 'loan' && !verified}
+					aria-describedby={source === 'loan' && !verified ? `${uid}-needs-verify` : undefined}
+				>
+					Review<span class="visually-hidden"> your help for “{r.title}”</span>
 				</button>
 			</div>
 		</form>
@@ -249,11 +257,19 @@
 				<p class="problem" role="alert">{error}</p>
 			{/if}
 			<div class="actions">
-				<button type="button" class="btn btn-primary small" onclick={send} disabled={step === 'sending'}>
-					{step === 'sending' ? 'Pledging…' : source === 'gift' ? `Pledge ${formatCents(cents)}` : `Offer the loan`}
+				<button
+					type="button"
+					class="btn btn-primary small"
+					onclick={send}
+					aria-disabled={step === 'sending'}
+					aria-busy={step === 'sending'}
+				>
+					{step === 'sending' ? 'Pledging…' : source === 'gift' ? `Pledge ${formatCents(cents)}` : `Offer the loan`}<span
+						class="visually-hidden"> to “{r.title}”</span
+					>
 				</button>
-				<button type="button" class="btn btn-ghost small" onclick={back} disabled={step === 'sending'}>
-					Change
+				<button type="button" class="btn btn-ghost small" onclick={back} aria-disabled={step === 'sending'}>
+					Change<span class="visually-hidden"> your help for “{r.title}”</span>
 				</button>
 			</div>
 		</div>
@@ -465,7 +481,7 @@
 		justify-content: center;
 	}
 
-	.btn:disabled {
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: not-allowed;
 	}

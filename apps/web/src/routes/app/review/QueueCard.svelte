@@ -69,8 +69,7 @@
 <article class="card" aria-labelledby="{id}-title">
 	<header class="head">
 		<div>
-			<p class="eyebrow">{kindLabel(r.kind)}</p>
-			<h3 id="{id}-title">{formatCents(r.amount_cents)}</h3>
+			<h3 id="{id}-title">{kindLabel(r.kind)}, {formatCents(r.amount_cents)}</h3>
 		</div>
 		<span class="status" data-status={r.status}>{statusLabel(r.status)}</span>
 	</header>
@@ -104,7 +103,9 @@
 		{#if item.evidence.length === 0}
 			<p class="muted">No evidence is visible to reviewers for this request.</p>
 		{:else}
-			<ul class="evidence">
+<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="evidence" role="list">
 				{#each item.evidence as ev (ev.id)}
 					<li>
 						<strong>{evidenceLabel(ev.kind)}</strong>
@@ -121,7 +122,9 @@
 	{#if item.myReviews.length > 0}
 		<section aria-labelledby="{id}-mine">
 			<h4 id="{id}-mine">Your earlier reviews</h4>
-			<ul class="history">
+<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="history" role="list">
 				{#each item.myReviews as rv, i (i)}
 					<li>
 						<strong>{decidedLabel(rv.decision)}</strong>
@@ -188,7 +191,9 @@
 			{/if}
 
 			<button class="btn btn-primary" type="submit" aria-disabled={busy} aria-busy={busy}>
-				{busy ? 'Saving…' : submitLabel}
+				{busy ? 'Saving…' : submitLabel}<span class="visually-hidden">
+					for {kindLabel(r.kind)}, {formatCents(r.amount_cents)}</span
+				>
 			</button>
 		</form>
 	{:else if r.status === 'refused'}
@@ -214,9 +219,6 @@
 		gap: 12px;
 	}
 
-	.head .eyebrow {
-		margin-bottom: 4px;
-	}
 
 	h3 {
 		font-size: 24px;

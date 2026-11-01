@@ -43,6 +43,7 @@
 	const until = $derived(addMonths(today, months));
 
 	async function open() {
+		if (left < 1) return;
 		months = Math.min(1, left);
 		reason = '';
 		error = '';
@@ -52,12 +53,16 @@
 	}
 
 	async function close() {
+		// The buttons stay focusable while sending (aria-disabled), so guard here.
+		if (step === 'sending') return;
 		step = 'closed';
 		await tick();
 		openButton?.focus();
 	}
 
 	async function goBack() {
+		// The buttons stay focusable while sending (aria-disabled), so guard here.
+		if (step === 'sending') return;
 		step = 'edit';
 		await tick();
 		firstField?.focus();
@@ -118,10 +123,18 @@
 	</p>
 	{#if step === 'closed'}
 		{#if left < 1}
-			<p class="hint">No pause months are left right now. They come back as earlier pauses fall outside the last 12 months.</p>
+			<p class="hint" id="{uid}-none-left">No pause months are left right now. They come back as earlier pauses fall outside the last 12 months.</p>
 		{/if}
 		<div class="actions">
-			<button type="button" class="btn btn-ghost" bind:this={openButton} onclick={open} disabled={left < 1}>
+			<!-- aria-disabled, not disabled: the button stays in the Tab order so its reason is read. -->
+			<button
+				type="button"
+				class="btn btn-ghost"
+				bind:this={openButton}
+				onclick={open}
+				aria-disabled={left < 1}
+				aria-describedby={left < 1 ? `${uid}-none-left` : undefined}
+			>
 				Pause payments
 			</button>
 		</div>
@@ -149,9 +162,14 @@
 				</span>
 			</div>
 			{@render movedList()}
-			{#if problem}<p class="problem" role="alert">{problem}</p>{/if}
+			{#if problem}<p class="problem" id="{uid}-problem" role="alert">{problem}</p>{/if}
 			<div class="actions">
-				<button type="submit" class="btn btn-primary" disabled={!!problem}>Review the pause</button>
+				<button
+					type="submit"
+					class="btn btn-primary"
+					aria-disabled={!!problem}
+					aria-describedby={problem ? `${uid}-problem` : undefined}>Review the pause</button
+				>
 				<button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
 			</div>
 		</form>
@@ -169,10 +187,10 @@
 			{@render movedList()}
 			{#if error}<p class="problem" role="alert">{error}</p>{/if}
 			<div class="actions">
-				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
+				<button type="button" class="btn btn-primary" onclick={save} aria-disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Pausing…' : `Pause for ${monthsWord(months)}`}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>
+				<button type="button" class="btn btn-ghost" onclick={goBack} aria-disabled={step === 'sending'}>
 					Go back
 				</button>
 			</div>

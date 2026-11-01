@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { supabase } from '#lib/supabase/client.ts';
+	import { define } from '#lib/board/terms.ts';
 	import { explainDbError } from '#lib/review/errors.ts';
 	import { loadAppeals, loadQueue } from '#lib/review/queries.ts';
 	import type { AppealItem, QueueItem } from '#lib/review/queue.ts';
@@ -51,6 +52,36 @@
 		confirmationEl?.focus();
 	}
 
+	let queueHeading = $state<HTMLElement>();
+	let appealsHeading = $state<HTMLElement>();
+
+	// Try again swaps the error block (and the button that had focus) for the
+	// list; park focus on the section heading so keyboard users stay in place.
+	async function retryQueue() {
+		queue = { state: 'loading' };
+		await refreshQueue();
+		await tick();
+		queueHeading?.focus();
+	}
+
+	async function retryAppeals() {
+		appeals = { state: 'loading' };
+		await refreshAppeals();
+		await tick();
+		appealsHeading?.focus();
+	}
+
+	// One live region, mounted empty, whose text changes: a region inserted
+	// already holding its text isn't reliably announced.
+	const loadingText = $derived(
+		[
+			data.access.reviewer && queue.state === 'loading' ? 'Loading the queue…' : '',
+			data.access.panel && appeals.state === 'loading' ? 'Loading appeals…' : ''
+		]
+			.filter(Boolean)
+			.join(' ')
+	);
+
 	function count(n: number, one: string, many: string) {
 		return `${n} ${n === 1 ? one : many}`;
 	}
@@ -67,6 +98,7 @@
 		The legitimacy score advises; only a person's decision, with a written reason, can refuse a
 		request. You see redacted evidence, never originals.
 	</p>
+	<p class="define"><strong>Redacted:</strong> {define('redacted')}</p>
 	{#if data.access.reviewer && data.access.panel}
 		<nav class="jump" aria-label="Sections">
 			<a href="#queue-heading">Review queue</a>
@@ -74,6 +106,8 @@
 		</nav>
 	{/if}
 </header>
+
+<p class="visually-hidden" role="status">{loadingText}</p>
 
 <div role="status">
 	{#if confirmation}
@@ -84,25 +118,29 @@
 {#if data.access.reviewer}
 	<section class="block" aria-labelledby="queue-heading">
 		<div class="block-head">
-			<h2 id="queue-heading">Review queue</h2>
+			<h2 id="queue-heading" tabindex="-1" bind:this={queueHeading}>Review queue</h2>
 			{#if queue.state === 'ready'}
 				<p class="muted">{count(queue.items.length, 'request', 'requests')}</p>
 			{/if}
 		</div>
 		{#if queue.state === 'loading'}
-			<div role="status">
+			<div aria-hidden="true">
 				<p class="muted">Loading the queue…</p>
 				<div class="skeleton" aria-hidden="true"></div>
 			</div>
 		{:else if queue.state === 'error'}
 			<div class="error" role="alert">
 				<p>Couldn't load the queue. {queue.message}</p>
-				<button class="btn btn-ghost" type="button" onclick={refreshQueue}>Try again</button>
+				<button class="btn btn-ghost" type="button" onclick={retryQueue}>
+					Try again<span class="visually-hidden"> loading the queue</span>
+				</button>
 			</div>
 		{:else if queue.items.length === 0}
 			<p class="empty">Nothing is waiting for a reviewer. Requests appear here when they need a person: a low legitimacy score, a fraud flag or an upheld appeal.</p>
 		{:else}
-			<ul class="cards">
+<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
 				{#each queue.items as item (item.request.id)}
 					<li><QueueCard {item} ondecided={(m) => decided(m, refreshQueue)} /></li>
 				{/each}
@@ -114,25 +152,29 @@
 {#if data.access.panel}
 	<section class="block" aria-labelledby="appeals-heading">
 		<div class="block-head">
-			<h2 id="appeals-heading">Appeals</h2>
+			<h2 id="appeals-heading" tabindex="-1" bind:this={appealsHeading}>Appeals</h2>
 			{#if appeals.state === 'ready'}
 				<p class="muted">{count(appeals.items.length, 'open appeal', 'open appeals')}</p>
 			{/if}
 		</div>
 		{#if appeals.state === 'loading'}
-			<div role="status">
+			<div aria-hidden="true">
 				<p class="muted">Loading appeals…</p>
 				<div class="skeleton" aria-hidden="true"></div>
 			</div>
 		{:else if appeals.state === 'error'}
 			<div class="error" role="alert">
 				<p>Couldn't load appeals. {appeals.message}</p>
-				<button class="btn btn-ghost" type="button" onclick={refreshAppeals}>Try again</button>
+				<button class="btn btn-ghost" type="button" onclick={retryAppeals}>
+					Try again<span class="visually-hidden"> loading appeals</span>
+				</button>
 			</div>
 		{:else if appeals.items.length === 0}
 			<p class="empty">No open appeals. When a member appeals a refusal, it shows here.</p>
 		{:else}
-			<ul class="cards">
+<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
 				{#each appeals.items as item (item.appeal.id)}
 					<li><AppealCard {item} ondecided={(m) => decided(m, refreshAppeals)} /></li>
 				{/each}
@@ -156,8 +198,13 @@
 		font-size: clamp(28px, 4vw, 36px);
 	}
 
-	.lead {
+	.lead,
+	.define {
 		color: var(--muted);
+	}
+
+	.define strong {
+		color: var(--text);
 	}
 
 	.jump {

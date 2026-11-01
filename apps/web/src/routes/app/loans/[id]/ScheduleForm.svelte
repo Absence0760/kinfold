@@ -78,12 +78,16 @@
 	}
 
 	async function close() {
+		// The buttons stay focusable while sending (aria-disabled), so guard here.
+		if (step === 'sending') return;
 		step = 'closed';
 		await tick();
 		openButton?.focus();
 	}
 
 	async function goBack() {
+		// The buttons stay focusable while sending (aria-disabled), so guard here.
+		if (step === 'sending') return;
 		announcement = '';
 		step = 'edit';
 		await tick();
@@ -222,10 +226,10 @@
 			</ul>
 			{#if error}<p class="problem" role="alert">{error}</p>{/if}
 			<div class="actions">
-				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
+				<button type="button" class="btn btn-primary" onclick={save} aria-disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Saving…' : 'Save the schedule'}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>
+				<button type="button" class="btn btn-ghost" onclick={goBack} aria-disabled={step === 'sending'}>
 					Go back
 				</button>
 			</div>

@@ -20,14 +20,19 @@
 		kind,
 		status,
 		amountCents,
+		title,
 		headingLevel = 2
 	}: {
 		requestId: string;
 		kind: RequestKind;
 		status: RequestStatus;
 		amountCents: number;
-		headingLevel?: 2 | 3;
+		/** The request's title, added (visually hidden) to button names when several panels share a page. */
+		title?: string;
+		headingLevel?: 2 | 3 | 4;
 	} = $props();
+
+	const forTitle = $derived(title ? ` for “${title}”` : '');
 
 	const uid = $derived(`invite-${requestId}`);
 	const h = $derived(`h${headingLevel}`);
@@ -46,6 +51,7 @@
 	let canShare = $state(false);
 
 	let linkHeading = $state<HTMLElement>();
+	let panelHeading = $state<HTMLElement>();
 	let linkInput = $state<HTMLInputElement>();
 
 	const relationshipInput = $derived(choice === 'other' ? other : choice);
@@ -65,8 +71,18 @@
 		refresh();
 	});
 
+	// Try again swaps the error block (and its focused button) for the lists;
+	// keep keyboard users in this panel by focusing its heading.
+	async function retry() {
+		await refresh();
+		await tick();
+		panelHeading?.focus();
+	}
+
 	async function make(e: SubmitEvent) {
 		e.preventDefault();
+		// aria-disabled keeps the button focusable while a link is made, so guard here.
+		if (creating) return;
 		touched = true;
 		if (!('value' in checked)) return;
 		creating = true;
@@ -116,7 +132,9 @@
 </script>
 
 <section class="invites" aria-labelledby="{uid}-heading">
-	<svelte:element this={h} id="{uid}-heading" class="title">Invite family and friends</svelte:element>
+	<svelte:element this={h} id="{uid}-heading" class="title" tabindex="-1" bind:this={panelHeading}
+		>Invite family and friends</svelte:element
+	>
 	<p class="lead">
 		Send a private link to someone you know. Once they accept, they can see this request and
 		<strong>give</strong> (a gift, never paid back) or <strong>lend at 0%</strong>: no interest and no
@@ -161,8 +179,8 @@
 				<p class="problem" id="{uid}-create-error" role="alert">{createError}</p>
 			{/if}
 			<div>
-				<button type="submit" class="btn btn-primary small" disabled={creating}>
-					{creating ? 'Making link…' : 'Make an invite link'}
+				<button type="submit" class="btn btn-primary small" aria-disabled={creating} aria-busy={creating}>
+					{creating ? 'Making link…' : 'Make an invite link'}<span class="visually-hidden">{forTitle}</span>
 				</button>
 			</div>
 		</form>
@@ -179,11 +197,13 @@
 			<div class="link-row">
 				<input id="{uid}-link" readonly value={link.url} bind:this={linkInput} onfocus={(e) => e.currentTarget.select()} />
 				<button type="button" class="btn btn-ghost small" onclick={copy}>
-						{copied === 'copied' ? 'Copied' : 'Copy link'}
+					{copied === 'copied' ? 'Copied' : 'Copy link'}<span class="visually-hidden">{forTitle}</span>
+				</button>
+				{#if canShare}
+					<button type="button" class="btn btn-ghost small" onclick={share}>
+						Share…<span class="visually-hidden">{forTitle}</span>
 					</button>
-					{#if canShare}
-						<button type="button" class="btn btn-ghost small" onclick={share}>Share…</button>
-					{/if}
+				{/if}
 			</div>
 			<p class="hint" role="status">
 				{#if copied === 'copied'}
@@ -201,12 +221,16 @@
 		</div>
 	{/if}
 
+	<!-- Mounted empty; only its text changes, so loading is announced. -->
+	<p class="visually-hidden" role="status">{panel.state === 'loading' ? 'Loading who you’ve invited…' : ''}</p>
 	{#if panel.state === 'loading'}
-		<p class="muted" role="status">Loading who you've invited…</p>
+		<p class="muted" aria-hidden="true">Loading who you've invited…</p>
 	{:else if panel.state === 'error'}
 		<div class="error" role="alert">
 			<p>Couldn't load your invites. {panel.message}</p>
-			<button type="button" class="btn btn-ghost small" onclick={refresh}>Try again</button>
+			<button type="button" class="btn btn-ghost small" onclick={retry}>
+				Try again<span class="visually-hidden"> loading your invites{forTitle}</span>
+			</button>
 		</div>
 	{:else}
 		{@const s = panel.data.support}
@@ -219,7 +243,9 @@
 			{#if s.supporters.length === 0}
 				<p class="empty">No one has accepted an invite yet.</p>
 			{:else}
-				<ul class="rows">
+				<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+				<!-- svelte-ignore a11y_no_redundant_roles -->
+				<ul class="rows" role="list">
 					{#each s.supporters as line (line.memberId)}
 						<li>
 							<span class="who">{relationshipLabel(line.relationship)}</span>
@@ -245,7 +271,9 @@
 				<p class="empty">You haven't made any invite links for this request.</p>
 			{:else}
 				<p class="muted">{count(panel.data.invites.length, 'link', 'links')} made.</p>
-				<ul class="rows">
+				<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+				<!-- svelte-ignore a11y_no_redundant_roles -->
+				<ul class="rows" role="list">
 					{#each panel.data.invites as invite (invite.id)}
 						<li>
 							<span class="who">{relationshipLabel(invite.relationship)}</span>
@@ -393,7 +421,7 @@
 		justify-content: center;
 	}
 
-	.btn:disabled {
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: progress;
 	}

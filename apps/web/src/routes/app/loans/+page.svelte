@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { invalidate } from '$app/navigation';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import { loanStatusText } from '#lib/dashboard/labels.ts';
@@ -8,14 +9,41 @@
 	let { data } = $props();
 
 	let retrying = $state(false);
+	let heading = $state<HTMLElement>();
+
 	async function retry() {
+		if (retrying) return;
 		retrying = true;
 		try {
 			await invalidate('app:loans');
+			await data.loans.catch(() => undefined);
 		} finally {
 			retrying = false;
+			// The error block (and the button that had focus) is replaced; park focus on the page heading.
+			await tick();
+			heading?.focus();
 		}
 	}
+
+	// Where the load stands, for the one live region below. It's mounted (empty)
+	// before the data arrives and only its text changes, so screen readers
+	// announce both "loading" and "loaded"; a region inserted already holding
+	// its text isn't reliably announced.
+	let phase = $state<'loading' | 'ready' | 'failed'>('loading');
+	$effect(() => {
+		let live = true;
+		phase = 'loading';
+		data.loans.then(
+			() => live && (phase = 'ready'),
+			() => live && (phase = 'failed')
+		);
+		return () => {
+			live = false;
+		};
+	});
+	const liveText = $derived(
+		retrying ? 'Reloading your loans…' : phase === 'loading' ? 'Loading your loans…' : phase === 'ready' ? 'Your loans have loaded.' : ''
+	);
 
 	const borrowed = (loans: LoanListItem[]) => loans.filter((l) => l.role === 'borrower');
 	const lent = (loans: LoanListItem[]) => loans.filter((l) => l.role === 'lender');
@@ -27,7 +55,7 @@
 
 <header class="page-head">
 	<p class="eyebrow">Loans</p>
-	<h1>Your loans</h1>
+	<h1 bind:this={heading} tabindex="-1">Your loans</h1>
 	<p class="lead">
 		Loans between you and the family and friends you invited. Every one is zero interest with no late
 		fees: you repay exactly what was lent, and a missed payment starts a conversation, never a charge.
@@ -40,7 +68,9 @@
 		{#if items.length === 0}
 			<p class="empty">{empty}</p>
 		{:else}
-			<ul class="cards">
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
 				{#each items as l (l.loan.id)}
 					{@const st = loanStatusText(l.loan.status)}
 					<li>
@@ -82,11 +112,10 @@
 	</section>
 {/snippet}
 
-<p class="visually-hidden" role="status">{retrying ? 'Reloading your loans…' : ''}</p>
+<p class="visually-hidden" role="status">{liveText}</p>
 
 {#await data.loans}
-	<div class="loading" role="status">
-		<span class="visually-hidden">Loading your loans…</span>
+	<div class="loading" aria-hidden="true">
 		{#each [1, 2] as i (i)}
 			<div class="skeleton" aria-hidden="true"></div>
 		{/each}
@@ -100,7 +129,14 @@
 				shows here. You’ll agree the payment day and schedule together, both sign, and track every
 				installment from either side.
 			</p>
-			<p><a href="/app">Back to your home</a></p>
+			<p>
+				A loan starts with a request: ask for help, then invite family and friends, who can give or
+				lend at 0%.
+			</p>
+			<div class="cta">
+				<a class="btn btn-primary" href="/app/requests/new">Ask for help</a>
+				<a class="btn btn-ghost" href="/app/invite">Invite someone</a>
+			</div>
 		</div>
 	{:else}
 		{@render list(
@@ -115,7 +151,7 @@
 	<div class="error" role="alert">
 		<h2>We couldn’t load your loans</h2>
 		<p>Check your connection and try again. Nothing on your loans has changed.</p>
-		<button type="button" class="btn btn-primary" onclick={retry} disabled={retrying}>
+		<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying}>
 			{retrying ? 'Trying again…' : 'Try again'}
 		</button>
 	</div>
@@ -246,7 +282,20 @@
 		gap: 14px;
 	}
 
-	.error .btn {
+	.error .btn,
+	.cta .btn {
 		min-height: 44px;
+	}
+
+	.cta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.btn[aria-disabled='true'] {
+		opacity: 0.6;
+		cursor: progress;
 	}
 </style>

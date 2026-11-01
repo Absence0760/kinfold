@@ -20,6 +20,8 @@
 	let resultEl = $state<HTMLElement>();
 
 	async function accept() {
+		// aria-disabled keeps the button focusable while accepting, so guard here.
+		if (phase.step === 'accepting') return;
 		phase = { step: 'accepting' };
 		try {
 			const requestId = await acceptInvite(data.token);
@@ -66,6 +68,11 @@
 	</p>
 </header>
 
+<!-- Mounted empty; only its text changes, so loading is announced. -->
+<p class="visually-hidden" role="status">
+	{phase.step === 'accepting' ? 'Accepting the invite…' : phase.step === 'loading' ? 'Loading the request…' : ''}
+</p>
+
 <div role="status">
 	{#if confirmation}
 		<p class="confirmation" tabindex="-1" bind:this={confirmationEl}>{confirmation}</p>
@@ -82,7 +89,16 @@
 	</div>
 {:else if !data.hasMember}
 	<div class="error block" role="alert">
-		<p>Finish setting up your Kinfold account first, then open this link again.</p>
+		<p><strong>Your member profile isn’t set up yet.</strong></p>
+		<p>
+			You’re signed in, but this account doesn’t have a Kinfold member profile yet, so you can’t
+			accept this invite. A profile can’t be created from this page yet.
+		</p>
+		<p>
+			Membership is by invitation for now. Ask the member who sent you this link to contact the
+			Kinfold team, who will finish setting up your profile. Then sign in again and open this link:
+			it still works if nobody else has used it and it’s less than 30 days old.
+		</p>
 	</div>
 {:else if phase.step === 'ready' || phase.step === 'accepting'}
 	<section class="block card" aria-labelledby="what-heading" aria-busy={phase.step === 'accepting'}>
@@ -106,7 +122,13 @@
 			<li>The link works once, for you. Accepting uses it up.</li>
 		</ul>
 		<div>
-			<button type="button" class="btn btn-primary" onclick={accept} disabled={phase.step === 'accepting'}>
+			<button
+				type="button"
+				class="btn btn-primary"
+				onclick={accept}
+				aria-disabled={phase.step === 'accepting'}
+				aria-busy={phase.step === 'accepting'}
+			>
 				{phase.step === 'accepting' ? 'Accepting…' : 'Accept the invite'}
 			</button>
 		</div>
@@ -122,7 +144,7 @@
 		<p><a href="/app/invite">See the requests you've accepted</a></p>
 	</div>
 {:else if phase.step === 'loading'}
-	<p class="muted block" role="status">Loading the request…</p>
+	<p class="muted block" aria-hidden="true">Loading the request…</p>
 {:else if phase.step === 'load-error'}
 	{@const id = phase.requestId}
 	<div class="error block" role="alert" tabindex="-1" bind:this={resultEl}>
@@ -213,7 +235,7 @@
 		justify-content: center;
 	}
 
-	.btn:disabled {
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: progress;
 	}

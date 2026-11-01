@@ -40,8 +40,8 @@
 		flex: none;
 	}
 
-	/* --warm on --warm-soft is under 4.5:1 for small text, so the words stay
-	   --text and only the border and icon carry the warm colour. */
+	/* The words stay --text and the border and icon carry the warm colour, for a
+	   calmer badge. (--warm on --warm-soft would also pass: 4.95:1 light, 5.65:1 dark.) */
 	.badge.action {
 		color: var(--text);
 		background: var(--warm-soft);

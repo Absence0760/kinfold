@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import {
 		amountText,
+		countText,
 		filterItems,
 		fundLabel,
 		kindLabel,
@@ -8,6 +10,7 @@
 		monthLabel,
 		payeeLabel,
 		progress,
+		shortTitle,
 		SORT_LABELS,
 		sortItems,
 		statusLabel,
@@ -17,6 +20,8 @@
 		type StatusFilter
 	} from '#lib/board/board.ts';
 	import { loadBoard } from '#lib/board/data.ts';
+	import { explainBoardError } from '#lib/board/errors.ts';
+	import { define, TERMS, type Term } from '#lib/board/terms.ts';
 	import { poolRule } from '#lib/dashboard/labels.ts';
 	import { fundForKind } from '#lib/requests/form.ts';
 	import { boardBand, scoreBandLabel } from '#lib/requests/score-band.ts';
@@ -42,16 +47,45 @@
 				if (request === p) items = v;
 			},
 			(e: unknown) => {
-				if (request === p) failed = e instanceof Error ? e.message : 'Unknown error';
+				// Never the raw database message: say what happened and what to do next.
+				if (request === p) failed = explainBoardError(e as { code?: string; message?: string });
 			}
 		);
 	}
 
 	$effect(() => watch(data.board));
 
+	let heading = $state<HTMLElement>();
+
+	// Try again replaces the error block (and the button that had focus) with the
+	// loading state, then the board: park focus on the page heading once it settles.
+	async function retry() {
+		const p = loadBoard(data.viewerId);
+		watch(p);
+		await p.catch(() => undefined);
+		await tick();
+		heading?.focus();
+	}
+
 	const kinds = $derived(items ? kindsPresent(items) : []);
 	const shown = $derived(items ? sortItems(filterItems(items, kind, status), order) : []);
 	const openCount = $derived(items ? items.filter((i) => i.status === 'open').length : 0);
+
+	// One live region, mounted before the data arrives, whose text changes: a
+	// region inserted already holding its text isn't reliably announced.
+	const liveText = $derived(
+		!data.active || failed
+			? ''
+			: items === null
+				? 'Loading the board…'
+				: items.length === 0
+					? 'No requests on the board right now.'
+					: countText(shown.length, status, kind, openCount)
+	);
+
+	// The words this page uses before it explains them, in the order they appear.
+	const WORDS: Term[] = ['pool', 'repairFund', 'homeFund', 'poolRun', 'payee', 'redacted'];
+	const capital = (s: string) => `${s[0].toUpperCase()}${s.slice(1)}`;
 
 	// Cards where this member just pledged. Their form stays mounted so the thank-you note
 	// (and focus) isn't removed when the pledge covers what was left.
@@ -62,8 +96,6 @@
 		if (!items) return;
 		items = items.map((i) => (i.id === id ? { ...i, raisedCents: cents } : i));
 	}
-
-	const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 </script>
 
 <svelte:head>
@@ -71,13 +103,26 @@
 </svelte:head>
 
 <header class="head">
-	<h1>Request board</h1>
+	<h1 bind:this={heading} tabindex="-1">Request board</h1>
 	<p class="lead">
-		Pool requests from verified members. Each shows a summary the member checked and confirmed,
-		the state or region, and the month, never names or towns. Money goes to the shop or lender
-		named on the request, never to the member.
+		Requests from verified members that ask the pool for help. Each shows a redacted summary the
+		member checked and confirmed, the state or region, and the month, never names or towns. Money
+		goes to the payee, the shop or lender named on the request, never to the member.
 	</p>
+	<details class="explain words">
+		<summary>What these words mean</summary>
+		<dl>
+			{#each WORDS as t (t)}
+				<div>
+					<dt>{capital(TERMS[t].word)}</dt>
+					<dd>{define(t)}</dd>
+				</div>
+			{/each}
+		</dl>
+	</details>
 </header>
+
+<p class="visually-hidden" role="status">{liveText}</p>
 
 {#if !data.active}
 	<div class="notice">
@@ -91,13 +136,10 @@
 	<div class="notice" role="alert">
 		<p class="notice-title">The board didn't load.</p>
 		<p>{failed}</p>
-		<button type="button" class="btn btn-ghost small" onclick={() => watch(loadBoard(data.viewerId))}>
-			Try again
-		</button>
+		<button type="button" class="btn btn-ghost small" onclick={retry}>Try again</button>
 	</div>
 {:else if items === null}
-	<div class="loading" role="status" aria-busy="true">
-		<span class="visually-hidden">Loading the board…</span>
+	<div class="loading" aria-hidden="true">
 		{#each [1, 2, 3] as i (i)}
 			<div class="skeleton" aria-hidden="true"></div>
 		{/each}
@@ -106,9 +148,15 @@
 	<div class="notice">
 		<p class="notice-title">No requests on the board right now.</p>
 		<p>
-			When a member's request is scored and they confirm its summary, it shows here. Requests stay
-			for 12 months after they close.
+			A member's request shows here once its evidence has been checked and the member has approved
+			the summary other members see, with private details blurred out. Requests stay for 12 months
+			after they close.
 		</p>
+		<p>Need help yourself? Start a request, or invite family and friends to one.</p>
+		<div class="cta">
+			<a class="btn btn-primary small" href="/app/requests/new">Ask for help</a>
+			<a class="btn btn-ghost small" href="/app/invite">Invite someone</a>
+		</div>
 	</div>
 {:else}
 	<form class="controls" aria-label="Filter and sort the board" onsubmit={(e) => e.preventDefault()}>
@@ -138,13 +186,8 @@
 		</label>
 	</form>
 
-	<p class="count" role="status">
-		{#if status === 'open'}
-			{plural(shown.length, 'request', 'requests')} asking now{kind === 'all' ? '' : `, ${kindLabel(kind).toLowerCase()}`}.
-		{:else}
-			{plural(shown.length, 'request', 'requests')} in the last 12 months; {openCount} still asking.
-		{/if}
-	</p>
+	<!-- Announced by the live region above the board; this copy is for reading. -->
+	<p class="count">{countText(shown.length, status, kind, openCount)}</p>
 
 	{#if shown.length === 0}
 		<div class="notice">
@@ -156,7 +199,9 @@
 			</p>
 		</div>
 	{:else}
-		<ul class="board">
+		<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+		<!-- svelte-ignore a11y_no_redundant_roles -->
+		<ul class="board" role="list">
 			{#each shown as item (item.id)}
 				{@const p = progress(item)}
 				{@const band = item.scoreBand != null ? boardBand(item.scoreBand, fundForKind(item.kind), item.minScore) : null}
@@ -167,7 +212,7 @@
 						{#if item.own}<span class="own">Your request</span>{/if}
 					</div>
 
-					<p class="summary">{item.summary}</p>
+					<h2 class="summary">{item.summary}</h2>
 
 					<dl class="facts">
 						<div class="amount">
@@ -208,7 +253,7 @@
 					{/if}
 
 					<p class="paid-to">
-						Pool request: {fundLabel(item.kind)} {poolRule(item.kind)}, and members can give on top.
+						Asks the pool: {fundLabel(item.kind)} {poolRule(item.kind)}, and members can give on top.
 						Paid to {payeeLabel(item.kind)}, never to the member.
 					</p>
 
@@ -222,6 +267,7 @@
 							{:else if p && (p.leftCents > 0 || pledged[item.id])}
 								<PledgeForm
 									{item}
+									name={shortTitle(item.summary)}
 									leftCents={p.leftCents}
 									onpledged={(cents) => setRaised(item.id, cents)}
 								/>
@@ -381,7 +427,8 @@
 		white-space: nowrap;
 	}
 
-	/* Body text colour on the soft fill: warm text on warm-soft is under 4.5:1 at this size. */
+	/* Body text on the soft fill, for a calmer chip. (--warm on --warm-soft would also
+	   pass: 4.95:1 light, 5.65:1 dark.) */
 	.open .status {
 		background: var(--warm-soft);
 		color: var(--text);
@@ -401,7 +448,31 @@
 	.summary {
 		font-weight: 600;
 		font-size: 17px;
+		line-height: 1.35;
+		margin: 0;
 		overflow-wrap: anywhere;
+	}
+
+	.cta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.words dl {
+		margin: 8px 0 0;
+		display: grid;
+		gap: 10px;
+	}
+
+	.words dt {
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.words dd {
+		margin: 2px 0 0;
+		color: var(--muted);
 	}
 
 	.facts {
@@ -484,6 +555,13 @@
 	.explain {
 		margin-top: 24px;
 		max-width: 680px;
+	}
+
+	.head .words {
+		margin-top: 12px;
+	}
+
+	.explain {
 		font-size: 15px;
 	}
 

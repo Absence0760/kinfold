@@ -175,8 +175,14 @@
 		}
 	}
 
-	.panel :global(.btn:disabled) {
+	/* aria-disabled rather than disabled, so the button keeps focus and its reason
+	   (aria-describedby) is still read; each handler guards the same state. */
+	.panel :global(.btn[aria-disabled='true']) {
 		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.panel :global(.btn[aria-busy='true']) {
 		cursor: progress;
 	}
 

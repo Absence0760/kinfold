@@ -157,6 +157,11 @@
 		accent-color: var(--accent);
 	}
 
+	/* Contrast (WCAG 1.4.3), --accent-contrast text, computed from the tokens:
+	   on --accent: 6.41:1 light, 8.26:1 dark; on the 10% panels below: 5.12:1
+	   light, 6.93:1 dark. No text here is faded with opacity, which is what took
+	   the small lines under 4.5:1 before. SavingsCalculator.contrast.test.ts
+	   recomputes these from app.css. */
 	.results {
 		background: var(--accent);
 		color: var(--accent-contrast);
@@ -169,7 +174,6 @@
 
 	.label {
 		font-size: 14px;
-		opacity: 0.85;
 	}
 
 	.big {
@@ -187,13 +191,20 @@
 	}
 
 	.compare > div {
-		background: color-mix(in srgb, var(--accent-contrast) 12%, transparent);
+		background: color-mix(in srgb, var(--accent-contrast) 10%, transparent);
 		border-radius: 10px;
 		padding: 14px 16px;
 	}
 
+	/* "With Kinfold" stands out by an outline and weight, not a lighter tint
+	   (a 22% tint took its small text to 3.9:1). The ring is 6.41:1 / 8.26:1
+	   against the accent fill. */
 	.compare .with {
-		background: color-mix(in srgb, var(--accent-contrast) 22%, transparent);
+		box-shadow: inset 0 0 0 2px var(--accent-contrast);
+	}
+
+	.compare .with .label {
+		font-weight: 700;
 	}
 
 	.value {
@@ -205,17 +216,14 @@
 	.value small {
 		font-size: 14px;
 		font-weight: 500;
-		opacity: 0.85;
 	}
 
 	.sub {
 		font-size: 13px;
-		opacity: 0.85;
 	}
 
 	.note {
 		font-size: 13px;
-		opacity: 0.85;
 		margin-top: auto;
 	}
 

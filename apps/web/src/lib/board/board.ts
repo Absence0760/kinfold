@@ -247,3 +247,32 @@ export function quickAmounts(leftCents: number): number[] {
 	if (leftCents > 0) picks.push(leftCents);
 	return picks;
 }
+
+// --- accessible names and status lines ------------------------------------------------
+
+/**
+ * A short form of a card's summary for button names, so ten "Pledge a gift"
+ * buttons each say which request they belong to ("Pledge a gift to “Rear-ended
+ * at a light, bumper…”"). Cut at a word boundary, never mid-word.
+ */
+export function shortTitle(summary: string, max = 60): string {
+	const s = summary.replace(/\s+/g, ' ').trim();
+	if (s.length <= max) return s;
+	const cut = s.slice(0, max);
+	const space = cut.lastIndexOf(' ');
+	return `${(space > max / 2 ? cut.slice(0, space) : cut).replace(/[\s,.;:–—-]+$/, '')}…`;
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** What the filtered board shows, as one line (also what the live region announces). */
+export function countText(
+	shown: number,
+	status: StatusFilter,
+	kind: KindFilter,
+	openCount: number
+): string {
+	if (status === 'open')
+		return `${plural(shown, 'request', 'requests')} asking now${kind === 'all' ? '' : `, ${kindLabel(kind).toLowerCase()}`}.`;
+	return `${plural(shown, 'request', 'requests')} in the last 12 months; ${openCount} still asking.`;
+}

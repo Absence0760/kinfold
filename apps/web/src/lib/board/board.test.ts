@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	amountText,
+	countText,
 	filterItems,
 	formatCents,
 	fundLabel,
@@ -13,6 +14,7 @@ import {
 	progress,
 	quickAmounts,
 	scoreBandLabel,
+	shortTitle,
 	sortItems,
 	toItems,
 	type BoardItem,
@@ -212,5 +214,35 @@ describe('pledge amounts', () => {
 		expect(quickAmounts(185_000)).toEqual([2_500, 5_000, 10_000, 185_000]);
 		expect(quickAmounts(4_000)).toEqual([2_500, 4_000]);
 		expect(quickAmounts(0)).toEqual([]);
+	});
+});
+
+describe('shortTitle', () => {
+	it('keeps a short summary as it is, with spaces tidied', () => {
+		expect(shortTitle('  Rear-ended   at a light ')).toBe('Rear-ended at a light');
+	});
+
+	it('cuts a long summary at a word and marks the cut', () => {
+		const s = 'Rear-ended at a light, bumper and tail lamp need replacing before the inspection next week';
+		const t = shortTitle(s, 40);
+		expect(t.endsWith('…')).toBe(true);
+		expect(t.length).toBeLessThanOrEqual(41);
+		expect(s.startsWith(t.slice(0, -1))).toBe(true);
+		expect(t).toBe('Rear-ended at a light, bumper and tail…');
+	});
+
+	it('cuts one very long word rather than returning nothing', () => {
+		expect(shortTitle('x'.repeat(100), 10)).toBe(`${'x'.repeat(10)}…`);
+	});
+});
+
+describe('countText', () => {
+	it('counts what is asking now, naming the type filter', () => {
+		expect(countText(1, 'open', 'all', 1)).toBe('1 request asking now.');
+		expect(countText(3, 'open', 'home_repair', 3)).toBe('3 requests asking now, home repair.');
+	});
+
+	it('counts the last 12 months with how many still ask', () => {
+		expect(countText(5, 'all', 'all', 2)).toBe('5 requests in the last 12 months; 2 still asking.');
 	});
 });

@@ -2,6 +2,7 @@ import { fundForKind } from '#lib/requests/form.ts';
 import { minScoreFor } from '#lib/requests/score-band.ts';
 import { supabase } from '#lib/supabase/client.ts';
 import { toItems, type BoardItem } from './board.ts';
+import { BoardLoadError } from './errors.ts';
 
 /**
  * Read the board as the signed-in member, under RLS:
@@ -26,8 +27,9 @@ export async function loadBoard(viewerId: string): Promise<BoardItem[]> {
 		db.from('requests').select('id').eq('member_id', viewerId),
 		db.from('fund_settings').select('fund, min_score')
 	]);
-	if (board.error) throw new Error(board.error.message);
-	if (own.error) throw new Error(own.error.message);
+	// Keep the code: the page words the failure with `explainBoardError`, never the raw message.
+	if (board.error) throw new BoardLoadError(board.error);
+	if (own.error) throw new BoardLoadError(own.error);
 
 	const rows = board.data ?? [];
 	const open = rows.filter((r) => r.status === 'open' && r.id).map((r) => r.id as string);
