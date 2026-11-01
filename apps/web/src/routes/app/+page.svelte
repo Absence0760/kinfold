@@ -15,13 +15,17 @@
 
 	const name = $derived(data.viewer.member?.display_name ?? null);
 	let retrying = $state(false);
+	let heading = $state<HTMLElement>();
 
 	async function retry() {
+		if (retrying) return;
 		retrying = true;
 		try {
 			await invalidate('app:home');
 		} finally {
 			retrying = false;
+			// The error block (and the button that had focus) is replaced; park focus on the page heading.
+			heading?.focus();
 		}
 	}
 
@@ -52,12 +56,12 @@
 
 <header class="page-head">
 	<p class="eyebrow">Your home</p>
-	<h1>{name ? `Hello, ${name}` : 'Hello'}</h1>
+	<h1 bind:this={heading} tabindex="-1">{name ? `Hello, ${name}` : 'Hello'}</h1>
 	<p class="lead">Your requests, the loans you’ve taken or given, and your private giving record.</p>
 </header>
 
 {#await data.home}
-	<div class="loading" role="status">
+	<div class="loading" role="status" aria-busy="true">
 		<span class="visually-hidden">Loading your home…</span>
 		{#each [1, 2, 3] as i (i)}
 			<div class="skeleton" aria-hidden="true"></div>
@@ -322,7 +326,7 @@
 	<div class="error" role="alert">
 		<h2>We couldn’t load your home</h2>
 		<p>Check your connection and try again. Nothing on your account has changed.</p>
-		<button type="button" class="btn btn-primary" onclick={retry} disabled={retrying}>
+		<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying}>
 			{retrying ? 'Trying again…' : 'Try again'}
 		</button>
 	</div>
@@ -335,6 +339,11 @@
 
 	h1 {
 		font-size: clamp(28px, 5vw, 38px);
+		overflow-wrap: anywhere;
+	}
+
+	h1:focus {
+		outline: none;
 	}
 
 	.lead {
@@ -417,6 +426,7 @@
 
 	.meta strong {
 		color: var(--text);
+		font-variant-numeric: tabular-nums;
 	}
 
 	.hint {
@@ -506,7 +516,8 @@
 	.score-num {
 		font-size: 30px;
 		font-weight: 800;
-		color: var(--accent);
+		color: var(--text);
+		font-variant-numeric: tabular-nums;
 		line-height: 1;
 		min-width: 2.2ch;
 	}
@@ -570,6 +581,7 @@
 	.facts dd {
 		margin: 2px 0 0;
 		font-size: 15px;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.private {
@@ -648,9 +660,10 @@
 		font-size: 20px;
 	}
 
-	.error button:disabled {
+	.error button[aria-disabled='true'] {
 		opacity: 0.7;
 		cursor: progress;
+		pointer-events: none;
 	}
 
 	@media (max-width: 400px) {
@@ -668,6 +681,9 @@
 	}
 
 	.card h3 a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
 		color: inherit;
 		text-decoration: underline;
 		text-decoration-color: var(--border);
