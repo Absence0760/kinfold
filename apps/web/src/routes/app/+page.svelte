@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { invalidate } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
+	import { page } from '$app/state';
+	import { loadProblem } from '#lib/auth/errors.ts';
+	import { signinUrl } from '#lib/auth/next.ts';
+	import { clearLocalSession } from '#lib/auth/session.ts';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import {
 		defaultPlanText,
@@ -9,13 +13,15 @@
 		requestStatusText,
 		type Tone
 	} from '#lib/dashboard/labels.ts';
+	import { greeting } from '#lib/dashboard/home.ts';
 	import { showsRaised } from '#lib/dashboard/requests.ts';
 	import { scoreBand } from '#lib/requests/score-band.ts';
 
 	let { data } = $props();
 
-	const name = $derived(data.viewer.member?.display_name ?? null);
+	const member = $derived(data.viewer.member);
 	let retrying = $state(false);
+	let leaving = $state(false);
 	let heading = $state<HTMLElement>();
 
 	async function retry() {
@@ -29,6 +35,26 @@
 			heading?.focus();
 		}
 	}
+
+	// The server rejected the session: retrying would fail the same way, so
+	// drop it on this device and sign in again, coming back here after.
+	async function signInAgain() {
+		if (leaving) return;
+		leaving = true;
+		try {
+			await clearLocalSession();
+			await goto(signinUrl(page.url));
+		} finally {
+			leaving = false;
+		}
+	}
+
+	// A member with no profile sees the setup note instead of the home, so the
+	// home's reads (which RLS answers with nothing) have no reader; mark them
+	// handled rather than leave an unhandled rejection in the console.
+	$effect(() => {
+		if (!member) data.home.catch(() => {});
+	});
 
 	const pct = (part: number, whole: number) => (whole > 0 ? Math.min(100, Math.round((part / whole) * 100)) : 0);
 	const months = (n: number) => `${n} month${n === 1 ? '' : 's'}`;
@@ -57,10 +83,27 @@
 
 <header class="page-head">
 	<p class="eyebrow">Your home</p>
-	<h1 bind:this={heading} tabindex="-1">{name ? `Hello, ${name}` : 'Hello'}</h1>
+	<h1 bind:this={heading} tabindex="-1">{greeting(member?.display_name)}</h1>
 	<p class="lead">Your requests, the loans you’ve taken or given, and your private giving record.</p>
 </header>
 
+{#if !member}
+	<!-- Signed in, but no members row. Creating one in the app is a pending
+	     product decision, so say what's missing and who can fix it, with no
+	     link that would lead back here. -->
+	<section class="setup" aria-labelledby="setup-h">
+		<h2 id="setup-h">Your member profile isn’t set up yet</h2>
+		<p>
+			You’re signed in, but this account doesn’t have a Kinfold member profile yet, so asking for
+			help, lending and the members’ board aren’t open to you. A profile can’t be created from this
+			page yet.
+		</p>
+		<p>
+			Membership is by invitation for now. Ask the member who invited you to contact the Kinfold
+			team, who will finish setting up your profile. Then sign in again.
+		</p>
+	</section>
+{:else}
 {#await data.home}
 	<div class="loading" role="status" aria-busy="true">
 		<span class="visually-hidden">Loading your home…</span>
@@ -162,6 +205,10 @@
 					When family or friends lend toward one of your requests, or you lend toward theirs, the
 					schedule and the next installment show here, for both of you.
 				</p>
+				<div class="next">
+					<a class="btn btn-primary" href="/app/requests/new">Ask for help</a>
+					<a class="btn btn-ghost" href="/app/invite">Invite someone</a>
+				</div>
 			</div>
 		{:else}
 			<ul class="cards">
@@ -263,7 +310,13 @@
 		{#if home.giving.empty}
 			<div class="empty">
 				<p><strong>Nothing here yet.</strong></p>
-				<p>Your dues, gifts and loans to others, and any help you receive, add up here once collected.</p>
+				<p>
+					Your monthly membership dues, the gifts and loans you give, and any help you receive add up
+					here once the payment partner has collected the money.
+				</p>
+				<div class="next">
+					<a class="btn btn-ghost" href="/app/invite">Invite someone</a>
+				</div>
 			</div>
 		{:else}
 			<div class="ledger">
@@ -331,15 +384,26 @@
 			</dl>
 		</section>
 	{/if}
-{:catch}
+{:catch err}
+	{@const problem = loadProblem(err, 'your home')}
 	<div class="error" role="alert">
-		<h2>We couldn’t load your home</h2>
-		<p>Check your connection and try again. Nothing on your account has changed.</p>
-		<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying}>
-			{retrying ? 'Trying again…' : 'Try again'}
-		</button>
+		<h2>{problem.title}</h2>
+		<p>{problem.body}</p>
+		{#if problem.detail}
+			<p class="fine">What the server said: “{problem.detail}”</p>
+		{/if}
+		{#if problem.kind === 'session'}
+			<button type="button" class="btn btn-primary" onclick={signInAgain} aria-disabled={leaving}>
+				{leaving ? 'Signing out…' : 'Sign in again'}
+			</button>
+		{:else}
+			<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying}>
+				{retrying ? 'Trying again…' : 'Try again'}
+			</button>
+		{/if}
 	</div>
 {/await}
+{/if}
 
 <style>
 	.page-head {
@@ -394,7 +458,8 @@
 	.card,
 	.empty,
 	.ledger .side,
-	.error {
+	.error,
+	.setup {
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
@@ -411,6 +476,24 @@
 
 	.empty strong {
 		color: var(--text);
+	}
+
+	.next {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 8px;
+	}
+
+	.setup {
+		display: grid;
+		gap: 10px;
+		max-width: 680px;
+		border-left: 4px solid var(--warm);
+	}
+
+	.setup h2 {
+		font-size: 20px;
 	}
 
 	.card-head {
@@ -705,6 +788,7 @@
 		.empty,
 		.ledger .side,
 		.error,
+		.setup,
 		.facts.wide {
 			padding: 14px 14px;
 		}

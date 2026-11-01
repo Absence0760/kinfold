@@ -13,7 +13,7 @@ export function safeNext(next: string | null | undefined): string {
 }
 
 /** The sign-in URL that returns to `url` afterwards. */
-export function signinUrl(url: URL): string {
+export function signinUrl(url: Pick<URL, 'pathname' | 'search'>): string {
 	const next = url.pathname + url.search;
 	return next === '/app' ? '/signin' : `/signin?next=${encodeURIComponent(next)}`;
 }

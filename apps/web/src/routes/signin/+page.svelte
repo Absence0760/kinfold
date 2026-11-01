@@ -4,6 +4,7 @@
 	import { safeNext } from '#lib/auth/next.ts';
 	import { dev } from '$app/env';
 	import { DEMO_ACCOUNTS, DEMO_PASSWORD, demoSignInAllowed } from '#lib/auth/demo-accounts.ts';
+	import { classifySignInError, notConfiguredNotice, signInNotice, type Notice } from '#lib/auth/errors.ts';
 	import { getSession, signIn } from '#lib/auth/session.ts';
 	import { isConfigured, supabaseUrl } from '#lib/supabase/client.ts';
 
@@ -16,28 +17,38 @@
 
 	let email = $state('');
 	let password = $state('');
-	let error = $state('');
+	let error = $state<Notice | null>(null);
+	// Only a wrong email or password marks the fields invalid; a dropped
+	// connection or a rate limit isn't the member's typing.
+	let badCredentials = $state(false);
+	const missingKey = notConfiguredNotice(dev);
 	let busy = $state<string | null>(null);
 
 	$effect(() => {
 		if (!configured) return;
-		getSession().then((s): void => {
-			if (s) goto(next, { replaceState: true });
-		});
+		// Already signed in: skip the form. If the session can't be checked
+		// (offline), stay on the form; signing in will say what's wrong.
+		getSession().then(
+			(s): void => {
+				if (s) goto(next, { replaceState: true });
+			},
+			() => {}
+		);
 	});
 
 	async function submit(asEmail: string, asPassword: string, key: string) {
 		if (busy !== null) return;
-		error = '';
+		error = null;
+		badCredentials = false;
 		busy = key;
 		try {
 			await signIn(asEmail, asPassword);
 			await goto(next);
 		} catch (e) {
-			error =
-				e instanceof Error && /fetch/i.test(e.message)
-					? "Can't reach the local backend. Start it with `pnpm dev:db:up`."
-					: 'That email and password don’t match an account.';
+			// Wrong password, too many tries, unconfirmed email and a dropped
+			// connection each get their own words; pnpm commands only in dev.
+			error = signInNotice(e, dev);
+			badCredentials = classifySignInError(e) === 'invalid-credentials';
 		} finally {
 			busy = null;
 		}
@@ -61,12 +72,13 @@
 
 			{#if !configured}
 				<p class="notice" role="alert">
-					The member area has no Supabase key. Start it with <code>pnpm dev:run:web</code>, which
-					reads the key from the running local stack.
+					{missingKey.text}{#if missingKey.command}{' '}<code>{missingKey.command}</code>{/if}
 				</p>
 			{:else}
 				{#if error}
-					<p class="notice" role="alert" id="signin-error">{error}</p>
+					<p class="notice" role="alert" id="signin-error">
+						{error.text}{#if error.command}{' '}<code>{error.command}</code>.{/if}
+					</p>
 				{/if}
 
 				<form
@@ -87,7 +99,7 @@
 							required
 							bind:value={email}
 							readonly={busy !== null}
-							aria-invalid={error ? 'true' : undefined}
+							aria-invalid={badCredentials ? 'true' : undefined}
 							aria-describedby={error ? 'signin-error' : undefined}
 						/>
 					</label>
@@ -99,7 +111,7 @@
 							required
 							bind:value={password}
 							readonly={busy !== null}
-							aria-invalid={error ? 'true' : undefined}
+							aria-invalid={badCredentials ? 'true' : undefined}
 							aria-describedby={error ? 'signin-error' : undefined}
 						/>
 					</label>
@@ -107,6 +119,13 @@
 						{busy === 'form' ? 'Signing in…' : 'Sign in'}
 					</button>
 				</form>
+
+				<!-- No sign-up yet: membership is invitation-only while that
+				     product decision is pending. -->
+				<p class="join">
+					<strong>New to Kinfold?</strong> Joining is by invitation for now. If a member sent you an
+					invitation link, open that link to join.
+				</p>
 
 				<!-- Dev only, and kept out of the way: a collapsed strip under the
 				     form, so the page reads like the real sign-in. -->
@@ -306,6 +325,15 @@
 	.hint {
 		color: var(--muted);
 		font-size: 14px;
+	}
+
+	.join {
+		color: var(--muted);
+		font-size: 15px;
+	}
+
+	.join strong {
+		color: var(--text);
 	}
 
 	.notice {

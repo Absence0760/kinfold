@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { loadHome } from './home.ts';
+import { classifyLoadError, LoadError } from '#lib/auth/errors.ts';
+import { greeting, loadHome } from './home.ts';
 
-type Fixture = { data: unknown; error: { message: string } | null };
+type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
 /**
  * A stand-in for the Supabase client: every query on a table (or RPC) resolves
@@ -71,5 +72,28 @@ describe('loadHome', () => {
 			my_reliability: reliability
 		});
 		await expect(loadHome(db, 'maria', '2026-10-31')).rejects.toThrow(/your requests: permission denied/);
+	});
+
+	it('keeps the code and status, so an ended session is not retried forever', async () => {
+		const { db } = fakeDb({
+			family_loans: { data: null, error: { message: 'JWT expired', code: 'PGRST301' }, status: 401 },
+			my_giving_record: giving,
+			my_reliability: reliability
+		});
+		const err = await loadHome(db, 'maria', '2026-10-31').catch((e: unknown) => e);
+		expect(err).toBeInstanceOf(LoadError);
+		expect(err).toMatchObject({ what: 'your loans', code: 'PGRST301', status: 401 });
+		expect(classifyLoadError(err)).toBe('session');
+	});
+});
+
+describe('greeting', () => {
+	it('uses the display name', () => {
+		expect(greeting('Maria')).toBe('Hello, Maria');
+		expect(greeting('  Maria  ')).toBe('Hello, Maria');
+	});
+
+	it('welcomes a member with no name instead of a bare "Hello"', () => {
+		for (const none of [null, undefined, '', '   ']) expect(greeting(none)).toBe('Welcome to Kinfold');
 	});
 });

@@ -1,3 +1,4 @@
+import { LoadError } from '#lib/auth/errors.ts';
 import type { Db } from '#lib/supabase/client.ts';
 import { givingSummary, type GivingSummary, type ReliabilityRow } from './giving.ts';
 import { sortLoans, summarizeLoan, type LoanSummary } from './loans.ts';
@@ -17,11 +18,21 @@ export interface HomeData {
 	reliability: ReliabilityRow | null;
 }
 
-type Result<T> = { data: T | null; error: { message: string } | null };
+type Result<T> = { data: T | null; error: { message: string; code?: string } | null; status?: number };
 
+/** The data, or a `LoadError` keeping the code and HTTP status so the page can tell an ended session from a dropped connection. */
 function must<T>(r: Result<T>, what: string): T {
-	if (r.error) throw new Error(`Couldn't load ${what}: ${r.error.message}`);
+	if (r.error) throw new LoadError(what, r.error, r.status);
 	return r.data as T;
+}
+
+/**
+ * The home page's heading. A member with no display name (or no member row
+ * yet) is welcomed, not greeted with a bare "Hello".
+ */
+export function greeting(displayName: string | null | undefined): string {
+	const name = displayName?.trim();
+	return name ? `Hello, ${name}` : 'Welcome to Kinfold';
 }
 
 /**
@@ -56,7 +67,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 	const requestIds = requests.map((r) => r.id);
 	const loanIds = loans.map((l) => l.id);
 	const loanRequestIds = [...new Set(loans.map((l) => l.request_id).filter((id): id is string => id !== null))];
-	const none = Promise.resolve({ data: [], error: null });
+	const none = Promise.resolve({ data: [], error: null, status: 200 });
 
 	const [scoresRes, contribRes, instRes, pausesRes, forgRes, missedRes, titlesRes, supportersRes] = await Promise.all([
 		requestIds.length
