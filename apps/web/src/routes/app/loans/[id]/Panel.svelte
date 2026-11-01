@@ -45,7 +45,7 @@
 		justify-items: start;
 	}
 
-	.panel :global(.field > span:first-child),
+	.panel :global(.field > label:first-child),
 	.panel :global(legend) {
 		font-weight: 600;
 		font-size: 15px;
@@ -70,6 +70,7 @@
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		padding: 8px 10px;
+		min-height: 44px;
 		max-width: 100%;
 	}
 
@@ -99,8 +100,16 @@
 	}
 
 	.panel :global(.option input) {
-		margin-top: 4px;
+		margin-top: 2px;
 		flex: none;
+		width: 20px;
+		height: 20px;
+		accent-color: var(--accent);
+	}
+
+	.panel :global(.option:has(input:focus-visible)) {
+		outline: 3px solid var(--warm);
+		outline-offset: 2px;
 	}
 
 	.panel :global(.hint),
@@ -157,6 +166,13 @@
 	.panel :global(.btn) {
 		padding: 9px 16px;
 		font-size: 15px;
+		min-height: 44px;
+	}
+
+	@media (max-width: 480px) {
+		.panel :global(.actions .btn) {
+			flex: 1 1 10rem;
+		}
 	}
 
 	.panel :global(.btn:disabled) {

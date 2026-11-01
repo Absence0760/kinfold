@@ -62,16 +62,26 @@
 		openButton?.focus();
 	}
 
+	async function goBack() {
+		step = 'edit';
+		await tick();
+		firstField?.focus();
+	}
+
 	async function review(e: SubmitEvent) {
 		e.preventDefault();
 		tried = true;
-		if (problem) return;
+		if (problem) {
+			firstField?.focus();
+			return;
+		}
 		step = 'confirm';
 		await tick();
 		confirmTitle?.focus();
 	}
 
 	async function save() {
+		if (step === 'sending') return;
 		if (cents == null) return;
 		step = 'sending';
 		error = '';
@@ -86,6 +96,8 @@
 		} catch (err) {
 			error = explainLoanError(err as { message?: string; code?: string });
 			step = 'confirm';
+			await tick();
+			confirmTitle?.focus();
 		}
 	}
 </script>
@@ -117,20 +129,22 @@
 				</label>
 			</fieldset>
 			{#if choice === 'part'}
-				<label class="field">
-					<span>Amount to forgive, in dollars</span>
+				<div class="field">
+					<label for="{uid}-amount">Amount to forgive, in dollars</label>
 					<input
+						id="{uid}-amount"
 						bind:this={firstField}
 						bind:value={typed}
 						inputmode="decimal"
 						autocomplete="off"
 						size="10"
+						aria-required="true"
 						aria-invalid={tried && problem ? 'true' : undefined}
 						aria-describedby="{uid}-hint{tried && problem ? ` ${uid}-problem` : ''}"
 					/>
 					<span class="hint" id="{uid}-hint">Up to {formatCents(outstandingCents)}, like 100 or 49.50.</span>
-					{#if tried && problem}<span class="problem" id="{uid}-problem">{problem}</span>{/if}
-				</label>
+					{#if tried && problem}<span class="problem" id="{uid}-problem" role="alert">{problem}</span>{/if}
+				</div>
 			{/if}
 			<div class="actions">
 				<button type="submit" class="btn btn-primary">Review</button>
@@ -172,7 +186,7 @@
 				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Saving…' : `Forgive ${formatCents(cents ?? 0)}`}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={() => (step = 'edit')} disabled={step === 'sending'}>
+				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>
 					Go back
 				</button>
 			</div>

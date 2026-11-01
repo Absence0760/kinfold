@@ -49,6 +49,7 @@
 	}
 
 	async function sign() {
+		if (step === 'sending') return;
 		step = 'sending';
 		error = '';
 		try {
@@ -62,6 +63,8 @@
 		} catch (err) {
 			error = explainLoanError(err as { message?: string; code?: string });
 			step = 'confirm';
+			await tick();
+			confirmTitle?.focus();
 		}
 	}
 </script>

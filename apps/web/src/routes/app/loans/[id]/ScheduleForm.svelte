@@ -32,6 +32,7 @@
 
 	let openButton = $state<HTMLButtonElement>();
 	let monthsInput = $state<HTMLInputElement>();
+	let firstInput = $state<HTMLInputElement>();
 	let confirmTitle = $state<HTMLElement>();
 
 	const uid = $derived(`schedule-${loan.id}`);
@@ -63,16 +64,31 @@
 		openButton?.focus();
 	}
 
+	async function goBack() {
+		step = 'edit';
+		await tick();
+		monthsInput?.focus();
+	}
+
 	async function review(e: SubmitEvent) {
 		e.preventDefault();
 		tried = true;
-		if (monthsProblem || firstProblem || rows.length === 0) return;
+		if (monthsProblem) {
+			monthsInput?.focus();
+			return;
+		}
+		if (firstProblem) {
+			firstInput?.focus();
+			return;
+		}
+		if (rows.length === 0) return;
 		step = 'confirm';
 		await tick();
 		confirmTitle?.focus();
 	}
 
 	async function save() {
+		if (step === 'sending') return;
 		step = 'sending';
 		error = '';
 		try {
@@ -84,6 +100,8 @@
 		} catch (err) {
 			error = explainLoanError(err as { message?: string; code?: string });
 			step = 'confirm';
+			await tick();
+			confirmTitle?.focus();
 		}
 	}
 </script>
@@ -127,25 +145,30 @@
 		</div>
 	{:else if step === 'edit'}
 		<form onsubmit={review} novalidate>
-			<label class="field">
-				<span>Number of monthly payments</span>
+			<div class="field">
+				<label for="{uid}-months">Number of monthly payments</label>
 				<input
+					id="{uid}-months"
 					bind:this={monthsInput}
 					bind:value={monthsText}
 					inputmode="numeric"
 					autocomplete="off"
 					size="6"
+					aria-required="true"
 					aria-invalid={tried && monthsProblem ? 'true' : undefined}
 					aria-describedby="{uid}-months-hint{tried && monthsProblem ? ` ${uid}-months-problem` : ''}"
 				/>
 				<span class="hint" id="{uid}-months-hint">1 to {MAX_MONTHS}. 12 is one year.</span>
-				{#if tried && monthsProblem}<span class="problem" id="{uid}-months-problem">{monthsProblem}</span>{/if}
-			</label>
+				{#if tried && monthsProblem}<span class="problem" id="{uid}-months-problem" role="alert">{monthsProblem}</span>{/if}
+			</div>
 
-			<label class="field">
-				<span>First payment no earlier than</span>
+			<div class="field">
+				<label for="{uid}-first">First payment no earlier than</label>
 				<input
+					id="{uid}-first"
+					bind:this={firstInput}
 					type="date"
+					aria-required="true"
 					bind:value={first}
 					min={tomorrow}
 					aria-invalid={tried && firstProblem ? 'true' : undefined}
@@ -155,8 +178,8 @@
 					The first payment lands on the next {ordinal(loan.payment_day)} on or after this date. Repayments only
 					start once the money has reached the payee.
 				</span>
-				{#if tried && firstProblem}<span class="problem" id="{uid}-first-problem">{firstProblem}</span>{/if}
-			</label>
+				{#if tried && firstProblem}<span class="problem" id="{uid}-first-problem" role="alert">{firstProblem}</span>{/if}
+			</div>
 
 			{@render preview()}
 
@@ -179,7 +202,7 @@
 				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Saving…' : 'Save the schedule'}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={() => (step = 'edit')} disabled={step === 'sending'}>
+				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>
 					Go back
 				</button>
 			</div>

@@ -57,6 +57,12 @@
 		openButton?.focus();
 	}
 
+	async function goBack() {
+		step = 'edit';
+		await tick();
+		firstField?.focus();
+	}
+
 	async function review(e: SubmitEvent) {
 		e.preventDefault();
 		if (problem) return;
@@ -66,6 +72,7 @@
 	}
 
 	async function save() {
+		if (step === 'sending') return;
 		step = 'sending';
 		error = '';
 		try {
@@ -75,6 +82,8 @@
 		} catch (err) {
 			error = explainLoanError(err as { message?: string; code?: string });
 			step = 'confirm';
+			await tick();
+			confirmTitle?.focus();
 		}
 	}
 </script>
@@ -108,22 +117,28 @@
 		({used} used).
 	</p>
 	{#if step === 'closed'}
+		{#if left < 1}
+			<p class="hint">No pause months are left right now. They come back as earlier pauses fall outside the last 12 months.</p>
+		{/if}
 		<div class="actions">
-			<button type="button" class="btn btn-ghost" bind:this={openButton} onclick={open}>Pause payments</button>
+			<button type="button" class="btn btn-ghost" bind:this={openButton} onclick={open} disabled={left < 1}>
+				Pause payments
+			</button>
 		</div>
 	{:else if step === 'edit'}
 		<form onsubmit={review} novalidate>
-			<label class="field">
-				<span>How long?</span>
-				<select bind:this={firstField} bind:value={months}>
+			<div class="field">
+				<label for="{uid}-months">How long?</label>
+				<select id="{uid}-months" bind:this={firstField} bind:value={months}>
 					{#each choices as m (m)}
 						<option value={m}>{monthsWord(m)}</option>
 					{/each}
 				</select>
-			</label>
-			<label class="field">
-				<span>A note for your lender (optional)</span>
+			</div>
+			<div class="field">
+				<label for="{uid}-reason">A note for your lender (optional)</label>
 				<textarea
+					id="{uid}-reason"
 					rows="3"
 					bind:value={reason}
 					maxlength={REASON_MAX}
@@ -132,7 +147,7 @@
 				<span class="hint" id="{uid}-reason-hint">
 					You don’t have to explain. Your lender can see this note. {reason.trim().length} of {REASON_MAX} characters.
 				</span>
-			</label>
+			</div>
 			{@render movedList()}
 			{#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 			<div class="actions">
@@ -157,7 +172,7 @@
 				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Pausing…' : `Pause for ${monthsWord(months)}`}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={() => (step = 'edit')} disabled={step === 'sending'}>
+				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>
 					Go back
 				</button>
 			</div>

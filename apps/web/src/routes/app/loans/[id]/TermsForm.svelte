@@ -82,6 +82,12 @@
 		openButton?.focus();
 	}
 
+	async function goBack() {
+		step = 'edit';
+		await tick();
+		firstField?.focus();
+	}
+
 	async function review(e: SubmitEvent) {
 		e.preventDefault();
 		if (!changed) return;
@@ -91,6 +97,7 @@
 	}
 
 	async function save() {
+		if (step === 'sending') return;
 		step = 'sending';
 		error = '';
 		try {
@@ -102,6 +109,8 @@
 		} catch (err) {
 			error = explainLoanError(err as { message?: string; code?: string });
 			step = 'confirm';
+			await tick();
+			confirmTitle?.focus();
 		}
 	}
 </script>
@@ -117,9 +126,9 @@
 		</div>
 	{:else if step === 'edit'}
 		<form onsubmit={review} novalidate>
-			<label class="field">
-				<span>Payment day</span>
-				<select bind:this={firstField} bind:value={day} aria-describedby="{uid}-day-hint">
+			<div class="field">
+				<label for="{uid}-day">Payment day</label>
+				<select id="{uid}-day" bind:this={firstField} bind:value={day} aria-describedby="{uid}-day-hint">
 					{#each days as d (d)}
 						<option value={d}>The {ordinal(d)} of each month</option>
 					{/each}
@@ -127,11 +136,11 @@
 				<span class="hint" id="{uid}-day-hint">
 					The day the payment partner collects each installment. Pick one just after the borrower’s payday.
 				</span>
-			</label>
+			</div>
 
-			<label class="field">
-				<span>Pause allowance</span>
-				<select bind:value={pauses} aria-describedby="{uid}-pause-hint">
+			<div class="field">
+				<label for="{uid}-pauses">Pause allowance</label>
+				<select id="{uid}-pauses" bind:value={pauses} aria-describedby="{uid}-pause-hint">
 					{#each months as m (m)}
 						<option value={m}>{m === 0 ? 'No pauses' : `Up to ${m} month${m === 1 ? '' : 's'} a year`}</option>
 					{/each}
@@ -140,7 +149,7 @@
 					How many months in any 12 the borrower can pause without asking. A pause moves payments later; it
 					never adds to what’s owed.
 				</span>
-			</label>
+			</div>
 
 			<fieldset>
 				<legend>If repayments stop for good</legend>
@@ -165,9 +174,9 @@
 				</div>
 			{/if}
 
-			{#if !changed}<p class="hint">Change something to save new terms.</p>{/if}
+			{#if !changed}<p class="hint" id="{uid}-nochange">Change something to save new terms.</p>{/if}
 			<div class="actions">
-				<button type="submit" class="btn btn-primary" disabled={!changed}>Review the new terms</button>
+				<button type="submit" class="btn btn-primary" disabled={!changed} aria-describedby={changed ? undefined : `${uid}-nochange`}>Review the new terms</button>
 				<button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
 			</div>
 		</form>
@@ -188,7 +197,7 @@
 				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Saving…' : 'Save the terms'}
 				</button>
-				<button type="button" class="btn btn-ghost" onclick={() => (step = 'edit')} disabled={step === 'sending'}>
+				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>
 					Go back
 				</button>
 			</div>
