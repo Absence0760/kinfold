@@ -351,7 +351,7 @@
 		font: inherit;
 		color: var(--text);
 		background: var(--bg);
-		border: 1px solid var(--border);
+		border: 1px solid var(--field-border);
 		border-radius: 10px;
 		padding: 10px 12px;
 		resize: vertical;

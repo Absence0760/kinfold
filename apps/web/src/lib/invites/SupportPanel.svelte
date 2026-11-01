@@ -425,7 +425,7 @@
 		gap: 6px;
 		max-width: 220px;
 		background: var(--surface);
-		border: 1px solid var(--border);
+		border: 1px solid var(--field-border);
 		border-radius: 8px;
 		padding: 0 10px;
 	}

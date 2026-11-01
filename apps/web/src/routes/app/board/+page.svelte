@@ -370,7 +370,7 @@
 		font-size: 15px;
 		color: var(--text);
 		background: var(--surface);
-		border: 1px solid var(--border);
+		border: 1px solid var(--field-border);
 		border-radius: 8px;
 		padding: 8px 10px;
 		min-height: 44px;

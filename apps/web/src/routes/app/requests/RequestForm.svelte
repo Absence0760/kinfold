@@ -539,7 +539,7 @@
 		min-height: 44px;
 		color: var(--text);
 		background: var(--surface);
-		border: 1px solid var(--border);
+		border: 1px solid var(--field-border);
 		border-radius: 10px;
 		padding: 10px 12px;
 		width: 100%;

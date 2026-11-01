@@ -26,3 +26,18 @@ describe('shared style utilities', () => {
 		}
 	});
 });
+
+// Form fields need a ≥3:1 outline (WCAG 1.4.11); --border (≈1.3:1) is for card
+// edges. Every input, select, textarea or .field rule draws its border with
+// --field-border instead.
+describe('form field outlines', () => {
+	it('never use the low-contrast card border', () => {
+		for (const [file, src] of Object.entries(sources)) {
+			const css = src.slice(Math.max(0, src.indexOf('<style>')));
+			for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+				if (!/(^|[\s,>(])(input|select|textarea)\b|\.field\b/.test(selector.trim())) continue;
+				expect(body, `${file}: ${selector.trim()} uses --border`).not.toMatch(/border(-color)?\s*:[^;]*var\(--border\)/);
+			}
+		}
+	});
+});
