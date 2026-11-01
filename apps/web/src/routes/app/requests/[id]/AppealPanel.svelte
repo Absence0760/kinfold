@@ -31,6 +31,7 @@
 
 	async function send(e: SubmitEvent) {
 		e.preventDefault();
+		if (sending) return;
 		problem = appealReasonProblem(reason);
 		if (problem) {
 			textarea?.focus();
@@ -92,9 +93,10 @@
 			{#if problem}<p class="problem" id="{base}-problem" role="alert">{problem}</p>{/if}
 			<div>
 				<button type="submit" class="btn btn-primary" disabled={sending}>
-					{sending ? 'Sending…' : 'Send appeal'}
+					{sending ? 'Sending your appeal…' : 'Send appeal'}
 				</button>
 			</div>
+			<p class="hint" role="status">{#if sending}Sending. Keep this page open.{/if}</p>
 		</form>
 	{:else if status === 'appeal_used' && appeals.length > 0}
 		<p class="hint">Each refusal can be appealed once, and this one has been decided.</p>
@@ -181,6 +183,14 @@
 		font-weight: 600;
 		padding-left: 10px;
 		border-left: 4px solid var(--warm);
+	}
+
+	.btn {
+		min-height: 44px;
+	}
+
+	textarea {
+		min-height: 44px;
 	}
 
 	.btn:disabled {

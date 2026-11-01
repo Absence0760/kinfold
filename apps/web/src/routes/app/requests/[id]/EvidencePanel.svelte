@@ -38,6 +38,18 @@
 	let links = $state<Record<string, { url: string; which: string }>>({});
 	let removing = $state<string | null>(null);
 
+	async function askRemove(id: string) {
+		removing = id;
+		await tick();
+		document.getElementById(`${base}-${id}-confirm`)?.focus();
+	}
+
+	async function keepIt(id: string) {
+		removing = null;
+		await tick();
+		document.getElementById(`${base}-${id}-remove`)?.focus();
+	}
+
 	async function open(e: EvidenceRow, which: 'original' | 'redacted') {
 		rowError = null;
 		busy = `${e.id}-${which}`;
@@ -88,15 +100,19 @@
 	let fileInput = $state<HTMLInputElement>();
 	let addProblem = $state<string | null>(null);
 	let adding = $state(false);
+	/** The last upload failed; the chosen file is kept so one tap retries it. */
+	let failed = $state(false);
 
 	function pick(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
 		file = input.files?.[0] ?? null;
+		failed = false;
 		addProblem = file ? fileProblem(file) : null;
 	}
 
 	async function add(e: SubmitEvent) {
 		e.preventDefault();
+		if (adding) return;
 		if (!file) {
 			addProblem = 'Choose a file to upload.';
 			fileInput?.focus();
@@ -108,6 +124,7 @@
 			return;
 		}
 		adding = true;
+		failed = false;
 		try {
 			await addEvidence(uid, requestId, newKind, file);
 			const label = evidenceKindLabel(newKind).toLowerCase();
@@ -116,6 +133,8 @@
 			await onchanged(`Uploaded the ${label}. It’s stored privately and waits for redaction.`);
 		} catch (err) {
 			addProblem = err instanceof Error ? err.message : 'The upload didn’t go through. Try again.';
+			failed = true;
+			fileInput?.focus();
 		} finally {
 			adding = false;
 		}
@@ -164,7 +183,7 @@
 							</button>
 						{/if}
 						{#if editable && removing !== e.id}
-							<button type="button" class="btn btn-ghost small" onclick={() => (removing = e.id)} disabled={busy !== null}>
+							<button type="button" class="btn btn-ghost small" id="{base}-{e.id}-remove" onclick={() => askRemove(e.id)} disabled={busy !== null}>
 								Remove
 							</button>
 						{/if}
@@ -178,13 +197,13 @@
 						</p>
 					{/if}
 					{#if removing === e.id}
-						<div class="confirm" role="group" aria-label="Remove this evidence?">
+						<div class="confirm" role="group" aria-label="Remove this evidence?" id="{base}-{e.id}-confirm" tabindex="-1">
 							<p>Remove this {evidenceKindLabel(e.kind).toLowerCase()} from the request?</p>
 							<div class="actions">
 								<button type="button" class="btn btn-primary small" onclick={() => remove(e)} disabled={busy !== null}>
 									{busy === `${e.id}-remove` ? 'Removing…' : 'Yes, remove it'}
 								</button>
-								<button type="button" class="btn btn-ghost small" onclick={() => (removing = null)}>Keep it</button>
+								<button type="button" class="btn btn-ghost small" onclick={() => keepIt(e.id)}>Keep it</button>
 							</div>
 						</div>
 					{/if}
@@ -215,16 +234,19 @@
 				aria-invalid={addProblem ? 'true' : undefined}
 			/>
 			<p class="hint" id="{base}-file-hint">
-				A photo or a PDF, up to 50 MB. Uploads from your files are marked as such; photos taken in
+				A photo or a PDF, up to 50 MB. It’s stored privately and is only shared after it’s redacted and you’ve checked it. Uploads from your files are marked as such; photos taken in
 				the Kinfold app (coming with the phone app) count for more, because they can be checked as
 				unedited.
 			</p>
 			{#if addProblem}<p class="problem" id="{base}-file-problem" role="alert">{addProblem}</p>{/if}
 			<div class="actions">
 				<button type="submit" class="btn btn-primary small" disabled={adding}>
-					{adding ? 'Uploading…' : 'Upload'}
+					{adding ? 'Uploading…' : failed ? 'Try the upload again' : 'Upload'}
 				</button>
 			</div>
+			<p class="hint" role="status">
+				{#if adding}Uploading. Keep this page open until it finishes. Large files can take a minute.{/if}
+			</p>
 		</form>
 	{/if}
 </section>
@@ -310,6 +332,7 @@
 	}
 
 	.btn.small {
+		min-height: 44px;
 		padding: 8px 14px;
 		font-size: 14px;
 	}
@@ -368,6 +391,7 @@
 		padding: 10px 12px;
 		width: 100%;
 		min-width: 0;
+		min-height: 44px;
 	}
 
 	[aria-invalid='true'] {

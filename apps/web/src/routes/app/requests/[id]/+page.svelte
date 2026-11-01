@@ -116,6 +116,12 @@
 	let errorBox = $state<HTMLElement>();
 	let busy = $state<'submit' | 'withdraw' | 'summary' | null>(null);
 	let confirmingWithdraw = $state(false);
+
+	async function askWithdraw(open: boolean) {
+		confirmingWithdraw = open;
+		await tick();
+		document.getElementById(open ? 'withdraw-confirm' : 'withdraw-btn')?.focus();
+	}
 	let editing = $state(false);
 
 	$effect(() => {
@@ -263,7 +269,7 @@
 			{#if canChangeEvidence(rs) && blockers.length}
 				<div class="blockers" role="note" aria-labelledby="blockers-h">
 					<p id="blockers-h"><strong>Before you can submit:</strong></p>
-					<ul>{#each blockers as b (b)}<li>{b}</li>{/each}</ul>
+					<ul id="blockers-list">{#each blockers as b (b)}<li>{b}</li>{/each}</ul>
 				</div>
 			{/if}
 
@@ -277,7 +283,7 @@
 						type="button"
 						class="btn btn-primary"
 						disabled={busy !== null || blockers.length > 0}
-						aria-describedby={blockers.length ? 'blockers-h' : undefined}
+						aria-describedby={blockers.length ? 'blockers-h blockers-list' : undefined}
 						onclick={() =>
 							act('submit', () => submitRequest(r.id), 'Submitted. Your evidence is being read and scored; the result will show here.')}
 					>
@@ -290,14 +296,14 @@
 					</button>
 				{/if}
 				{#if canWithdraw(rs) && !confirmingWithdraw}
-					<button type="button" class="btn btn-ghost" disabled={busy !== null} onclick={() => (confirmingWithdraw = true)}>
+					<button id="withdraw-btn" type="button" class="btn btn-ghost" disabled={busy !== null} onclick={() => askWithdraw(true)}>
 						Withdraw
 					</button>
 				{/if}
 			</div>
 
 			{#if confirmingWithdraw}
-				<div class="confirm" role="group" aria-labelledby="withdraw-h">
+				<div class="confirm" id="withdraw-confirm" tabindex="-1" role="group" aria-labelledby="withdraw-h">
 					<p id="withdraw-h"><strong>Withdraw this request?</strong></p>
 					<p>
 						It stops here. Any pledges are released and nobody is charged. You can’t undo this, but you can
@@ -312,7 +318,7 @@
 						>
 							{busy === 'withdraw' ? 'Withdrawing…' : 'Yes, withdraw it'}
 						</button>
-						<button type="button" class="btn btn-ghost" onclick={() => (confirmingWithdraw = false)}>Keep it</button>
+						<button type="button" class="btn btn-ghost" onclick={() => askWithdraw(false)}>Keep it</button>
 					</div>
 				</div>
 			{/if}
@@ -325,6 +331,7 @@
 		{#if detail.score}
 			<div class="panel score">
 				<p class="score-line"><span class="score-num">{detail.score.score}</span> <span>out of 100</span></p>
+				<p class="sub">A score explains the evidence; it isn’t a verdict. A person can still look at it.</p>
 				{#if detail.score.reasons.length}
 					<p class="why">Why this score:</p>
 					<ul class="reasons">{#each detail.score.reasons as reason, i (i)}<li>{reason}</li>{/each}</ul>
@@ -465,6 +472,9 @@
 
 	.back a {
 		color: var(--accent);
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
 	}
 
 	.page-head {
@@ -618,6 +628,10 @@
 		margin-top: 16px;
 	}
 
+	.btn {
+		min-height: 44px;
+	}
+
 	.btn:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
@@ -632,7 +646,7 @@
 	.score-num {
 		font-size: 30px;
 		font-weight: 800;
-		color: var(--accent);
+		color: var(--text);
 		line-height: 1;
 	}
 
@@ -709,6 +723,13 @@
 		display: inline-block;
 		min-width: 8.5em;
 		color: var(--muted);
+	}
+
+	@media (max-width: 400px) {
+		.when {
+			display: block;
+			min-width: 0;
+		}
 	}
 
 	.loading {

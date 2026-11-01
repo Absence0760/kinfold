@@ -116,6 +116,7 @@
 
 	async function save(e: SubmitEvent) {
 		e.preventDefault();
+		if (saving) return;
 		saveError = null;
 		const r = validateDraft(form, latest);
 		if (!r.ok) {
@@ -169,11 +170,22 @@
 		document.getElementById(id('payeeId'))?.focus();
 	}
 
+	/** Enter in the business name adds the business; it must not save the whole draft. */
+	function nameKey(e: KeyboardEvent) {
+		if (e.key !== 'Enter') return;
+		e.preventDefault();
+		if (!payeeSaving) addPayee();
+	}
+
 	async function addPayee() {
+		if (payeeSaving) return;
 		payeeError = null;
 		const r = validatePayee(newPayee);
 		if (!r.ok) {
 			payeeProblems = r.problems;
+			await tick();
+			const first = r.problems.legalName ? 'payee-name' : r.problems.region ? 'payee-region' : 'payee-kind';
+			document.getElementById(id(first))?.focus();
 			return;
 		}
 		payeeProblems = {};
@@ -195,7 +207,7 @@
 </script>
 
 <form class="form" onsubmit={save} novalidate>
-	<fieldset>
+	<fieldset aria-describedby={problems.kind ? id('kind-problem') : undefined}>
 		<legend>What is the help for?</legend>
 		<div class="choices">
 			{#each REQUEST_KINDS as k (k.kind)}
@@ -218,7 +230,7 @@
 		{#if problems.kind}<p class="problem" id={id('kind-problem')}>{problems.kind}</p>{/if}
 	</fieldset>
 
-	<fieldset>
+	<fieldset aria-describedby={problems.funding ? id('funding-problem') : undefined}>
 		<legend>Who are you asking?</legend>
 		<div class="choices">
 			{#each FUNDING_MODES as mode (mode)}
@@ -354,7 +366,12 @@
 				</p>
 				{#if payeeKinds.length > 1}
 					<label for={id('payee-kind')}>Kind of business</label>
-					<select id={id('payee-kind')} bind:value={newPayee.kind}>
+					<select
+						id={id('payee-kind')}
+						bind:value={newPayee.kind}
+						aria-invalid={payeeProblems.kind ? 'true' : undefined}
+						aria-describedby={payeeProblems.kind ? id('payee-kind-problem') : undefined}
+					>
 						{#each payeeKinds as pk (pk)}<option value={pk}>{payeeKindLabel(pk)}</option>{/each}
 					</select>
 				{/if}
@@ -362,17 +379,23 @@
 				<input
 					id={id('payee-name')}
 					bind:value={newPayee.legalName}
+					onkeydown={nameKey}
 					autocomplete="organization"
 					aria-invalid={payeeProblems.legalName ? 'true' : undefined}
 					aria-describedby={payeeProblems.legalName ? id('payee-name-problem') : undefined}
 				/>
 				{#if payeeProblems.legalName}<p class="problem" id={id('payee-name-problem')}>{payeeProblems.legalName}</p>{/if}
 				<label for={id('payee-region')}>State</label>
-				<select id={id('payee-region')} bind:value={newPayee.region}>
+				<select
+					id={id('payee-region')}
+					bind:value={newPayee.region}
+					aria-invalid={payeeProblems.region ? 'true' : undefined}
+					aria-describedby={payeeProblems.region ? id('payee-region-problem') : undefined}
+				>
 					{#each US_STATES as [code, name] (code)}<option value={code}>{name}</option>{/each}
 				</select>
-				{#if payeeProblems.region}<p class="problem">{payeeProblems.region}</p>{/if}
-				{#if payeeProblems.kind}<p class="problem">{payeeProblems.kind}</p>{/if}
+				{#if payeeProblems.region}<p class="problem" id={id('payee-region-problem')}>{payeeProblems.region}</p>{/if}
+				{#if payeeProblems.kind}<p class="problem" id={id('payee-kind-problem')}>{payeeProblems.kind}</p>{/if}
 				{#if payeeError}<p class="problem" role="alert">{payeeError}</p>{/if}
 				<div class="actions">
 					<button type="button" class="btn btn-primary small" onclick={addPayee} disabled={payeeSaving}>
@@ -414,12 +437,13 @@
 
 	<div class="actions">
 		<button type="submit" class="btn btn-primary" disabled={saving}>
-			{saving ? 'Saving…' : requestId ? 'Save changes' : 'Save draft'}
+			{saving ? 'Saving your draft…' : requestId ? 'Save changes' : 'Save draft'}
 		</button>
 		{#if oncancel}
 			<button type="button" class="btn btn-ghost" onclick={oncancel} disabled={saving}>Cancel</button>
 		{/if}
 	</div>
+	<span class="visually-hidden" role="status">{saving ? 'Saving your draft…' : ''}</span>
 	<p class="hint">Saving keeps it as a private draft. Nothing is sent until you submit it.</p>
 </form>
 
@@ -463,6 +487,7 @@
 		border-radius: 10px;
 		padding: 12px 14px;
 		cursor: pointer;
+		min-height: 44px;
 	}
 
 	.choice:has(input:checked) {
@@ -498,6 +523,7 @@
 	select,
 	textarea {
 		font: inherit;
+		min-height: 44px;
 		color: var(--text);
 		background: var(--surface);
 		border: 1px solid var(--border);
@@ -611,8 +637,13 @@
 
 	.btn.small {
 		padding: 8px 16px;
+		min-height: 44px;
 		font-size: 14px;
 		justify-self: start;
+	}
+
+	.btn {
+		min-height: 44px;
 	}
 
 	.btn:disabled {
