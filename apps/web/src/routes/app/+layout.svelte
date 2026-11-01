@@ -27,7 +27,7 @@
 	}
 </script>
 
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">Skip to content</a>
 <header class="app-nav">
 	<div class="container inner">
 		<a class="brand" href="/app">
@@ -45,25 +45,11 @@
 		</div>
 	</div>
 </header>
-<main id="main" class="container app-main">
+<main id="main" tabindex="-1" class="container app-main">
 	{@render children()}
 </main>
 
 <style>
-	.skip {
-		position: absolute;
-		left: -9999px;
-	}
-
-	.skip:focus {
-		left: 16px;
-		top: 8px;
-		z-index: 20;
-		background: var(--surface);
-		padding: 8px 12px;
-		border-radius: 8px;
-	}
-
 	.app-nav {
 		position: sticky;
 		top: 0;
@@ -146,6 +132,15 @@
 		nav {
 			order: 3;
 			flex-basis: 100%;
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			scrollbar-width: none;
+			margin: 0 -20px;
+			padding: 0 20px 4px;
+		}
+
+		nav a {
+			white-space: nowrap;
 		}
 
 		.me {

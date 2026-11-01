@@ -7,7 +7,7 @@
 	let menuOpen = $state(false);
 </script>
 
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">Skip to content</a>
 
 <header class="nav">
 	<div class="container nav-inner">
@@ -46,23 +46,6 @@
 </header>
 
 <style>
-	.skip {
-		position: absolute;
-		left: 12px;
-		top: -60px;
-		z-index: 20;
-		padding: 10px 16px;
-		border-radius: 999px;
-		background: var(--accent);
-		color: var(--accent-contrast);
-		font-weight: 600;
-		text-decoration: none;
-	}
-
-	.skip:focus {
-		top: 12px;
-	}
-
 	.nav {
 		position: sticky;
 		top: 0;

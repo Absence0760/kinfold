@@ -47,7 +47,7 @@
 	<title>Sign in · Kinfold</title>
 </svelte:head>
 
-<main id="main" class="signin container">
+<main id="main" tabindex="-1" class="signin container">
 	<a class="brand" href="/">
 		<img src="/favicon.svg" alt="" width="30" height="30" />
 		<span>Kinfold</span>

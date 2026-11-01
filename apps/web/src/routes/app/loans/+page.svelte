@@ -238,18 +238,4 @@
 		gap: 14px;
 	}
 
-	.skeleton {
-		height: 120px;
-		border-radius: var(--radius);
-		background: var(--surface-2);
-	}
-
-	.visually-hidden {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
-	}
 </style>

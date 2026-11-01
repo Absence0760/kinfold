@@ -137,30 +137,6 @@
 	.skeleton {
 		height: 420px;
 		max-width: 680px;
-		border-radius: var(--radius);
-		background: var(--surface-2);
-		animation: pulse 1.4s ease-in-out infinite;
 	}
 
-	@keyframes pulse {
-		50% {
-			opacity: 0.55;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.skeleton {
-			animation: none;
-		}
-	}
-
-	.visually-hidden {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0 0 0 0);
-		white-space: nowrap;
-	}
 </style>
