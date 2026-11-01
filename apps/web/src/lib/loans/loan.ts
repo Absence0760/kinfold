@@ -103,13 +103,7 @@ export function pushBack(
 
 // --- forgiveness --------------------------------------------------------------
 
-/**
- * The 2026 annual gift-tax exclusion per recipient (design.md, "Gift instead
- * of lend"). Above it in a year, the lender files a gift-tax return (Form 709);
- * tax is rarely due.
- */
-export const GIFT_EXCLUSION_YEAR = 2026;
-export const GIFT_EXCLUSION_CENTS = 1_900_000;
+// The yearly gift-tax limit lives in `tax.ts` (a table by year, with a fallback).
 
 /** Why forgiving `cents` would be refused, or null. */
 export function forgiveProblem(cents: number | null, outstandingCents: number): string | null {

@@ -2,9 +2,11 @@
 	import { tick } from 'svelte';
 	import { invalidate } from '$app/navigation';
 	import { formatCents, formatDay, localToday } from '#lib/dashboard/format.ts';
-	import { defaultPlanText, loanStatusText, type DefaultPlan } from '#lib/dashboard/labels.ts';
+	import { defaultPlanText, loanStatusText } from '#lib/dashboard/labels.ts';
 	import { summarizeLoan } from '#lib/dashboard/loans.ts';
+	import { lentToText, planDetail, securityText } from '#lib/loans/agreement.ts';
 	import type { LoanDetail } from '#lib/loans/data.ts';
+	import { afrNote } from '#lib/loans/tax.ts';
 	import {
 		forgivenInYear,
 		formatBps,
@@ -135,18 +137,12 @@
 			scheduled,
 			signed,
 			actions,
+			afr: afrNote(loan.imputed_rate_bps),
 			status: loanStatusText(loan.status)
 		};
 	});
 
 	const taxYear = Number(today.slice(0, 4));
-
-	const planDetail: Record<DefaultPlan, string> = {
-		forgive: 'Whatever is left becomes a gift from the lender, recorded for that tax year. Nothing more is owed.',
-		repay_on_sale:
-			'The lien stays on the home and what’s left is repaid when it’s sold or refinanced. Nobody forces a sale.',
-		mediate: 'A neutral mediator helps you both agree what happens next. Nothing is decided for you.'
-	};
 </script>
 
 <svelte:head>
@@ -190,7 +186,7 @@
 						? ` from your ${view.lenderRelationship}`
 						: ''}
 				{:else}
-					You lent {formatCents(l.principal_cents)}
+					You lent {formatCents(l.principal_cents)}{lentToText(view.lenderRelationship)}
 				{/if}
 			</h1>
 			<Badge tone={view.status.tone} label={view.status.label} />
@@ -299,7 +295,7 @@
 					{:else}
 						Agreed {l.status === 'proposed' ? 'when you sign' : 'at signing'}: {defaultPlanText(l.default_plan)}.
 					{/if}
-					<span class="sub">{planDetail[l.default_plan]}</span>
+					<span class="sub">{planDetail(l.default_plan, l.secured)}</span>
 					<span class="sub">
 						Neither of you triggers this in the app. A missed payment starts a conversation (a reminder and an
 						offer to pause), not a default; Kinfold’s loan servicing applies the plan only if repayments stop for
@@ -307,33 +303,25 @@
 					</span>
 				</dd>
 			</div>
-			{#if l.secured}
-				<div>
-					<dt>Security</dt>
-					<dd>
-						Secured by a lien on the home.
-						{l.lien_recorded_at
-							? `Recorded with the county on ${formatDay(l.lien_recorded_at)}.`
-							: 'Not recorded with the county yet.'}
-					</dd>
-				</div>
-			{/if}
-			{#if l.imputed_rate_bps !== null}
-				<div>
-					<dt>IRS minimum rate (tax paperwork only)</dt>
-					<dd>
-						{#if l.imputed_rate_bps > 0}
-							US tax law treats a family loan over $10,000 at no interest as if it charged the IRS minimum rate,
-							here {formatBps(l.imputed_rate_bps)} a year. Kinfold calculates it only for the paperwork, where the
-							interest not charged is recorded as a gift from the lender. <strong>Nobody pays it.</strong> The
-							loan stays at 0%.
-						{:else}
-							Kinfold checked the IRS minimum-rate rule for this loan, and nothing needs reporting. The loan is
-							0% interest either way.
-						{/if}
-					</dd>
-				</div>
-			{/if}
+			<div>
+				<dt>Security</dt>
+				<dd>{securityText(l)}</dd>
+			</div>
+			<div>
+				<dt>IRS minimum rate (tax paperwork only)</dt>
+				<!-- PENDING COUNSEL: AFR and imputed-interest wording (design.md, Product 1, "Tax note"). -->
+				<dd>
+					{#if view.afr.worked && l.imputed_rate_bps}
+						US tax law treats a family loan over $10,000 at no interest as if it charged the IRS minimum rate,
+						here {formatBps(l.imputed_rate_bps)} a year. Kinfold calculates it only for the paperwork, where the
+						interest not charged is recorded as a gift from the lender. <strong>Nobody pays it.</strong> The
+						loan stays at 0%.
+						<span class="sub">{view.afr.lenderTax}</span>
+					{:else if !view.afr.worked}
+						{view.afr.text}
+					{/if}
+				</dd>
+			</div>
 			<div>
 				<dt>Signatures</dt>
 				<dd>

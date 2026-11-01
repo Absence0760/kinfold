@@ -14,7 +14,13 @@ const none = Promise.resolve({ data: [], error: null });
 
 export interface LoanListItem extends LoanSummary {
 	requestTitle: string | null;
-	/** How the borrower named the lender on their invite ("brother"), shown only to the borrower. */
+	/**
+	 * How the borrower named the lender on their invite ("brother"). The borrower
+	 * reads it as "from your brother"; the lender reads their own supporter row
+	 * (RLS: `member_id = auth.uid()`) as "to the member who invited you as their
+	 * brother". Members read only themselves, so the borrower's name is never
+	 * available to the lender.
+	 */
 	lenderRelationship: string | null;
 }
 
@@ -60,10 +66,7 @@ export async function loadLoans(db: Db, uid: string, today: string): Promise<Loa
 		...s,
 		requestTitle: s.loan.request_id ? (titleOf.get(s.loan.request_id) ?? null) : null,
 		lenderRelationship:
-			s.role === 'borrower'
-				? (people.find((p) => p.request_id === s.loan.request_id && p.member_id === s.loan.lender_id)?.relationship ??
-					null)
-				: null
+			people.find((p) => p.request_id === s.loan.request_id && p.member_id === s.loan.lender_id)?.relationship ?? null
 	}));
 }
 
@@ -93,7 +96,9 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 		db.from('loan_forgiveness').select('*').eq('loan_id', id).order('created_at'),
 		db.from('loan_missed_installments').select('*').eq('loan_id', id),
 		loan.request_id ? db.from('requests').select('title').eq('id', loan.request_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
-		loan.request_id && loan.borrower_id === uid
+		// Both sides can read the lender's supporter row: the borrower owns the
+		// request, and the lender reads their own row.
+		loan.request_id
 			? db
 					.from('request_supporters')
 					.select('relationship')

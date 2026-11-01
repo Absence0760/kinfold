@@ -3,6 +3,7 @@
 	import { supabase } from '#lib/supabase/client.ts';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import { defaultPlanText } from '#lib/dashboard/labels.ts';
+	import { afterSigningText, lenderSignPoints, planDetail } from '#lib/loans/agreement.ts';
 	import { signLoan } from '#lib/loans/data.ts';
 	import { explainLoanError } from '#lib/loans/errors.ts';
 	import type { InstallmentRow, LoanDetailRow, Side, Signatures } from '#lib/loans/loan.ts';
@@ -95,6 +96,15 @@
 		{@const last = installments[installments.length - 1]}
 		<div class="step" role="group" aria-labelledby="{uid}-confirm">
 			<p class="confirm-title" id="{uid}-confirm" tabindex="-1" bind:this={confirmTitle}>Sign this loan?</p>
+			{#if !youRepay}
+				<!-- PENDING COUNSEL: the lender's risk wording (collection, no cancelling, no guarantee). -->
+				<p><strong>Before you sign, about your money:</strong></p>
+				<ul class="terms lender">
+					{#each lenderSignPoints(loan) as point (point)}
+						<li>{point}</li>
+					{/each}
+				</ul>
+			{/if}
 			<p>By signing, you agree that:</p>
 			<ul class="terms">
 				<li>
@@ -108,8 +118,11 @@
 						? 'There are no pauses without asking.'
 						: `The borrower can pause up to ${monthsWord(loan.pause_months_per_year)} in any 12 without asking. A pause moves payments later and never adds to the total.`}
 				</li>
-				<li>If repayments stop for good, {defaultPlanText(loan.default_plan)}.</li>
-				<li>After you both sign, the terms are fixed. Changing them needs a new agreement between you.</li>
+				<li>
+					If repayments stop for good, {defaultPlanText(loan.default_plan)}.
+					{planDetail(loan.default_plan, loan.secured)}
+				</li>
+				<li>{afterSigningText(loan.pause_months_per_year)}</li>
 			</ul>
 			{#if error}<p class="problem" role="alert">{error}</p>{/if}
 			<div class="actions">

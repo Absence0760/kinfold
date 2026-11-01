@@ -5,12 +5,8 @@
 	import { formatCents } from '#lib/dashboard/format.ts';
 	import { forgiveLoan } from '#lib/loans/data.ts';
 	import { explainLoanError } from '#lib/loans/errors.ts';
-	import {
-		forgiveProblem,
-		GIFT_EXCLUSION_CENTS,
-		GIFT_EXCLUSION_YEAR,
-		type LoanDetailRow
-	} from '#lib/loans/loan.ts';
+	import { forgiveProblem, type LoanDetailRow } from '#lib/loans/loan.ts';
+	import { forgiveTaxNote } from '#lib/loans/tax.ts';
 	import Panel from './Panel.svelte';
 
 	let {
@@ -42,8 +38,9 @@
 	const cents = $derived(choice === 'rest' ? outstandingCents : parseDollars(typed));
 	const problem = $derived(forgiveProblem(cents, outstandingCents));
 	const yearTotal = $derived(forgivenThisYearCents + (cents ?? 0));
-	// The exclusion figure is the 2026 one; later years need the new figure.
-	const overExclusion = $derived(taxYear === GIFT_EXCLUSION_YEAR && yearTotal > GIFT_EXCLUSION_CENTS);
+	// The yearly limit comes from a table by year; a year not in it still warns,
+	// using the latest known figure labelled with its year (tax.ts).
+	const taxNote = $derived(forgiveTaxNote(yearTotal, taxYear));
 	const isAll = $derived(cents === outstandingCents);
 
 	async function open() {
@@ -173,15 +170,8 @@
 					lender may ask the borrower for one.
 				</li>
 				<li>
-					{#if overExclusion}
-						<strong>Gift-tax return:</strong> with this, you’ll have forgiven {formatCents(yearTotal)} in
-						{taxYear}, over the {formatCents(GIFT_EXCLUSION_CENTS)} yearly limit per person. You’d file a gift-tax
-						return (IRS Form 709). Tax is rarely due, but check with a tax adviser.
-					{:else}
-						Up to {formatCents(GIFT_EXCLUSION_CENTS)} a year per person ({GIFT_EXCLUSION_YEAR} limit) needs no
-						gift-tax return. You’ll have forgiven {formatCents(yearTotal)} on this loan in {taxYear}; count other
-						gifts to the same person too.
-					{/if}
+					{#if taxNote.over}<strong>Gift-tax return:</strong>{/if}
+					{taxNote.text}
 				</li>
 				<li>No money moves. Forgiving only lowers what the borrower repays.</li>
 			</ul>

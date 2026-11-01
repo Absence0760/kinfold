@@ -3,6 +3,7 @@
 	import { supabase } from '#lib/supabase/client.ts';
 	import { formatDay } from '#lib/dashboard/format.ts';
 	import { defaultPlanText, type DefaultPlan } from '#lib/dashboard/labels.ts';
+	import { planDetail } from '#lib/loans/agreement.ts';
 	import { setLoanTerms } from '#lib/loans/data.ts';
 	import { explainLoanError } from '#lib/loans/errors.ts';
 	import type { InstallmentRow, LoanDetailRow } from '#lib/loans/loan.ts';
@@ -36,22 +37,10 @@
 	const uid = $derived(`terms-${loan.id}`);
 	const days = Array.from({ length: MAX_PAYMENT_DAY }, (_, i) => i + 1);
 	const months = Array.from({ length: 13 }, (_, i) => i);
-	const plans: { value: DefaultPlan; title: string; detail: string }[] = [
-		{
-			value: 'mediate',
-			title: 'Go to a mediator',
-			detail: 'A neutral mediator helps you agree what happens next. Nothing is decided for you.'
-		},
-		{
-			value: 'forgive',
-			title: 'Forgive the rest as a gift',
-			detail: 'Whatever is left becomes a gift from the lender. Nothing more is owed.'
-		},
-		{
-			value: 'repay_on_sale',
-			title: 'Repay when the home is sold or refinanced',
-			detail: 'Only for loans secured by a lien on the home. Nobody forces a sale.'
-		}
+	const plans: { value: DefaultPlan; title: string }[] = [
+		{ value: 'mediate', title: 'Go to a mediator' },
+		{ value: 'forgive', title: 'Forgive the rest as a gift' },
+		{ value: 'repay_on_sale', title: 'Repay when the home is sold or refinanced' }
 	];
 
 	const moved = $derived(
@@ -163,7 +152,8 @@
 						<input type="radio" name="{uid}-plan" value={p.value} bind:group={plan} disabled={blocked} />
 						<span>
 							<strong>{p.title}</strong>
-							<span class="sub">{blocked ? 'Not available: this loan isn’t secured by a lien.' : p.detail}</span>
+							<!-- An unsecured loan gets the one-line reason repay-on-sale is unavailable. -->
+							<span class="sub">{planDetail(p.value, loan.secured)}</span>
 						</span>
 					</label>
 				{/each}

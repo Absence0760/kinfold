@@ -3,6 +3,7 @@
 	import { invalidate } from '$app/navigation';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import { loanStatusText } from '#lib/dashboard/labels.ts';
+	import { lentToText } from '#lib/loans/agreement.ts';
 	import type { LoanListItem } from '#lib/loans/data.ts';
 	import Badge from './Badge.svelte';
 
@@ -82,7 +83,7 @@
 											? ` from your ${l.lenderRelationship}`
 											: ''}
 									{:else}
-										You lent {formatCents(l.loan.principal_cents)}
+										You lent {formatCents(l.loan.principal_cents)}{lentToText(l.lenderRelationship)}
 									{/if}
 								</h3>
 								<Badge tone={st.tone} label={st.label} />

@@ -253,5 +253,57 @@ export function quickAmounts(left: number): number[] {
 	return picks;
 }
 
-/** 2026 annual gift-tax exclusion per recipient (design.md, Product 1). */
-export const GIFT_EXCLUSION_CENTS = 1_900_000;
+// --- gift or loan ---------------------------------------------------------------
+
+/** Request kinds that can be toward buying a home (design.md, "Family loans can block the mortgage"). */
+const HOME_PURCHASE: readonly RequestKind[] = ['down_payment', 'mortgage_gap'];
+
+/**
+ * The short gift-versus-loan comparison shown before the invitee picks one.
+ * PENDING COUNSEL: the gift-letter and mortgage line. It says "may", because
+ * what a mortgage lender accepts depends on the loan type (design.md: a
+ * repayable family loan counts toward debt-to-income; Fannie Mae doesn't take
+ * a 0% family second lien; down payments default to gifts with a gift letter).
+ */
+export function giftOrLoanPoints(kind: RequestKind): string[] {
+	const points = [
+		'A gift isn’t paid back.',
+		'A 0% loan is repaid monthly, with no interest and no late fees, on a schedule you both sign.'
+	];
+	if (HOME_PURCHASE.includes(kind))
+		points.push(
+			'For a home purchase, the borrower’s mortgage lender may need a gift letter for a gift, and a repayable loan can affect their mortgage. It’s worth them asking their mortgage lender before you choose.'
+		);
+	return points;
+}
+
+// --- after a pledge -------------------------------------------------------------
+
+export interface PledgedNotice {
+	message: string;
+	/** Where to go next: the new loan when its id is known, else the loans list. */
+	link: { href: string; text: string } | null;
+}
+
+/** The confirmation after a pledge, and for a loan, a link to it. */
+export function pledgedNotice(source: 'gift' | 'loan', cents: number, loanId: string | null): PledgedNotice {
+	if (source === 'gift')
+		return {
+			message: `Thank you. You pledged a gift of ${formatCents(cents)}. Nothing is collected until the whole request is pledged.`,
+			link: null
+		};
+	return {
+		message: `Thank you. You offered to lend ${formatCents(cents)} at 0%. Next, you and the borrower set the monthly schedule and both sign. Nothing is collected until the whole request is pledged and every loan on it is signed.`,
+		link: loanId
+			? { href: `/app/loans/${encodeURIComponent(loanId)}`, text: 'Open your new loan to set the schedule and sign' }
+			: { href: '/app/loans', text: 'Go to your loans to set the schedule and sign' }
+	};
+}
+
+// --- the invite page ------------------------------------------------------------
+
+/** "No pressure" lines for the invite page (design.md, Risks: elder financial abuse). */
+export const NO_PRESSURE = [
+	'You can say no, and you don’t have to explain why.',
+	'Kinfold never asks you to send money to the member. Money only goes to the shop, contractor or lender being paid.'
+] as const;
