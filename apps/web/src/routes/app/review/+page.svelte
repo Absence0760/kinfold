@@ -90,7 +90,10 @@
 			{/if}
 		</div>
 		{#if queue.state === 'loading'}
-			<p class="muted" role="status">Loading the queue…</p>
+			<div role="status">
+				<p class="muted">Loading the queue…</p>
+				<div class="skeleton" aria-hidden="true"></div>
+			</div>
 		{:else if queue.state === 'error'}
 			<div class="error" role="alert">
 				<p>Couldn't load the queue. {queue.message}</p>
@@ -117,7 +120,10 @@
 			{/if}
 		</div>
 		{#if appeals.state === 'loading'}
-			<p class="muted" role="status">Loading appeals…</p>
+			<div role="status">
+				<p class="muted">Loading appeals…</p>
+				<div class="skeleton" aria-hidden="true"></div>
+			</div>
 		{:else if appeals.state === 'error'}
 			<div class="error" role="alert">
 				<p>Couldn't load appeals. {appeals.message}</p>
@@ -156,8 +162,20 @@
 
 	.jump {
 		display: flex;
-		gap: 16px;
+		flex-wrap: wrap;
+		gap: 4px 20px;
 		font-weight: 600;
+	}
+
+	.jump a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+	}
+
+	.skeleton {
+		height: 160px;
+		margin-top: 8px;
 	}
 
 	.confirmation {
@@ -208,6 +226,11 @@
 		border-radius: var(--radius);
 		padding: 20px;
 		color: var(--muted);
+	}
+
+	.error .btn {
+		min-height: 44px;
+		justify-content: center;
 	}
 
 	.error {

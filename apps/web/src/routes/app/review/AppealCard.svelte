@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { supabase } from '#lib/supabase/client.ts';
 	import { explainDbError } from '#lib/review/errors.ts';
 	import { decidedLabel, formatCents, formatDay, kindLabel } from '#lib/review/labels.ts';
@@ -15,14 +16,20 @@
 	let tried = $state(false);
 	let busy = $state(false);
 	let error = $state('');
+	let formEl = $state<HTMLFormElement | null>(null);
 
 	const choiceError = $derived(tried && choice === '' ? 'Choose uphold or deny.' : null);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
+		if (busy) return;
 		tried = true;
 		error = '';
-		if (choice === '') return;
+		if (choice === '') {
+			await tick();
+			formEl?.querySelector<HTMLInputElement>('input[type="radio"]')?.focus();
+			return;
+		}
 		busy = true;
 		try {
 			await decideAppeal(supabase(), a.id, choice === 'uphold');
@@ -86,7 +93,7 @@
 	{#if item.viewerReviewed}
 		<p class="note">You reviewed this request, so another panel member decides the appeal.</p>
 	{:else}
-		<form class="decide" onsubmit={submit} novalidate>
+		<form class="decide" onsubmit={submit} novalidate bind:this={formEl}>
 			<fieldset aria-describedby={choiceError ? `${id}-choice-error` : undefined}>
 				<legend>Your decision</legend>
 				<label class="option" class:chosen={choice === 'uphold'}>
@@ -112,7 +119,7 @@
 				<p class="notice" role="alert">{error}</p>
 			{/if}
 
-			<button class="btn btn-primary" type="submit" disabled={busy} aria-busy={busy}>
+			<button class="btn btn-primary" type="submit" aria-disabled={busy} aria-busy={busy}>
 				{busy ? 'Saving…' : 'Record decision'}
 			</button>
 		</form>
@@ -162,6 +169,9 @@
 	}
 
 	details summary {
+		min-height: 44px;
+		display: flex;
+		align-items: center;
 		cursor: pointer;
 		font-weight: 600;
 	}
@@ -196,6 +206,7 @@
 	}
 
 	.option {
+		min-height: 44px;
 		display: flex;
 		gap: 12px;
 		align-items: flex-start;
@@ -247,7 +258,12 @@
 		justify-self: start;
 	}
 
-	.btn:disabled {
+	.btn {
+		min-height: 44px;
+		justify-content: center;
+	}
+
+	.btn[aria-disabled='true'] {
 		opacity: 0.6;
 		cursor: wait;
 	}

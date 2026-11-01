@@ -27,6 +27,7 @@
 	});
 
 	async function submit(asEmail: string, asPassword: string, key: string) {
+		if (busy !== null) return;
 		error = '';
 		busy = key;
 		try {
@@ -62,7 +63,7 @@
 		</p>
 	{:else}
 		{#if error}
-			<p class="notice" role="alert">{error}</p>
+			<p class="notice" role="alert" id="signin-error">{error}</p>
 		{/if}
 
 		{#if showDemo}
@@ -75,12 +76,12 @@
 							<button
 								type="button"
 								class="demo-account"
-								disabled={busy !== null}
+								aria-disabled={busy !== null}
 								aria-busy={busy === account.email}
 								onclick={() => submit(account.email, DEMO_PASSWORD, account.email)}
 							>
 								<span class="who">
-									<strong>{account.name}</strong>
+									<span class="visually-hidden">Sign in as </span><strong>{account.name}</strong>
 									<span class="roles">{account.roles}</span>
 								</span>
 								<span class="summary">{account.summary}</span>
@@ -96,6 +97,7 @@
 
 		<form
 			class="form"
+			aria-busy={busy === 'form'}
 			onsubmit={(e) => {
 				e.preventDefault();
 				submit(email, password, 'form');
@@ -104,13 +106,31 @@
 			{#if showDemo}<h2>Or with an email</h2>{/if}
 			<label>
 				Email
-				<input type="email" autocomplete="email" required bind:value={email} />
+				<input
+					type="email"
+					autocomplete="email"
+					autocapitalize="off"
+					spellcheck="false"
+					required
+					bind:value={email}
+					readonly={busy !== null}
+					aria-invalid={error ? 'true' : undefined}
+					aria-describedby={error ? 'signin-error' : undefined}
+				/>
 			</label>
 			<label>
 				Password
-				<input type="password" autocomplete="current-password" required bind:value={password} />
+				<input
+					type="password"
+					autocomplete="current-password"
+					required
+					bind:value={password}
+					readonly={busy !== null}
+					aria-invalid={error ? 'true' : undefined}
+					aria-describedby={error ? 'signin-error' : undefined}
+				/>
 			</label>
-			<button class="btn btn-primary" type="submit" disabled={busy !== null}>
+			<button class="btn btn-primary" type="submit" aria-disabled={busy !== null}>
 				{busy === 'form' ? 'Signing in…' : 'Sign in'}
 			</button>
 		</form>
@@ -182,11 +202,11 @@
 		cursor: pointer;
 	}
 
-	.demo-account:hover:not(:disabled) {
+	.demo-account:hover:not([aria-disabled='true']) {
 		border-color: var(--accent);
 	}
 
-	.demo-account:disabled {
+	.demo-account[aria-disabled='true'] {
 		cursor: progress;
 		opacity: 0.7;
 	}
@@ -241,8 +261,23 @@
 		color: var(--text);
 	}
 
+	input {
+		min-height: 44px;
+	}
+
+	input[aria-invalid='true'] {
+		border-color: var(--warm);
+	}
+
 	.form .btn {
 		justify-self: start;
+		min-height: 44px;
+		justify-content: center;
+	}
+
+	.form .btn[aria-disabled='true'] {
+		opacity: 0.7;
+		cursor: progress;
 	}
 
 	@media (max-width: 480px) {
@@ -253,6 +288,10 @@
 		.go {
 			grid-column: 1;
 			grid-row: auto;
+		}
+
+		.form .btn {
+			justify-self: stretch;
 		}
 	}
 </style>

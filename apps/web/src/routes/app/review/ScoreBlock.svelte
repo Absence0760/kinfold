@@ -7,7 +7,7 @@
 <section class="score" aria-labelledby="{id}-score">
 	<h4 id="{id}-score">Legitimacy score</h4>
 	{#if score}
-		<p class="value"><strong>{score.score}</strong><span> / 100</span></p>
+		<p class="value"><strong>{score.score}</strong><span aria-hidden="true"> / 100</span><span class="visually-hidden"> out of 100</span></p>
 		{#if score.reasons.length > 0}
 			<ul class="reasons" aria-label="Why this score">
 				{#each score.reasons as reason, i (i)}
@@ -46,7 +46,7 @@
 		line-height: 1;
 	}
 
-	.value span {
+	.value span[aria-hidden] {
 		color: var(--muted);
 	}
 

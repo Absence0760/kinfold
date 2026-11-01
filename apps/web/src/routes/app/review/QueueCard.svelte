@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { supabase } from '#lib/supabase/client.ts';
 	import { explainDbError } from '#lib/review/errors.ts';
 	import {
@@ -28,6 +29,8 @@
 	let tried = $state(false);
 	let busy = $state(false);
 	let error = $state('');
+	let formEl = $state<HTMLFormElement | null>(null);
+	let reasonEl = $state<HTMLTextAreaElement | null>(null);
 
 	const reasonError = $derived(tried ? reasonProblem(reason) : null);
 	const decisionError = $derived(tried && decision === '' ? 'Choose a decision.' : null);
@@ -35,9 +38,16 @@
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
+		if (busy) return;
 		tried = true;
 		error = '';
-		if (decision === '' || reasonProblem(reason)) return;
+		if (decision === '' || reasonProblem(reason)) {
+			// Send keyboard and screen-reader users to the first thing to fix.
+			await tick();
+			if (decision === '') formEl?.querySelector<HTMLInputElement>('input[type="radio"]')?.focus();
+			else reasonEl?.focus();
+			return;
+		}
 		busy = true;
 		try {
 			const next = await recordReview(supabase(), r.id, decision, cleanReason(reason));
@@ -124,10 +134,10 @@
 	{/if}
 
 	{#if isReviewable(r.status)}
-		<form class="decide" onsubmit={submit} novalidate aria-labelledby="{id}-decide">
+		<form class="decide" onsubmit={submit} novalidate aria-labelledby="{id}-decide" bind:this={formEl}>
 			<h4 id="{id}-decide">Your decision</h4>
 			<fieldset aria-describedby={decisionError ? `${id}-decision-error` : undefined}>
-				<legend class="sr-only">Decision</legend>
+				<legend class="visually-hidden">Decision</legend>
 				{#each REVIEW_DECISIONS as option (option.value)}
 					<label class="option" class:chosen={decision === option.value}>
 						<input
@@ -148,19 +158,21 @@
 				{/if}
 			</fieldset>
 
-			<label class="reason" for="{id}-reason">
-				<span class="label">Reason</span>
+			<div class="reason">
+				<label class="label" for="{id}-reason">Reason</label>
 				<span class="muted hint" id="{id}-reason-hint">
 					The member reads this, without your name. Say what the evidence shows or what's missing.
 				</span>
-			</label>
+			</div>
 			<textarea
 				id="{id}-reason"
 				rows="4"
+				bind:this={reasonEl}
 				bind:value={reason}
-				disabled={busy}
+				readonly={busy}
+				aria-required="true"
 				aria-invalid={reasonError ? 'true' : undefined}
-				aria-describedby="{id}-reason-hint {id}-reason-count{reasonError ? ` ${id}-reason-error` : ''}"
+				aria-describedby="{id}-reason-hint{reasonError ? ` ${id}-reason-error` : ''} {id}-reason-count"
 			></textarea>
 			<div class="under">
 				{#if reasonError}
@@ -175,7 +187,7 @@
 				<p class="notice" role="alert">{error}</p>
 			{/if}
 
-			<button class="btn btn-primary" type="submit" disabled={busy} aria-busy={busy}>
+			<button class="btn btn-primary" type="submit" aria-disabled={busy} aria-busy={busy}>
 				{busy ? 'Saving…' : submitLabel}
 			</button>
 		</form>
@@ -290,6 +302,7 @@
 	}
 
 	.option {
+		min-height: 44px;
 		display: flex;
 		gap: 12px;
 		align-items: flex-start;
@@ -377,18 +390,14 @@
 		justify-self: start;
 	}
 
-	.btn:disabled {
-		opacity: 0.6;
-		cursor: wait;
+	.btn {
+		min-height: 44px;
+		justify-content: center;
 	}
 
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip: rect(0 0 0 0);
-		white-space: nowrap;
+	.btn[aria-disabled='true'] {
+		opacity: 0.6;
+		cursor: wait;
 	}
 
 	@media (max-width: 480px) {
