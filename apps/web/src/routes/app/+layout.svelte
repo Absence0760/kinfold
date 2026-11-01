@@ -90,6 +90,9 @@
 		font-size: 15px;
 		padding: 6px 10px;
 		border-radius: 8px;
+		min-height: 44px;
+		display: inline-flex;
+		align-items: center;
 	}
 
 	nav a:hover {
@@ -122,29 +125,33 @@
 		padding-bottom: 64px;
 	}
 
+	/* Phones: the header scrolls away instead of sticking (two rows would hide
+	   a focused control under it, WCAG 2.4.11), and the links wrap rather than
+	   scroll sideways out of sight (1.4.10). Brand on its own row, then the
+	   links and Sign out flow in DOM order, so Tab follows what you see. */
 	@media (max-width: 560px) {
+		.app-nav {
+			position: static;
+		}
+
 		.inner {
-			gap: 8px 16px;
+			gap: 4px 8px;
 			padding-top: 8px;
 			padding-bottom: 8px;
 		}
 
-		nav {
-			order: 3;
+		.brand {
 			flex-basis: 100%;
-			flex-wrap: nowrap;
-			overflow-x: auto;
-			scrollbar-width: none;
-			margin: 0 -20px;
-			padding: 0 20px 4px;
+			min-height: 44px;
+		}
+
+		nav {
+			flex: none;
+			gap: 4px;
 		}
 
 		nav a {
 			white-space: nowrap;
-		}
-
-		.me {
-			margin-left: auto;
 		}
 
 		.name {
