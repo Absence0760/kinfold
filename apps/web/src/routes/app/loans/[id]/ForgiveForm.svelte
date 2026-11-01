@@ -183,7 +183,7 @@
 			</ul>
 			{#if error}<p class="problem" role="alert">{error}</p>{/if}
 			<div class="actions">
-				<button type="button" class="btn btn-primary" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
+				<button type="button" class="btn btn-warn" onclick={save} disabled={step === 'sending'} aria-busy={step === 'sending'}>
 					{step === 'sending' ? 'Saving…' : `Forgive ${formatCents(cents ?? 0)}`}
 				</button>
 				<button type="button" class="btn btn-ghost" onclick={goBack} disabled={step === 'sending'}>

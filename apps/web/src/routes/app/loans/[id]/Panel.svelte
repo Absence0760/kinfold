@@ -180,8 +180,11 @@
 		cursor: progress;
 	}
 
+	/* Irreversible actions. --accent-contrast on --warm: 6.00:1 light (#fff on #a4471f),
+	   6.75:1 dark (#0b1f16 on #e88a62). */
 	.panel :global(.btn-warn) {
 		background: var(--warm);
+		border-color: var(--warm);
 		color: var(--accent-contrast);
 	}
 </style>

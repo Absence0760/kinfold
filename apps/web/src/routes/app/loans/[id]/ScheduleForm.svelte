@@ -49,9 +49,28 @@
 	const rows = $derived(monthsProblem || firstProblem ? [] : planSchedule(loan.principal_cents, months, first, loan.payment_day));
 	const total = $derived(scheduleTotal(rows));
 
+	// The visible preview updates on every keystroke; screen readers hear a
+	// summary only once typing has paused, so the months field isn't re-read per digit.
+	const ANNOUNCE_DELAY_MS = 600;
+	let announcement = $state('');
+	let announceTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function queueAnnouncement() {
+		clearTimeout(announceTimer);
+		announceTimer = setTimeout(() => {
+			announcement =
+				rows.length === 0
+					? (monthsProblem ?? firstProblem ?? '')
+					: `${describeSplit(rows, formatCents)}, total ${formatCents(total)}, no interest added.`;
+		}, ANNOUNCE_DELAY_MS);
+	}
+
+	$effect(() => () => clearTimeout(announceTimer));
+
 	async function open() {
 		error = '';
 		tried = false;
+		announcement = '';
 		if (!first) first = addMonths(today, 1);
 		step = 'edit';
 		await tick();
@@ -65,6 +84,7 @@
 	}
 
 	async function goBack() {
+		announcement = '';
 		step = 'edit';
 		await tick();
 		monthsInput?.focus();
@@ -107,7 +127,7 @@
 </script>
 
 {#snippet preview()}
-	<div class="preview" aria-live="polite" id="{uid}-preview">
+	<div class="preview" id="{uid}-preview">
 		{#if rows.length === 0}
 			<p>Enter the number of payments and the first date to see the schedule.</p>
 		{:else}
@@ -151,6 +171,7 @@
 					id="{uid}-months"
 					bind:this={monthsInput}
 					bind:value={monthsText}
+					oninput={queueAnnouncement}
 					inputmode="numeric"
 					autocomplete="off"
 					size="6"
@@ -170,6 +191,7 @@
 					type="date"
 					aria-required="true"
 					bind:value={first}
+					onchange={queueAnnouncement}
 					min={tomorrow}
 					aria-invalid={tried && firstProblem ? 'true' : undefined}
 					aria-describedby="{uid}-first-hint{tried && firstProblem ? ` ${uid}-first-problem` : ''}"
@@ -182,6 +204,7 @@
 			</div>
 
 			{@render preview()}
+			<p class="visually-hidden" role="status">{announcement}</p>
 
 			<div class="actions">
 				<button type="submit" class="btn btn-primary">Review the schedule</button>

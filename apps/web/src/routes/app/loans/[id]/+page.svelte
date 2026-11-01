@@ -54,6 +54,7 @@
 
 	let notice = $state('');
 	let noticeEl = $state<HTMLElement>();
+	let updatingEl = $state<HTMLElement>();
 
 	async function refresh() {
 		reloading = true;
@@ -69,7 +70,13 @@
 		}
 	}
 
+	// After an action the panel closes (or disappears), dropping focus to the page.
+	// Park it on the status line while the loan reloads, then move it to the
+	// confirmation so keyboard and screen-reader users land on what changed.
 	async function changed(message: string) {
+		notice = '';
+		await tick();
+		updatingEl?.focus();
 		await refresh();
 		notice = message;
 		await tick();
@@ -176,7 +183,7 @@
 		<p class="lead">{view.status.hint}</p>
 	</header>
 
-	<p class="visually-hidden" role="status">{reloading ? 'Updating the loan…' : ''}</p>
+	<p class="visually-hidden" role="status" tabindex="-1" bind:this={updatingEl}>{reloading ? 'Updating the loan…' : ''}</p>
 	{#if notice}
 		<p class="notice" role="status" tabindex="-1" bind:this={noticeEl}>{notice}</p>
 	{/if}
@@ -391,14 +398,13 @@
 				No schedule yet. {l.status === 'proposed' ? 'Set one above: it has to add up to exactly the amount lent before you sign.' : ''}
 			</p>
 		{:else}
-			<!-- Focusable so keyboard users can scroll the table sideways on a narrow screen. -->
-			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-			<div class="box table-wrap" role="region" aria-label="Payment schedule" tabindex="0">
-				<table>
-					<caption>
-						{view.installments.length} payment{view.installments.length === 1 ? '' : 's'} adding up to
-						{formatCents(view.scheduled)}{view.scheduled === l.principal_cents ? ', exactly the amount lent' : ''}
-					</caption>
+			{@const cap = `${view.installments.length} payment${view.installments.length === 1 ? '' : 's'} adding up to ${formatCents(view.scheduled)}${view.scheduled === l.principal_cents ? ', exactly the amount lent' : ''}`}
+			<div class="box table-wrap">
+				<!-- Wide screens get a real table. Phones get a list of the same rows: restyling
+				     table elements with display:block/grid can strip their roles in some browsers,
+				     so the unused version is hidden (display:none) and only one is ever exposed. -->
+				<table class="wide">
+					<caption>{cap}</caption>
 					<thead>
 						<tr>
 							<th scope="col"><span aria-hidden="true">No.</span><span class="visually-hidden">Payment number</span></th>
@@ -424,6 +430,29 @@
 						{/each}
 					</tbody>
 				</table>
+				<div class="narrow">
+					<p class="cap" id="schedule-cap">{cap}</p>
+					<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+					<!-- svelte-ignore a11y_no_redundant_roles -->
+					<ol class="rows" role="list" aria-labelledby="schedule-cap">
+						{#each view.installments as i (i.seq)}
+							{@const st = installmentText(installmentState(i, l.status, view.missedSeqs.has(i.seq), today))}
+							<li>
+								<span class="what">
+									<strong>Payment {i.seq}</strong>
+									<span class="sub">Due {formatDay(i.due_on)}</span>
+								</span>
+								<span class="amt num">
+									{formatCents(i.amount_cents)}
+									{#if i.paid_cents > 0 && i.paid_cents < i.amount_cents}
+										<span class="sub">{formatCents(i.paid_cents)} paid</span>
+									{/if}
+								</span>
+								<span class="state"><Badge tone={st.tone} label={st.label} /></span>
+							</li>
+						{/each}
+					</ol>
+				</div>
 			</div>
 			<p class="fine">
 				“Missed” means more than 10 days late. It’s never charged for. “Due” is today or past, within those 10
@@ -619,7 +648,49 @@
 
 	.table-wrap {
 		padding: 8px 12px;
-		overflow-x: auto;
+	}
+
+	.narrow {
+		display: none;
+	}
+
+	.cap {
+		color: var(--muted);
+		font-size: 14px;
+		padding: 8px 0;
+	}
+
+	.rows {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.rows li {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 4px 12px;
+		padding: 10px 0;
+		border-top: 1px solid var(--border);
+	}
+
+	.amt {
+		text-align: right;
+		font-weight: 600;
+	}
+
+	.state {
+		grid-column: 1 / -1;
+	}
+
+	@media (max-width: 520px) {
+		.wide {
+			display: none;
+		}
+
+		.narrow {
+			display: block;
+		}
 	}
 
 	td .sub {
