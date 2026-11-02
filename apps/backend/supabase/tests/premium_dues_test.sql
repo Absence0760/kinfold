@@ -9,7 +9,7 @@
 --   * a replayed reference is a no-op answering with the journal it made;
 --   * an unclassed vehicle takes no premium, and a home never carries a class.
 begin;
-select plan(10);
+select plan(13);
 
 -- --- fixtures ------------------------------------------------------------------
 
@@ -99,6 +99,24 @@ select pg_temp.login('00000000-0000-0000-0021-0000000000a1'::uuid);
 select throws_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a2'::uuid, 'prem_2')$$,
   '42501', 'a member cannot pay premiums');
+reset role;
+
+-- --- stating the class on their own vehicle --------------------------------------
+
+set local role authenticated;
+select pg_temp.login('00000000-0000-0000-0021-0000000000a3'::uuid);
+select lives_ok(
+  $$select public.set_vehicle_class('00000000-0000-0000-0021-0000000000c4'::uuid, 'van')$$,
+  'a member states the class on their own vehicle');
+select is(public.cover_premium_cents('00000000-0000-0000-0021-0000000000a3'::uuid),
+  18900::bigint, 'the classed van now costs the filed van premium at the Basic plan');
+reset role;
+
+set local role authenticated;
+select pg_temp.login('00000000-0000-0000-0021-0000000000a2'::uuid);
+select throws_ok(
+  $$select public.set_vehicle_class('00000000-0000-0000-0021-0000000000c4'::uuid, 'suv')$$,
+  'P0002', 'a member cannot state the class on someone else''s vehicle');
 reset role;
 
 rollback;

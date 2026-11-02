@@ -12,6 +12,23 @@ alter table public.covered_assets
   add vehicle_class public.vehicle_class,
   add constraint covered_assets_class_only_for_vehicles check (kind = 'vehicle' or vehicle_class is null);
 
+-- The class is a person's statement, so the member states it on their own
+-- covered vehicle; homes never take one, a removed vehicle keeps nothing.
+create function public.set_vehicle_class(p_asset uuid, p_class public.vehicle_class)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then
+    raise exception 'the class is stated by the member who owns the vehicle' using errcode = '42501';
+  end if;
+  update public.covered_assets set vehicle_class = p_class
+  where id = p_asset and member_id = auth.uid() and kind = 'vehicle' and removed_on is null;
+  if not found then
+    raise exception 'asset not found, not yours, already removed, or not a vehicle' using errcode = 'P0002';
+  end if;
+  perform private.audit('covered_assets.class', 'covered_assets', p_asset,
+    jsonb_build_object('member_id', auth.uid(), 'vehicle_class', p_class));
+end $$;
+
 -- Premium money is money the fund has committed to the insurer's cover.
 insert into private.ledger_accounts (fund, code) values ('protection', 'premiums');
 
@@ -65,6 +82,7 @@ begin
   return v_id;
 end $$;
 
+revoke all from function public.set_vehicle_class(uuid, public.vehicle_class);
 revoke all from function public.cover_premium_cents(uuid);
 revoke all from function public.cover_premium_cents(uuid) to public, anon;
 grant execute on function public.cover_premium_cents(uuid) to authenticated, service_role;
@@ -72,3 +90,4 @@ grant execute on function public.cover_premium_cents(uuid) to authenticated, ser
 revoke all from function public.pay_cover_premium(uuid, text);
 revoke all from function public.pay_cover_premium(uuid, text) to public, anon, authenticated;
 grant execute on function public.pay_cover_premium(uuid, text) to service_role;
+grant execute on function public.set_vehicle_class(uuid, public.vehicle_class) to authenticated;
