@@ -17,6 +17,12 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **The borrower may resume early at any time**; the loan-servicing service (`resume_ended_fund_pauses`) may only flip loans whose pause ran out, and the schema — not the job — decides which loans those are.
 - **Only the borrower reads their pauses** (RLS): pauses carry reasons, and reasons stay between the loan's own two sides.
 
+## 2026-11-02 — Reviewers answer needs edge cases beside the ranking (`needs_reviews`)
+
+- **A reviewer from another state answers an edge case** next to the Fund's published needs ranking (3b's "panel review for edge cases"): the answer names the formula version it was made against and carries a written reason the applicant reads without the reviewer's name. Only an applicant the Fund has ranked can be answered.
+- **The answer never edits the score** — `needs_reviews` is append-only history beside `needs_records`, so the published ranking stays exactly what the formula said and the judgement sits next to it, auditable at annual fairness time. **Reversal:** letting an answer overwrite a score would quietly rewrite the published formula's output; the ladder keeps both.
+- **One answer per reviewer per formula version**; the console's `NeedsForm` never shows a reviewer's own identity, and RLS answers decisions only for requests the viewer may review.
+
 ## 2026-11-02 — Mortgage gaps point at public help; Kinfold never becomes a counselor (`PublicHelpPanel`)
 
 - **A mortgage-gap request page carries a public-help panel**: HUD-approved housing counselors (you go to theirs, not to Kinfold — design.md says Kinfold partners with a certified agency rather than becoming one) for forbearance and loan modification, plus state and federal repair help. **Public money never joins the Fund** — the copy says so, matching 24 CFR 92.503: programme rules follow the money forever.
