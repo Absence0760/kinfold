@@ -2,7 +2,7 @@
 
 Open items that aren't part of a roadmap stage yet. Each says what's wrong, the fix, and when to do it. Tick an item off by deleting it in the change that fixes it. Stage work lives in [roadmap.md](roadmap.md).
 
-Last updated 2026-10-31.
+Last updated 2026-11-02.
 
 ## Do next
 

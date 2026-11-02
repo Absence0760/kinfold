@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Repair-fund weekly run (`functions/run-pool`)
+
+- **`run-pool` runs the allocation once per fund that has money in custody**, and a schema-guard refusal is a logged skip, not a crash. The allocation math itself stays in `run_pool_allocation` — this file only owns the schedule and the balance read. **Reversal:** computing bands or reserves here would fork the schema's allocation rules.
+
 ## 2026-11-02 — Evidence buckets get their limits (`…290000_evidence_limits.sql`)
 
 - **Both evidence buckets now declare `allowed_mime_types` (photos, clips, documents) and a 20 MB `file_size_limit` on `storage.buckets`** — the server, not just the web app, refuses anything else. **Reversal:** web-only checks leave the direct API path unbounded. The column names come from Supabase's storage schema and can't be exercised without Docker — CI is the gate for this one.
