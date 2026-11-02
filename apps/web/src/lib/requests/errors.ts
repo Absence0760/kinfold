@@ -31,6 +31,8 @@ export function explainRequestError(error: DbError | null | undefined): string {
 		return 'This request has already been sent. Refresh the page to see where it is.';
 	if (/name who should be paid/i.test(message))
 		return 'Choose who should be paid first: the shop, contractor, lender or seller. The money goes to them, never to you.';
+	if (/the payee does not fit this request/i.test(message))
+		return 'The business you named doesn’t fit this request: cars go to a repair shop, a home repair to a contractor, and home money to a lender, seller or title company. Pick the one that pays it, then submit again.';
 	if (/add at least one piece of evidence/i.test(message))
 		return 'Add at least one piece of evidence first, like a photo or an estimate.';
 	if (/confirm the redacted copy of every piece of evidence/i.test(message))

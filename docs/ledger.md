@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Payee kind fits the request (`…190000_payee_fits.sql`)
+
+- **`payee_fits(request_kind, payee_kind)` is the single mapping the web form and the database read.** `submit_request` refuses a mismatch, so money can't aim at the wrong place: cars at a shop, a repair at a contractor, home money at a lender, seller or title company. Call: one small function rather than a table check, because the rule is about a *pair* of kinds, not one row. **Reversal:** if counsel ever wants shops on home money, only that function's body changes.
+- **The refusal is at submission, not at the draft.** A member may save a draft naming any payee (the form offers only fitting kinds anyway, but drafts can be edited around it); the gate sits where money starts aiming somewhere, next to the other submission rules. **Reversal:** an insert-time check would push the rule onto drafts and fight the form's payee picker while editing.
+
 ## 2026-11-01 — CI gate, repo hygiene
 
 - **CI runs the tests on every push to `main`** (`.github/workflows/ci.yml`): `pnpm check`, `test:web`, `test:scripts`, then pgTAP with the Supabase stack started by `supabase/setup-cli`. Follows the single-emitter pattern in [README-ci-gate.md](../.github/workflows/README-ci-gate.md): one `changes` filter job, heavy jobs gated on it, `ci-gate` as the aggregator with `if: always()`. Action SHAs pinned like the other workflows. **e2e stays out of CI**: `test:web:e2e` still runs only on demand (`setup:e2e` per machine), so CI can't pay for the Chromium download yet.
