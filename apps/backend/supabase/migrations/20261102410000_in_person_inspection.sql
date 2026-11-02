@@ -27,7 +27,7 @@ alter table public.inspections enable row level security;
 -- required before the money moves. Kept in fund_settings so the partner can
 -- move it with their fee economics; the lines still need review.
 alter table public.fund_settings
-  insert inspection_min_cents bigint not null check (inspection_min_cents > 0) default 5000000;
+  add column inspection_min_cents bigint not null default 5000000 check (inspection_min_cents > 0);
 
 update public.fund_settings set inspection_min_cents = 5000000 where fund = 'protection';
 update public.fund_settings set inspection_min_cents = 10000000 where fund = 'home_fund';
