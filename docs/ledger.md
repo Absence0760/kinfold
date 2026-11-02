@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Income checks get an owner (`…270000_income_verification.sql`)
+
+- **`record_income_verification(member, method, cents, ref)` became the guarded way to write an income check** — active members only, no negative figures, and a bank-linked figure must carry the vendor's reference so the check can be traced back to the read that produced it (self-attested figures carry none by design). **Reversal:** deleting it hands `income_verifications` bare writes and dues priced from untraceable figures.
+- **`functions/verify-income` converts the vendor's ANNUAL income to the monthly figure the dues formulas price (floored whole cents)** and refuses any report that touched a credential field before anything is written — income only, never a password, never a transfer. **Reversal:** trusting the vendor's own monthly figure or trimming credential-touch instead of refusing would price dues off untrustworthy reads.
+
 ## 2026-11-02 — Refunds answer with their figure (`…260000_refund_figure.sql`)
 
 - **`mark_refunded` now returns the figure it stored** (`refunded_cents` computed by the `refunds_due` split), and the payments webhook journals exactly that number — a partner event claiming a different amount is refused so no journal can contradict the row it owns. **Reversal:** keeping `void` means the ledger mirrors the partner's word, and a wrong event figure silently mis-records money.
