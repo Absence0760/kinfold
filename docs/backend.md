@@ -80,6 +80,15 @@ A refused request is reopened only by an upheld appeal: `record_review` doesn't 
 
 A payout that is `pending` or `sent` is live: the money is with (or on its way to) the payee. While a request has a live payout the status guard refuses `refused`, `withdrawn` and `expired`, and `record_review` turns a refusal into `in_review` (the review and an audit row are still written), so a person deals with recovering the money; once the partner reports the payout `returned`, the request can be refused or withdrawn as usual. A request becomes `paid` only once at least one payout has been sent and its captured contributions cover the payouts sent.
 
+### Money for the same damage and the evidence lifecycle (`…120600_board_privacy.sql`, `…150000_evidence_lifecycle.sql`)
+
+| Relation | Purpose |
+| --- | --- |
+| `request_recoveries` | Money that covered the same damage through other sources: the member's own cover, insurer recoveries, FEMA/SBA/state/charity money. Append-only, positive amounts, `partner_ref`/`verified_at` set once the service verifies it. Owner-written (`record_recovery`) or service-written; read by the requester and the service. The pledge cap and the pool run's need subtract it (`private.recovered_cents`); it is never counted as money Kinfold raised, so funding, payout caps and refunds still look only at pledges and payouts |
+| `private.evidence_deletions` / `pending_evidence_deletions` (view) | When an evidence row is deleted, its original and redacted files queue here for the service to remove (`mark_evidence_deleted` closes an entry). A storage delete policy can't cover files whose row is already gone, and the queue can't race with the row |
+| `set_redaction_done`, `set_public_summary` (service) | The redaction pipeline's database affordance: `pending` or `rejected` evidence gets a `redacted_path` and `auto_done` while the request is still `draft` or `needs_evidence`; the service writes a request's `public_summary` (the existing trigger then clears the member's confirmation) |
+| `reject_redaction`, `request_summary_change` (member) | The member says a redaction is wrong, or asks for a different summary with a note the service acts on; a member can never write the summary or the redaction themselves |
+
 ### Funding, loans and the ledger (`…120200_funding.sql`, `…120300_repayment.sql`)
 
 | Table | Purpose |
