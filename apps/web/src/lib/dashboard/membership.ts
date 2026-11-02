@@ -60,6 +60,8 @@ export interface IncomeState {
 export interface CoverState {
 	/** Cover is per vehicle (one premium per covered vehicle). */
 	vehicles: number;
+	/** The filed premiums the cooperative pays for the member's classed vehicles. */
+	premiumCents: number;
 	claimsPaidCents: number;
 	openClaims: number;
 }
@@ -86,6 +88,7 @@ export function summarizeMembership(
 	income: IncomeRow[],
 	claims: ClaimRow[],
 	assets: AssetRow[],
+	premiumCents: number,
 	preferences: PreferenceRow[],
 	today: string
 ): MembershipSummary {
@@ -127,6 +130,7 @@ export function summarizeMembership(
 		income: incomeState,
 		cover: {
 			vehicles: assets.length,
+			premiumCents,
 			claimsPaidCents: claims.reduce((sum, c) => (c.status === 'paid' ? sum + c.paid_cents : sum), 0),
 			openClaims: claims.filter((c) => c.status === 'recorded').length
 		},

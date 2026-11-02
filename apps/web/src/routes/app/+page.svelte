@@ -388,6 +388,10 @@
 					<dd>{cover.vehicles === 0 ? 'No vehicle covered yet' : `${cover.vehicles} vehicle${cover.vehicles === 1 ? '' : 's'} covered`}</dd>
 				</div>
 				<div>
+					<dt>Premiums the cooperative pays for them</dt>
+					<dd>{cover.premiumCents > 0 ? `Paid from dues: ${formatCents(cover.premiumCents)} \u2014 filed rates by vehicle class, never by earnings` : 'None owed (vehicles not classed yet)'}</dd>
+				</div>
+				<div>
 					<dt>Covered claims paid so far</dt>
 					<dd>{cover.claimsPaidCents > 0 ? formatCents(cover.claimsPaidCents) : 'None paid yet'}</dd>
 				</div>

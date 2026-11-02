@@ -52,6 +52,7 @@ describe('loadHome', () => {
 		expect(asked.sort()).toEqual([
 			'allocation_preferences',
 			'contributions',
+			'cover_premium_cents',
 			'covered_assets',
 			'family_loans',
 			'income_verifications',

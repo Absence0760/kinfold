@@ -1,6 +1,6 @@
 import { LoadError } from '#lib/auth/errors.ts';
 import type { Db } from '#lib/supabase/client.ts';
-import { fromNew } from '#lib/supabase/client.ts';
+import { fromNew, rpcNew } from '#lib/supabase/client.ts';
 import { givingSummary, type GivingSummary, type ReliabilityRow } from './giving.ts';
 import { sortLoans, summarizeLoan, type LoanSummary } from './loans.ts';
 import { buildRequestCards, type RequestCard } from './requests.ts';
@@ -85,7 +85,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 	const loanRequestIds = [...new Set(loans.map((l) => l.request_id).filter((id): id is string => id !== null))];
 	const none = Promise.resolve({ data: [], error: null, status: 200 });
 
-	const [scoresRes, contribRes, instRes, pausesRes, forgRes, missedRes, titlesRes, supportersRes, claimsRes, assetsRes, prefsRes] = await Promise.all([
+	const [scoresRes, contribRes, instRes, pausesRes, forgRes, missedRes, titlesRes, supportersRes, claimsRes, assetsRes, prefsRes, premiumRes] = await Promise.all([
 		requestIds.length
 			? db.from('scores').select('request_id, score, reasons, model, model_version, created_at').in('request_id', requestIds)
 			: none,
@@ -105,9 +105,13 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 			? fromNew(db, 'claims').select('request_id, gross_cents, member_share_cents, paid_cents, status').in('request_id', requestIds)
 			: none,
 		db.from('covered_assets').select('kind').eq('member_id', uid),
-		db.from('allocation_preferences').select('target, weight_pct').eq('member_id', uid)
+		db.from('allocation_preferences').select('target, weight_pct').eq('member_id', uid),
+		// `cover_premium_cents` is newer than the committed generated types (`rpcNew` seam).
+		rpcNew(db, 'cover_premium_cents', { p_member: uid })
 	]);
 
+	if (premiumRes.error) throw new LoadError('your premiums', premiumRes.error);
+	const premiumCents = (premiumRes.data as number | null) ?? 0;
 	const loanInputs = {
 		installments: must(instRes, 'loan schedules'),
 		pauses: must(pausesRes, 'loan pauses'),
@@ -122,6 +126,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 		must(incomeRes, 'your earnings check'),
 		must(claimsRes, 'your claims'),
 		must(assetsRes, 'your covered vehicles'),
+		premiumCents,
 		must(prefsRes, 'your plan'),
 		today
 	);
