@@ -59,7 +59,7 @@ Goal: zero-interest home help for people with no family to lend, through a partn
 
 | Step | Build |
 | --- | --- |
-| 3a | `fund_loans`: the same shape as `family_loans`, with the fund as lender, a subordinate lien, and monthly or income-based schedules |
+| 3a | `fund_loans`: the same shape as `family_loans`, with the fund as lender, a subordinate lien, and monthly or income-based schedules  **Landed 2026-11-02:** `fund_loans` with monthly schedules (installments, no-interest totals check) and income schedules capped each month at the share of the member's live income (`fund_loan_income_due_cents`); the Fund signs at once, the borrower signs their side, and only the partner's disbursement (`activate_fund_loan`, service only) activates — payments webhook events `fund_loan_disbursed` and `fund_loan_paid` plumb it; lien totals ≤ 105% checked. Restructuring/pause flows for fund loans still to do |
 | 3b | Needs formula (versioned, inputs logged), panel review for edge cases |
 | 3c | Mortgage-gap bridging, plus referral to HUD-approved housing counselors |
 | 3d | Matching funds and program-related investments from foundations, employers and local government, tracked per source, with federally funded loans as their own pot (2 CFR 200); CDFI Technical Assistance application, then certification after the Fund has lent on its own books for one full fiscal year (loan-level reporting with "Do Not Know" where no data was collected) |
