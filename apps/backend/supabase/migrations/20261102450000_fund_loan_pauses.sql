@@ -20,10 +20,7 @@ create table public.fund_loan_pauses (
 
 -- Pause rows are history: never edited, never removed.
 create trigger fund_loan_pauses_append_only before update or delete on public.fund_loan_pauses
-language plpgsql security definer set search_path = '' as $$
-begin
-  raise exception 'loan pauses are never edited or removed' using errcode = '23514';
-end $$;
+  for each row execute function private.forbid_change();
 
 -- A pause is in effect until the latest started_on + months.
 create function private.fund_pause_ends_on(p_loan uuid) returns date
@@ -106,7 +103,7 @@ end $$;
 -- --- access --------------------------------------------------------------------
 
 alter table public.fund_loan_pauses enable row level security;
-revoke all on public.fund_loan_pauses to anon, authenticated;
+revoke all on public.fund_loan_pauses from anon, authenticated;
 create policy "borrowers read their fund loan pauses" on public.fund_loan_pauses for select to authenticated
   using (exists (select 1 from public.fund_loans l
                  where l.id = loan_id and l.borrower_id = auth.uid()));

@@ -118,7 +118,7 @@ select is(public.resume_ended_fund_pauses(), 0::int,
   'the job only resumes pauses that ran out; this pause is still ahead');
 select throws_ok($$update public.fund_loan_pauses set months = 12
   where loan_id = (select id from public.fund_loans where partner_ref = 'loan_p1')$$,
-  '23514', 'a recorded pause is never edited');
+  '42501', 'fund_loan_pauses is append-only');
 
 -- --- only the borrower reads their pauses -----------------------------------------
 
