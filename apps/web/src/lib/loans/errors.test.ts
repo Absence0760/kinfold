@@ -20,6 +20,30 @@ describe('explainLoanError', () => {
 		).toMatch(/1 pause month a year and 1 is used/);
 	});
 
+	it('explains restructure refusals', () => {
+		expect(
+			explainLoanError({
+				message: 'this loan owes nothing, so there is nothing to restructure',
+				code: 'P0002'
+			})
+		).toMatch(/nothing to restructure/);
+		expect(
+			explainLoanError({
+				message: 'too many installments for what is left to pay'
+			})
+		).toMatch(/more installments than there are cents/);
+		expect(
+			explainLoanError({
+				message: 'a restructure the other side has not signed yet is already pending'
+			})
+		).toMatch(/waiting for your side to sign/);
+		expect(
+			explainLoanError({
+				message: "the borrower’s pause runs until 2027-01-15"
+			})
+		).toMatch(/pause hasn’t ended yet/);
+	});
+
 	it('explains signing refusals', () => {
 		expect(explainLoanError({ message: 'loan is already signed' })).toMatch(/already signed/);
 		expect(explainLoanError({ message: 'loan is already active' })).toMatch(/past signing/);

@@ -1,3 +1,4 @@
+import { fromNew, rpcNew } from '#lib/supabase/client.ts';
 import type { Db } from '#lib/supabase/client.ts';
 import type { DefaultPlan } from '#lib/dashboard/labels.ts';
 import { sortLoans, summarizeLoan, type LoanSummary, type MissedRow } from '#lib/dashboard/loans.ts';
@@ -144,3 +145,27 @@ export const resumeLoan = (db: Db, loan: string) => call(db.rpc('resume_loan', {
 
 export const forgiveLoan = (db: Db, loan: string, cents: number, taxYear: number) =>
 	call(db.rpc('forgive_loan', { p_loan: loan, p_amount_cents: cents, p_tax_year: taxYear }));
+
+/** A restructure the borrower staged, waiting for the lender to sign it. */
+export interface RestructureRow {
+	loan_id: string;
+	months: number;
+	first_due: string;
+	stager_signed_at: string;
+	other_signed_at: string | null;
+	created_by: string;
+}
+
+export const loadPendingRestructures = (db: Db, loanIds: string[]) =>
+	loanIds.length === 0
+		? []
+		: must(
+			await fromNew(db, 'loan_restructures')
+				.select('loan_id, months, first_due, stager_signed_at, other_signed_at, created_by')
+				.in('loan_id', loanIds),
+			'pending restructures'
+		);
+
+/** The other side signs a staged restructure: both sides have agreed. */
+export const signLoanRestructure = (db: Db, loan: string) =>
+	must(await rpcNew(db, 'sign_loan_restructure', { p_loan: loan }), 'signing the restructure');

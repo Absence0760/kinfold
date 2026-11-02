@@ -51,6 +51,22 @@ export function explainLoanError(error: DbError | null | undefined): string {
 	if (/loan_forgiveness_amount_cents_check/i.test(message)) return 'Enter an amount above zero.';
 	if (/loan_forgiveness_tax_year_check/i.test(message)) return 'The tax year must be between 2000 and 2200.';
 
+	// restructure_loan / sign_loan_restructure.
+	if (/only a collecting loan can be restructured/i.test(message))
+		return 'This loan is closed or still being set up, so there is no schedule to change.';
+	if (/other side has not signed yet is already pending/i.test(message))
+		return 'You have a new schedule waiting for your side to sign. Check the loan before staging another.';
+	if (/owes nothing has nothing to restructure/i.test(message))
+		return 'This loan owes nothing, so there is nothing to restructure.';
+	if (/owes nothing, so there is nothing to restructure/i.test(message))
+		return 'This loan owes nothing, so there is nothing to restructure.';
+	if (/restructured schedule can't start in the past/i.test(message))
+		return 'A new schedule cannot start in the past. Pick a start date from today on.';
+	if (/too many installments for what is left to pay/i.test(message))
+		return 'That’s more installments than there are cents left to repay. Choose fewer.';
+	if (/no restructure is waiting for this side to sign/i.test(message))
+		return 'There is no new schedule waiting for you to sign. Refresh to see where the loan stands.';
+
 	// pause_loan / resume_loan.
 	if (/only an active loan can be paused/i.test(message))
 		return 'Repayments haven’t started, or the loan is closed, so there’s nothing to pause.';
