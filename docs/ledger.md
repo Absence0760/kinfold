@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Payout reporting owns the outcome (`…210000_payout_reporting.sql`)
+
+- **`report_payout(uuid, outcome)` became the service's guarded way to move a payout**, replacing the webhook's bare table write: honest steps only (pending→sent/failed, sent→returned; failed/returned terminal), pending is never an outcome to report, and the same outcome twice is a no-op for replayed webhooks. **Reversal:** deleting the function puts webhook writes back on the table, with none of these rules enforced.
+- **A payout can't be reported `returned`/`failed` once its request has refunded contributions** — this closes the open followup. `refunds_due` splits captured money over live payouts oldest first, and a late return wouldn't re-run that split, so the honest answer is a refusal that sends it to a person's decision (audit-logged). **Reversal:** re-running the split on returns would let the refusal back off — not chosen, because the ledger's shape stays frozen.
+- **The webhook journals each refund with the REFUND amount, one journal per contribution** (journals are keyed by partner_ref, so refunds can't share a journal), and journals two money lines — out of one account, into the next — with amounts checked before any write so a bad event leaves no half a refund. A failed payout moves no money and journals nothing. **Reversal:** one journal per event (not per contribution) would collide on the unique partner_ref; a single-sided line would break the schema's two-line rule.
+
 ## 2026-11-02 — Board progress on the view (`…200000_board_progress.sql`)
 
 - **`raised_cents` and `taking_pledges` became columns on `board_requests`** rather than a per-card RPC, so one read answers the whole board (the page used to call `request_raised_cents` once per open card). `raised_cents` is filled only while a request is `open`; a finished request shares none. `taking_pledges` is the same pair of rules `pledge` applies, so the page can say gifts aren't open yet instead of refusing the first gift. **Reversal:** the view is dropped and rebuilt; returning to per-card reads is deleting the two columns and restoring the map in `loadBoard`.
