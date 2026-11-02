@@ -10,6 +10,8 @@
     "db:psql": "psql postgresql://postgres:postgres@127.0.0.1:54722/postgres",
     "db:studio": "xdg-open http://127.0.0.1:54723",
     "test:db": "supabase test db",
-    "gen:types": "supabase gen types typescript --local > supabase/database.types.ts"
+    "gen:types": "supabase gen types typescript --local > supabase/database.types.ts",
+    "test:edge": "deno test functions",
+    "check:edge": "deno fmt --check functions && deno check functions"
   }
 }

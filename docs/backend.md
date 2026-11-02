@@ -170,13 +170,16 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 
 Storage has two private buckets. `evidence-original` holds files under the member's own folder, readable only by the member; reviewers get short-lived signed URLs from an edge function that writes to the audit log. `evidence-redacted` is readable by the owner, and by verified members once the request is on the board.
 
-## Edge functions (to build)
+## Edge functions
+
+Two are built (`apps/backend/functions/<name>/index.ts`, Deno, tested by `pnpm test:edge`); the rest are
+the plan for what to build, in `functions/` when each is built.
 
 | Function | Triggered by | Does | Local stand-in |
 | --- | --- | --- | --- |
-| `verify-identity` | Signup | Starts an identity check; the vendor's webhook calls `record_identity_check`, which stores the reference and sets the member `active` | Fake vendor that approves `*@test.com` |
+| `verify-identity` ✅ | Signup | Starts an identity check; the vendor's webhook calls `record_identity_check`, which stores the reference and sets the member `active` | Fake vendor that approves `*@test.com` (`functions/verify-identity`, tested by `pnpm test:edge`) |
 | `verify-income` | Member links a bank | Reads income only (never a password), writes `income_verifications`, prices the subscription | Fixture statements |
-| `redact-evidence` | Evidence upload | Blurs faces, plates, names and account numbers, writes the redacted copy and `auto_done`, computes hashes | Open-source face and plate detection running locally |
+| `redact-evidence` ✅ | Evidence upload | Blurs faces, plates, names and account numbers, writes the redacted copy and `auto_done`, computes hashes | Open-source face and plate detection running locally; the stand-in copies the file and masks region counts, but the file-exists-and-hash check is real (`functions/redact-evidence`, tested by `pnpm test:edge`) |
 | `score-request` | Status becomes `scoring` | Builds inputs from redacted and original evidence plus fraud signals, calls the model, then `record_score` | Ollama model behind the same provider interface |
 | `fraud-checks` | Evidence and request events | Duplicate-photo and pattern checks; records flags with `record_fraud_signal` and clears them with `resolve_fraud_signal` | Same code, local data |
 | `evidence-url` | Reviewer opens evidence | Issues a short-lived signed URL for the original and logs it | Same |

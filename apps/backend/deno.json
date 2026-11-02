@@ -1,0 +1,18 @@
+{
+	// Local settings for the edge functions in `functions/`. The Supabase
+	// Edge Runtime (config.toml `deno_version = 2`) runs `functions/<name>/index.ts`;
+	// `pnpm test:edge` runs the `*_test.ts` files beside them, which need no
+	// Docker and no stack. Formatting matches the rest of the repo.
+	"compile": {
+		"deny": []
+	},
+	"format": {
+		"baseDir": "./functions"
+	},
+	"indentWidth": 1,
+	"quote": {
+		"standard": "double"
+	},
+	"semicolons": "strict",
+	"useTabs": true
+}

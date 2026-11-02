@@ -27,9 +27,10 @@ Code layout in `apps/web/src/lib`: `auth/` (session helpers, the dev demo accoun
 | `pnpm dev:run:web` | Dev server on http://localhost:7790. With `dev:db:up` running, `/signin` lists the seeded demo accounts (maria, sam, james, priya; password `testtest`): click one to sign in. The list only appears in a dev build pointed at a loopback Supabase URL. There is no sign-up or password reset in the UI: membership is invitation-only for now, and the page says so |
 | `pnpm build:web` | Prerender to `apps/web/build/`. S3 + CloudFront must serve `200.html` for unknown paths so `/app/*` loads |
 | `pnpm preview:web` | Serve the production build on 7790 |
-| `pnpm check` | svelte-check typecheck |
+| `pnpm check` | svelte-check typecheck for the web workspace, then `deno fmt --check` + `deno check` for the edge functions |
 | `pnpm test` | Vitest unit tests + the root-scripts guard + pgTAP (needs `dev:db:up` first). Does not run the e2e tests |
 | `pnpm test:web:e2e` | Playwright end-to-end tests of the public site: builds it and serves it with `vite preview` on 7790 (reuses a server already on 7790 outside CI), then runs desktop Chrome and a Pixel 7 phone. Needs `setup:e2e` once |
+| `pnpm test:edge` | Deno unit tests of the edge functions in `apps/backend/functions` (fake `Db`, no stack, no Docker) |
 | `pnpm test:backend:db` | pgTAP only: schema, invariants, RLS |
 | `pnpm gen:types` | Regenerate `apps/backend/supabase/database.types.ts` from the local schema; commit the result |
 
@@ -42,6 +43,16 @@ Playwright tests live in `apps/web/e2e/`, outside the Vitest glob (`src/**/*.{te
 - **No-JS coverage** uses `test.use({ javaScriptEnabled: false })` and asserts that `data-hydrated` is absent.
 - **Not covered yet: the member area** (`/signin`, `/app/*`), because it needs the local Supabase stack. To add it: a separate Playwright project (or config) whose tests start with `pnpm dev:db:up && pnpm dev:db:reset`, run against a build pointed at the local stack (`PUBLIC_SUPABASE_URL` from `.env.development`, the anon key read from `supabase status` the way `bin/dev-run-web.sh` does it), sign in as a seeded demo account, and keep it out of the default `test:web:e2e` run so it still needs no Docker.
 - **e2e has no CI job (by decision).** `ci.yml` runs `pnpm check`, `test:web`, `test:scripts` and pgTAP on every push to `main`, but deliberately not `test:web:e2e`: CI would pay for the Chromium download on every push (see [ledger.md](ledger.md)). To add an e2e job later: run `pnpm setup:e2e` first (cache `~/.cache/ms-playwright` keyed on the `@playwright/test` version) and then `pnpm test:web:e2e`; with `CI` set, the config reuses no server, forbids `test.only` and writes an HTML report to `apps/web/playwright-report/`.
+
+## Edge functions
+
+`apps/backend/functions/<name>/index.ts` (Deno 2, which `supabase/config.toml` already pins with `deno_version = 2`).
+A function reaches the database through `functions/shared/rest.ts`: PostgREST with the service key from
+the runtime environment, calling the **same guarded functions** the members' app calls — a function never
+writes to a table itself, so its word is never more trusted than the function's own guard (`private.is_service()`).
+`pnpm test:edge` runs the `*_test.ts` files beside each function, where the `Db` is a fake: the rules a function
+applies before it touches a file are pinned there, without a stack. `pnpm check:edge` runs `deno fmt --check` and
+`deno check`. Not in CI: the runners don't ship Deno (see [ledger.md](ledger.md)); `pnpm test` runs these locally.
 
 ## Backend
 
