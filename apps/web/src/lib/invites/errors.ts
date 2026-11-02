@@ -24,8 +24,21 @@ export function explainInviteError(error: DbError | null | undefined): string {
 	if (code === '23503' && /request_supporters/i.test(message))
 		return 'Your member profile isn’t set up yet, so you can’t accept invites. Membership is by invitation for now: ask the member who invited you to contact the Kinfold team, who will finish setting up your profile. Then sign in again and open this link.';
 
+	// accept_invite, in its new readable form rather than a foreign-key crash.
+	if (/finish setting up your account/i.test(message))
+		return 'Your member profile isn’t set up yet, so you can’t accept invites. Membership is by invitation for now: ask the member who sent you this link to contact the Kinfold team, who will finish setting up your profile. Then sign in again and open the link.';
+
+	// invite_preview, and the preview of a link that was cancelled or used up.
+	if (/^invite not found$/i.test(message))
+		// Same answer as a used or expired link: cancelling stays invisible to others.
+		return 'This invite link can’t be found, was already used, has expired, or was cancelled by the member who sent it. Ask them for a new link.';
+
+	// revoke_invite
+	if (/the link was already used or cancelled/i.test(message))
+		return 'That link was already used or cancelled. Nothing more to do; make a new link if you still want to invite someone.';
+
 	// create_invite
-	if (/request_invites_relationship_check/i.test(message))
+	
 		return 'Say who this person is to you in 1 to 40 characters.';
 
 	// pledge
