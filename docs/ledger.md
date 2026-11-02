@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Scoring gets a gate and a provider seam (`functions/score-request`)
+
+- **Scoring stays OFF behind an evaluation-set gate**: until a labelled evaluation set (300+ real-shaped cases) is reviewed and its stamp deployed, the function refuses before any provider call — requests wait in the queue. **Reversal:** turning scoring on without the set would route money on unreviewed judgements.
+- **`score-request` goes through a `Provider` interface** and writes provenance (`model`, versions, inputs hash) with every score, so the console can retrace each one. **Reversal:** baking a model into the function would make the prod swap (Ollama locally, hosted model in prod) a schema change. The bundled scorer is an honest LOCAL HEURISTIC STAND-IN — evidence completeness, not picture understanding.
+
 ## 2026-11-02 — Insured claims record (`…300000_insured_claims.sql`)
 
 - **`claims` records the partner insurer's paid claims: gross, the member's share, and `paid_cents = gross - share` enforced by a check** — the score decides speed and scrutiny, never the amount, so nothing here recomputes money. `record_claim` is service-only and keyed by `partner_ref` (unique), so a replayed feed entry is a no-op that answers with the existing row.
