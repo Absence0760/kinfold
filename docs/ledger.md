@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Evidence URLs leave a trail (`…310000_evidence_url_audit.sql`, `functions/evidence-url`)
+
+- **`record_evidence_url` audits every issuing of a reviewer's signed URL** (request + file path in jsonb) — PII reads trail their name, same as every other affordance. Only the service issues.
+- **`evidence-url` mirrors the review pairings before signing anything**: same-region and self pairings sign NOTHING — no URL exists, so nothing is audited for a refusal either. URLs are 15 minutes, a review's length, not a day. **Reversal:** a day-long URL would let a link be shared long past the review. Regions are compared as a boolean inside the function; the value never leaves the read.
+
 ## 2026-11-02 — Scoring gets a gate and a provider seam (`functions/score-request`)
 
 - **Scoring stays OFF behind an evaluation-set gate**: until a labelled evaluation set (300+ real-shaped cases) is reviewed and its stamp deployed, the function refuses before any provider call — requests wait in the queue. **Reversal:** turning scoring on without the set would route money on unreviewed judgements.
