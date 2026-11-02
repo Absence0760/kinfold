@@ -6,6 +6,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
 
+## 2026-11-02 — A reconcile difference is recorded, not just logged (`ledger_differences`)
+
+- **When a statement and the ledger disagree, the difference is stored** (append-only, audit-logged, service-only: fund-level books are money members never see) so an operator can find the alert later; the log line still accompanies it. A statement that MATCHES stores nothing. **Reversal:** leaving alerts as a returned string buries the only record of a discrepancy in whichever cron log survives.
+
 ## 2026-11-02 — The request page records other money for the same damage (`RecoveriesPanel`)
 
 - **Other money that covered the same damage now has a place on the request page** — the member's own cover declared at request time, another insurer's claim, FEMA/SBA/state/charity money — with a record form the requester can write through (`record_recovery`; the schema re-checks and subtracts it from pledge caps and pool needs). It is money that moved outside Kinfold, so funding, payout caps and refunds still count only pledges and payouts; the page says so rather than implying Kinfold raised it. **Reversal:** hiding the record from the page would leave the pledge caps subtracting money the member can't see, making the ask look smaller for an unexplained reason.

@@ -19,7 +19,7 @@ Deno.test("January publishes the previous December", () => {
   assertEquals(monthToPublish(now), "2026-12-01");
 });
 
-Deno.test("due month publishes once and differences are reported", async () => {
+Deno.test("due month publishes once, reports and records differences", async () => {
   const rpcLog: string[] = [];
   const balances: Record<string, number> = { "protection/partner_cash": -800 };
   const db = {
@@ -45,6 +45,10 @@ Deno.test("due month publishes once and differences are reported", async () => {
   assertEquals(result.differences, [
     "protection/available: statement 999, ledger 0",
   ]);
+  assertEquals(
+    rpcLog.filter((name) => name === "record_ledger_difference").length,
+    1,
+  );
 });
 
 Deno.test("an already-published month is a skip, not a crash", async () => {

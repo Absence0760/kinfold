@@ -80,10 +80,23 @@ export async function reconcileBooks(
     );
     // Statements carry the partner's figure for the same account.
     const statementCents = entry.amountCents;
-    if (schemaCents !== statementCents) {
-      differences.push(
-        `${entry.fund}/${entry.code}: statement ${statementCents}, ledger ${schemaCents}`,
-      );
+    if (schemaCents === statementCents) {
+      continue;
+    }
+    differences.push(
+      `${entry.fund}/${entry.code}: statement ${statementCents}, ledger ${schemaCents}`,
+    );
+    // The alert is also RECORDED (append-only, audit-logged), not just a
+    // log line: an operator can find it later. Money is never moved here.
+    try {
+      await db.rpc("record_ledger_difference", {
+        p_fund: entry.fund,
+        p_code: entry.code,
+        p_statement_cents: statementCents,
+        p_ledger_cents: schemaCents,
+      });
+    } catch {
+      // A replayed cron day or a refused write: the log line still says it.
     }
   }
   return { published, differences };
