@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Refunds answer with their figure (`…260000_refund_figure.sql`)
+
+- **`mark_refunded` now returns the figure it stored** (`refunded_cents` computed by the `refunds_due` split), and the payments webhook journals exactly that number — a partner event claiming a different amount is refused so no journal can contradict the row it owns. **Reversal:** keeping `void` means the ledger mirrors the partner's word, and a wrong event figure silently mis-records money.
+- **Journal account codes are the fund's seeded ledger accounts** (`partner_cash`, `available`, `reserve`, `committed`, `paid_out`) — the webhook used invented codes that `post_journal` would refuse. Refunds journal `partner_cash → available`; payouts `available → paid_out`, reversed for `returned`; `failed` journals nothing. **Reversal:** inventing codes needs new ledger accounts with no role in the design.
+- **CREATE OR REPLACE resets a function's grants** (they live on the function object, not the signature). `mark_refunded` had been create-or-replaced by `…120500_service_paths.sql` with no grant re-claim after — the replacement re-claims service-only here. **Reversal:** leaving grants at their default would hand money-moving to every authenticated member. Worth an audit pass over other replaced functions.
+
 ## 2026-11-02 — Marginal dues formula (`…250000_dues_marginal.sql`)
 
 - **`subscription_amount` grew a `marginal` flag on the formula rows and version 2 (1% of the amount above the $1,500 floor) entered effective 2027-01-01** — closing the $15 cliff followup without touching today's dues. **Reversal:** switching the live version now would change what every member is charged with the actuarial review unmade; design.md keeps the figures pending review, so the switch stays dated.

@@ -38,20 +38,22 @@ export interface ChargeEvent {
 
 /**
  * A journal needs at least two lines: money always records both sides, the
- * account it left and the account it entered. The cooperative pays out
- * (partner receives), refunds come back (cooperative receives).
+ * account it left and the account it entered — the codes are the fund's
+ * seeded ledger accounts (`partner_cash`: money sitting with the payment
+ * partner, `available`: the cooperative's money in the fund, `paid_out`:
+ * money delivered to a payee).
  */
 function transferLines(
-  from: string,
-  to: string,
+  fromCode: string,
+  toCode: string,
   amountCents: number,
 ): unknown[] {
   if (amountCents <= 0) {
     throw new Error(`money moving needs a positive amount: ${amountCents}`);
   }
   return [
-    { code: from, amount_cents: -amountCents },
-    { code: to, amount_cents: amountCents },
+    { code: fromCode, amount_cents: -amountCents },
+    { code: toCode, amount_cents: amountCents },
   ];
 }
 
@@ -73,20 +75,29 @@ export async function handleChargeEvent(
             `money moving needs a positive amount: ${line.amountCents}`,
           );
         }
-        await db.rpc("mark_refunded", {
-          p_contribution: line.contributionId,
-          p_partner_ref: line.partnerRef,
-        });
-        // The refund journal says the money came back: out of the partner,
-        // into the cooperative's owed-to-people account. Amounts here, not
-        // `amount_cents`, because `mark_refunded` may refund less than a
-        // pledge (partial refunds are the ledger's job to record).
+        // The DB's answer is the figure it stored (`refunded_cents`, from
+        // the `refunds_due` split); the journal mirrors that, never the
+        // partner's word — a disagreement is refused loudly.
+        const refunded = Number(
+          await db.rpc("mark_refunded", {
+            p_contribution: line.contributionId,
+            p_partner_ref: line.partnerRef,
+          }),
+        );
+        if (refunded !== line.amountCents) {
+          throw new Error(
+            `the partner's refund figure (${line.amountCents}) doesn't match the split (${refunded})`,
+          );
+        }
+        // The refund journal says the money came back: out of the partner's
+        // side, into the fund's own money.
         await db.rpc("post_journal", {
           p_fund: event.fund,
           p_kind: "refund",
           p_ref: line.contributionId,
           p_partner_ref: line.partnerRef,
-          p_lines: transferLines("partner", "cooperative", line.amountCents),
+          // Money back from the partner's side into the fund's own money.
+          p_lines: transferLines("partner_cash", "available", line.amountCents),
         });
       }
       return;
@@ -103,12 +114,17 @@ export async function handleChargeEvent(
           p_payout: report.payoutId,
           p_outcome: report.outcome,
         });
+        // `sent` moved money to the payee (out of the fund's money, into
+        // paid-out); `returned` moved it back the other way. A failed payout
+        // moved no money, so there is no journal to write.
         await db.rpc("post_journal", {
           p_fund: event.fund,
           p_kind: "payout",
           p_ref: report.payoutId,
           p_partner_ref: report.partnerRef,
-          p_lines: transferLines("cooperative", "payee", report.amountCents),
+          p_lines: report.outcome === "sent"
+            ? transferLines("available", "paid_out", report.amountCents)
+            : transferLines("paid_out", "available", report.amountCents),
         });
       }
       return;
