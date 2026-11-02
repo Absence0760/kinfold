@@ -13,6 +13,8 @@
 	Every month, the cooperative publishes its own totals: money paid out, what the repair fund
 	allocated, and how many requests were paid. Small numbers stay hidden — a month shows its counts
 	only once at least eleven requests were paid — because transparency should not unmask individuals.
+	Quarters below are the published months summed; a quarter with fewer than three published months
+	says how many months it covers.
 </p>
 
 {#if problem}

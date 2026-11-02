@@ -6,6 +6,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
 
+## 2026-11-02 — Quarters sum the published months, never re-derive them (`quarterlySummaries`, `/transparency`)
+
+- **The quarterly open-books report is a sum of the published monthly figures** (per fund and calendar quarter), so the report can never disagree with the month pages beneath it; a quarter with fewer than three published months carries its months count so readers see it is partial rather than guessing. **Reversal:** recomputing quarters from raw journals could publish figures the month-level small-numbers rules never approved.
+
 ## 2026-11-02 — A reconcile difference is recorded, not just logged (`ledger_differences`)
 
 - **When a statement and the ledger disagree, the difference is stored** (append-only, audit-logged, service-only: fund-level books are money members never see) so an operator can find the alert later; the log line still accompanies it. A statement that MATCHES stores nothing. **Reversal:** leaving alerts as a returned string buries the only record of a discrepancy in whichever cron log survives.
