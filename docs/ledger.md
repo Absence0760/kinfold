@@ -6,6 +6,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
 
+## 2026-11-02 — Big money waits for a pair of eyes (`inspections`, pgTAP `in_person_inspection_test`)
+
+- **A large request can't move money until someone has actually looked**: requests at or above their fund's `inspection_min_cents` line in `fund_settings` are refused on any change toward `funded` or `paid` unless a recorded inspection says `clear`. The visit itself is the partner's statement (service-only `record_inspection`, append-only, replay-keyed by `inspector_ref`) — the database never decides what the shop looked like, only that nothing large may skip the visit. **Reversal:** letting large requests fund on automated scores alone would let a well-fabricated big claim through unexamined, which is exactly what the pool is for.
+
 ## 2026-11-02 — Cover comes in filed plans, priced by risk not earnings (`cover_plans`, pgTAP `cover_plans_test`)
 
 - **The partner insurer's filed group rate lives in the data**: one premium and cap per vehicle CLASS and PLAN (Basic, Standard), with the schema refusing any write that would price Standard at or below Basic inside a class (more premium must buy at least as much cap). A member chooses their plan (`cover_choices`, `set_my_plan`) but can never write a filed rate — only the service files, and each change leaves a history row and an audit trail. **Reversal:** a single global cap (the old `fund_settings.max_request_cents` alone) can't express class-based rates without turning earnings into a cap, which rating law forbids.
