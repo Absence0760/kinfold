@@ -247,7 +247,7 @@ Kinfold's costs per request are real even though it charges no interest: identit
 - **What the Basic plan covers**, and how much dues can pay for, need the partner's real rates and loss data.
 - **Whether a premium the cooperative pays is income to the member** is unresolved; it needs tax counsel.
 - **The scoring model** needs a labelled evaluation set before launch, and a decision on vendor model vs. self-hosted.
-- **Cross-state rules**: insurance and lending law is per state; the first state is chosen partly for how friendly its regulator is to new models (Kentucky, Vermont, West Virginia, North Carolina and South Dakota run insurance sandboxes; Utah runs a general one).
+- **Cross-state rules**: insurance and lending law is per state; the first state is chosen partly for how friendly its regulator is to new models (Kentucky, West Virginia, North Carolina and South Dakota have run insurance sandboxes, and Utah runs a general one; Vermont's, 8 V.S.A. § 15a, was repealed on 1 July 2025, and the others need re-checking before we rely on them).
 
 ## Structure: one platform, partners behind it
 
@@ -325,7 +325,7 @@ Help with car damage, in three layers: insured deductible cover, a gift-funded r
 4. **Surplus dues** at year end go to reserves or back to members, by member vote.
 5. **In declared disasters** the insurer decides within 30 days and gives the member a payment statement or a decline letter: FEMA won't consider an insured loss without one. Cover never waits to pay "after FEMA".
 
-**Launch states:** Vermont first, then Rhode Island, then Kentucky (whose group-rating law still needs checking), because their rating laws allow group-averaged rates and Vermont and Kentucky run insurance sandboxes. Avoid California, Michigan and North Carolina, where car damage cover is written at state or bureau rates.
+**Launch states:** Vermont first, then Rhode Island, then Kentucky (whose group-rating law still needs checking), because their rating laws allow group-averaged rates. Kentucky has run an insurance sandbox; Vermont's was repealed on 1 July 2025, so Vermont is first for its rating law alone. Avoid California, Michigan and North Carolina, where car damage cover is written at state or bureau rates.
 
 Payouts reimburse a loss, so they aren't income, but they reduce any casualty-loss tax deduction (IRS Publication 547). The app tells members both things when a request is paid.
 
