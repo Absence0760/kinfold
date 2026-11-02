@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The insurer's feed closes claims (`…360000_claim_paid.sql`, `functions/claims-feed`)
+
+- **`mark_claim_paid` is idempotent and refuses denials** (a denied claim pays nothing, code 23514) and audit-trails the confirmation with the event's partner reference; `claims-feed` journals a confirmed payment exactly gross minus the member's share — out of the insurer's side, into `paid_out`. **Reversal:** journaling on RECORD would claim money moved the insurer never confirmed.
+
 ## 2026-11-02 — Open books get a public page (`/transparency`, `lib/transparency/`)
 
 - **The transparency dashboard reads `open_books` anon-only** — the table only exists with the schema's small-numbers rules baked in at publish time (counts 0 or ≥ 11, money rounded to $1,000), so the page never re-derives or unmasks: it formats what the schema published. A failed read explains its kind (session/network/server); a not-yet-configured stack says so rather than showing blank money as zero. **Reversal:** computing totals client-side from raw rows would bypass the publish-time privacy rules entirely.
