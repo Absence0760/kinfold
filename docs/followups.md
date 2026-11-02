@@ -25,9 +25,7 @@ Found while building the web member area (`/app`, `/app/board`, `/app/review`, `
 
 
 - [ ] **Evidence redaction isn't running.** New uploads stay `pending`, and `submit_request` refuses them, so a request made in the web app can't be submitted. **Fix:** the `redact-evidence` edge function (sets `redacted_path`, `auto_done`), which must also check that the stored file exists and its SHA-256 matches the row before redacting; seed one `auto_done` row so the member's confirm-redaction step can be exercised. **When:** Stage 1, step 1c.
-- [ ] **`evidence-original` accepts any file type and size.** The web app checks, the server doesn't. **Fix:** set `allowed_mime_types` and `file_size_limit` on the bucket in a migration. **When:** before any hosted environment.
 - [ ] **No prepayment path**, though the agreement and `design.md` promise members can repay early. **Fix:** an extra-payment function through the payment partner. **When:** Stage 1, step 1f/1g with the partner.
-- [ ] **Either side can set loan terms while `proposed`**, which matches `design.md` ("borrower and lenders set the amount, schedule and purpose"); the web app says any change clears both signatures. Confirm that's intended, or restrict it in the database. **When:** operator's call.
 
 ## Funding and structure
 

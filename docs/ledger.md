@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Evidence buckets get their limits (`…290000_evidence_limits.sql`)
+
+- **Both evidence buckets now declare `allowed_mime_types` (photos, clips, documents) and a 20 MB `file_size_limit` on `storage.buckets`** — the server, not just the web app, refuses anything else. **Reversal:** web-only checks leave the direct API path unbounded. The column names come from Supabase's storage schema and can't be exercised without Docker — CI is the gate for this one.
+- **The loan-terms operator's call answered: intended as-is.** While `proposed`, either side may change terms, and the database's own line `borrower_signed_at = null, lender_signed_at = null` means a change signs nobody — both parties must re-sign. No new rule needed; the invariant already lives in `set_loan_terms`. **Reversal:** restricting who may edit terms would fight design.md's "borrower and lenders set the amount, schedule and purpose".
+
 ## 2026-11-02 — Books reconcile (`…280000_ledger_balance.sql`, `functions/reconcile`)
 
 - **`ledger_balance(fund, code)` gave the daily reconcile job a service-only read of fund-level ledger accounts** — the ledger lives in `private`, which PostgREST never exposes, so there was no honest way to ask what's in an account. Member/payee money stays theirs; members never see the books.
