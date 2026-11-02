@@ -14,6 +14,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **`mark_claim_paid` is idempotent and refuses denials** (a denied claim pays nothing, code 23514) and audit-trails the confirmation with the event's partner reference; `claims-feed` journals a confirmed payment exactly gross minus the member's share — out of the insurer's side, into `paid_out`. **Reversal:** journaling on RECORD would claim money moved the insurer never confirmed.
 
+## 2026-11-02 — Claims appear on the request page (`lib/requests/claims.ts`, ClaimsPanel)
+
+- **The member's request page now lists insured claims** (figures exactly as the schema stored them — the gap to the shop is never recomputed), and **a denied claim offers the requester an appeal** with a reason of at least 10 characters; the schema decides and its error text is shown verbatim. Claims read via `fromNew` (generated types lag), and a failed claims read is empty rather than a crash: RLS decides who sees them. **Reversal:** showing claims only in the review console would leave the requester unable to see why their deductible paid or didn't.
+
 ## 2026-11-02 — Open books get a public page (`/transparency`, `lib/transparency/`)
 
 - **The transparency dashboard reads `open_books` anon-only** — the table only exists with the schema's small-numbers rules baked in at publish time (counts 0 or ≥ 11, money rounded to $1,000), so the page never re-derives or unmasks: it formats what the schema published. A failed read explains its kind (session/network/server); a not-yet-configured stack says so rather than showing blank money as zero. **Reversal:** computing totals client-side from raw rows would bypass the publish-time privacy rules entirely.

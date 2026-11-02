@@ -1,7 +1,8 @@
 import { latestScores, type RequestScore } from '#lib/dashboard/requests.ts';
-import { supabase } from '#lib/supabase/client.ts';
+import { fromNew, supabase } from '#lib/supabase/client.ts';
 import type { Database } from '../../../../backend/supabase/database.types.ts';
 import type { AssetRow, FundSettings } from './eligibility.ts';
+import { type ClaimRow } from './claims.ts';
 import { EVIDENCE_LOCKED, NOT_EDITABLE, explainRequestError, type DbError } from './errors.ts';
 import {
 	evidencePath,
@@ -88,6 +89,8 @@ export interface RequestDetail {
 	events: EventRow[];
 	/** Payouts to the payee, oldest first (the "owners read payouts" policy). */
 	payouts: PayoutRow[];
+	/** Insurer claims on this request, newest first (the "owners read claims" policy). */
+	claims: ClaimRow[];
 }
 
 /**
@@ -120,7 +123,7 @@ export async function loadRequest(id: string): Promise<RequestDetail | null> {
 	if (!req.data) return null;
 	const r = req.data;
 
-	const [payee, asset, scores, evidence, appeals, reviews, events, payouts] = await Promise.all([
+	const [payee, asset, scores, evidence, appeals, reviews, events, payouts, claims] = await Promise.all([
 		r.payee_id ? db.from('payees').select(PAYEE_COLUMNS).eq('id', r.payee_id).maybeSingle() : null,
 		r.asset_id ? db.from('covered_assets').select(ASSET_COLUMNS).eq('id', r.asset_id).maybeSingle() : null,
 		db.from('scores').select('request_id, score, reasons, model, model_version, created_at').eq('request_id', id),
@@ -132,9 +135,11 @@ export async function loadRequest(id: string): Promise<RequestDetail | null> {
 		db.from('appeals').select('id, reason, status, created_at, decided_at').eq('request_id', id).order('created_at'),
 		db.rpc('my_request_reviews', { p_request: id }),
 		db.from('request_events').select('id, from_status, to_status, at').eq('request_id', id).order('id'),
-		db.from('payouts').select('id, status, amount_cents, sent_at, created_at').eq('request_id', id).order('created_at')
+			db.from('payouts').select('id, status, amount_cents, sent_at, created_at').eq('request_id', id).order('created_at'),
+		// `claims` isn't in the committed generated types yet (`fromNew` seam).
+		fromNew(db, 'claims').select('*').eq('request_id', id).order('recorded_at', { ascending: false })
 	]);
-	for (const res of [payee, asset, scores, evidence, appeals, reviews, events, payouts]) if (res?.error) fail(res.error);
+	for (const res of [payee, asset, scores, evidence, appeals, reviews, events, payouts, claims]) if (res?.error) fail(res.error);
 
 	// Only evidence that can still change can be removed and re-added, so only
 	// there is an unfinished upload worth finding.
@@ -150,7 +155,8 @@ export async function loadRequest(id: string): Promise<RequestDetail | null> {
 		appeals: appeals.data ?? [],
 		reviews: reviews.data ?? [],
 		events: events.data ?? [],
-		payouts: payouts.data ?? []
+		payouts: payouts.data ?? [],
+		claims: claims.data ?? []
 	};
 }
 

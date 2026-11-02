@@ -32,6 +32,7 @@
 	import Badge from '../Badge.svelte';
 	import RequestForm from '../RequestForm.svelte';
 	import AppealPanel from './AppealPanel.svelte';
+	import ClaimsPanel from './ClaimsPanel.svelte';
 	import EvidencePanel from './EvidencePanel.svelte';
 	import InvitePanel from '#lib/invites/InvitePanel.svelte';
 
@@ -504,6 +505,10 @@
 				{/each}
 			</ul>
 		</section>
+	{/if}
+
+	{#if detail.claims.length}
+		<ClaimsPanel claims={detail.claims} onrefresh={refresh} />
 	{/if}
 
 	{#if r.status === 'refused' || detail.appeals.length}
