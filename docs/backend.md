@@ -222,3 +222,4 @@ the plan for what to build, in `functions/` when each is built.
 
 Edge functions, the Flutter member app, the reviewer and panel console, `fund_loans` (Home Fund loans, Stage 3: the same shape as `family_loans`, with the fund as lender plus income-based schedules), restructuring flows, and the subrogation workflow. See [roadmap.md](roadmap.md).
 | Cross-request, cross-vehicle and cross-shop patterns flag low-severity signals (only duplicate photos stay high) | `fraud-checks` runs the patterns and writes through `record_fraud_signal` only; a person decides | `deno test` |
+| A claim denial is one atomic decision | `decide_claim` records the reviewer's refusal and denies the claim in the same transaction (a refusal at another instant can't deny); reviewers read standing claims of reviewable requests | `claim_decision_test` |
