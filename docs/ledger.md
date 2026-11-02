@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Open books get a public page (`/transparency`, `lib/transparency/`)
+
+- **The transparency dashboard reads `open_books` anon-only** — the table only exists with the schema's small-numbers rules baked in at publish time (counts 0 or ≥ 11, money rounded to $1,000), so the page never re-derives or unmasks: it formats what the schema published. A failed read explains its kind (session/network/server); a not-yet-configured stack says so rather than showing blank money as zero. **Reversal:** computing totals client-side from raw rows would bypass the publish-time privacy rules entirely.
+
 ## 2026-11-02 — Denied claims get an appeal (`…350000_claim_appeal.sql`)
 
 - **`appeal_claim` (requester only) re-opens a denied claim** — back to `recorded`, decision cleared, audit-logged with the written reason — completing design.md's "denials only by a person, with appeal". A re-opened claim counts toward insured cover again, so the pool stops paying what the insurer will. **Reversal:** letting other members appeal would put money decisions on people the damage was never offered to.
