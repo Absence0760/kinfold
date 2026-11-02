@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Insured claims record (`…300000_insured_claims.sql`)
+
+- **`claims` records the partner insurer's paid claims: gross, the member's share, and `paid_cents = gross - share` enforced by a check** — the score decides speed and scrutiny, never the amount, so nothing here recomputes money. `record_claim` is service-only and keyed by `partner_ref` (unique), so a replayed feed entry is a no-op that answers with the existing row.
+- **`deny_claim` only works right after a recorded refuse review** — the same all-or-nothing pattern the status guard uses (`created_at = now()` in the same transaction) — and the denial is audit-logged with its reason. **Reversal:** letting a denial stand on its own would let the feed veto payments without a person's decision. The ledger journal for insured claims still goes through the payments webhook when that leg is wired.
+
 ## 2026-11-02 — Repair-fund weekly run (`functions/run-pool`)
 
 - **`run-pool` runs the allocation once per fund that has money in custody**, and a schema-guard refusal is a logged skip, not a crash. The allocation math itself stays in `run_pool_allocation` — this file only owns the schedule and the balance read. **Reversal:** computing bands or reserves here would fork the schema's allocation rules.
