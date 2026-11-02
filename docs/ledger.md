@@ -1,0 +1,10 @@
+# Decision ledger
+
+The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
+
+## 2026-11-01 — CI gate, repo hygiene
+
+- **CI runs the tests on every push to `main`** (`.github/workflows/ci.yml`): `pnpm check`, `test:web`, `test:scripts`, then pgTAP with the Supabase stack started by `supabase/setup-cli`. Follows the single-emitter pattern in [README-ci-gate.md](../.github/workflows/README-ci-gate.md): one `changes` filter job, heavy jobs gated on it, `ci-gate` as the aggregator with `if: always()`. Action SHAs pinned like the other workflows. **e2e stays out of CI**: `test:web:e2e` still runs only on demand (`setup:e2e` per machine), so CI can't pay for the Chromium download yet.
+- **Backend rules are verified only in CI on this machine.** No Docker daemon (user not in the docker group, sudo needs a password) and no Supabase CLI installed, so `dev:db:up` and `test:backend:db` can't run locally here. Backend changes therefore land with their pgTAP tests, and CI turns them green or red the same day; a red run is fixed in the same session, not shelved.
+- **Work lands on `main`, path-scoped** (CLAUDE.md, pre-launch no-PR decision): the checkout sat on a scratch branch `full_roadmap` sitting on the same commit as `main`; switched back to `main` and left the scratch branch alone (deleting it is the operator's call).
+- **Root `package.json` had an accidental `"pnpm": "^12.16.1"` dependency** with a stray `package-lock.json` and a rewritten `pnpm-lock.yaml` — written by some global pnpm call. It grants access to nothing but confuses corepack version pinning; reverted all three paths.

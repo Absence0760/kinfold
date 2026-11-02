@@ -2,7 +2,7 @@
 
 What to build, in what order. Each stage ships something members can use, and the next stage starts only when the last one's gate is met. The product reasons behind the order are in [design.md](design.md#roadmap); the data model is in [backend.md](backend.md). Durations are planning estimates for a small team.
 
-Open items outside the stages (CI gaps, backend edge cases, pending decisions) are tracked in [followups.md](followups.md). Whether each stage's product can work at all is in [feasibility.md](feasibility.md).
+Open items outside the stages (CI gaps, backend edge cases, pending decisions) are tracked in [followups.md](followups.md). Whether each stage's product can work at all is in [feasibility.md](feasibility.md). The judgment calls taken while building — and how to reverse them — are in [ledger.md](ledger.md).
 
 **Order rule:** build what moves no pooled money first. Every stage before Stage 2 can run with Kinfold holding nothing, so a mistake costs trust, not someone's savings.
 
@@ -12,7 +12,7 @@ Open items outside the stages (CI gaps, backend edge cases, pending decisions) a
 | --- | --- |
 | Preview site (`apps/web`) | ✅ Live locally; deployable as static files |
 | Schema v1: members, requests, evidence, scores, reviews, funding, loans, repayment, ledger, pool (`apps/backend`) | ✅ Migrations apply; pgTAP suite green |
-| CI: `pnpm check`, `pnpm test` (web, scripts, pgTAP) on every push to `main` (no PRs pre-launch; see `CLAUDE.md`) | Green on `main`; PR review and branch protection switched back on before Stage 1 has real members |
+| CI: `pnpm check`, `pnpm test` (web, scripts, pgTAP) on every push to `main` (no PRs pre-launch; see `CLAUDE.md`) | ✅ `.github/workflows/ci.yml` live; Green on `main`; PR review and branch protection switched back on before Stage 1 has real members |
 | Infra skeleton (Terraform, estate pattern): AWS account via `new-project-account.sh`, S3 + CloudFront for the site, hosted Supabase project, `production` environment with a required reviewer | The site deploys through the gated workflow |
 | Counsel engaged (insurance, consumer lending, money transmission, co-op formation) and a first-state shortlist | Written legal plan for Stage 1 |
 | Start-up funding: member capital and cooperative or CDFI loans for the cooperative; foundation grants only for specific charitable projects (or through a fiscal sponsor); formation help from a cooperative development centre ([design.md](design.md#public-and-grant-funding)) | Start-up costs covered without outside equity |
