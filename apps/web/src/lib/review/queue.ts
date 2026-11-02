@@ -58,11 +58,30 @@ export interface AppealRow {
 
 // --- assembled for the page -------------------------------------------------------
 
+/** The kinds the Home Fund ranks by need (fund_for_kind in the schema). */
+export function isHomeFundKind(kind: string): boolean {
+	return kind === 'home_repair' || kind === 'down_payment' ||
+		kind === 'mortgage_gap' || kind === 'loan_payoff';
+}
+
 export interface ScoreView {
 	score: number;
 	reasons: string[];
 	modelVersion: string;
 	at: string;
+}
+
+/** One row of the Fund's needs ranking (`needs_records`, filtered by RLS). */
+export interface NeedsRow {
+	request_id: string;
+	score: number;
+	formula_version: number;
+}
+
+/** The Fund's ranking a Home Fund applicant got, newest effective version. */
+export interface NeedsView {
+	score: number;
+	formulaVersion: number;
 }
 
 export interface QueueItem {
@@ -71,6 +90,8 @@ export interface QueueItem {
 	evidence: EvidenceRow[];
 	/** Reviews this reviewer already wrote on it, oldest first. */
 	myReviews: ReviewRow[];
+	/** The Fund's needs ranking, when one is recorded. */
+	needs: NeedsView | null;
 	/** False when the database says this viewer may not review it. */
 	mayReview: boolean;
 }
@@ -138,10 +159,19 @@ export function buildQueue(
 	scores: readonly ScoreRow[],
 	evidence: readonly EvidenceRow[],
 	myReviews: readonly ReviewRow[],
+	/** The Fund's needs ranking rows RLS lets this viewer read. */
+	needs: readonly NeedsRow[] = [],
 	/** Requests the database says this viewer may not review. */
 	mayNotReview: readonly string[] = []
 ): QueueItem[] {
 	const score = latestScores(scores);
+	// One map pass: later rows overwrite earlier ones, so sort by version
+	// ascending and the highest formula version ends up on the map.
+	const needsByRequest = new Map(
+		[...needs]
+			.sort((a, b) => a.formula_version - b.formula_version)
+			.map((row) => [row.request_id, row])
+	);
 	const ev = groupBy(evidence);
 	const mine = groupBy(myReviews);
 	return [...requests]
@@ -155,6 +185,12 @@ export function buildQueue(
 			score: score.get(request.id) ?? null,
 			evidence: [...(ev.get(request.id) ?? [])].sort(byTimeAsc),
 			myReviews: [...(mine.get(request.id) ?? [])].sort(byTimeAsc),
+			needs: (() => {
+				const row = needsByRequest.get(request.id);
+				return row === undefined
+					? null
+					: { score: row.score, formulaVersion: row.formula_version };
+			})(),
 			mayReview: !mayNotReview.includes(request.id)
 		}));
 }

@@ -15,7 +15,7 @@
 		type ReviewDecision
 	} from '#lib/review/labels.ts';
 	import { recordReview } from '#lib/review/queries.ts';
-	import { reviewOutcome, type QueueItem } from '#lib/review/queue.ts';
+	import { isHomeFundKind, reviewOutcome, type QueueItem } from '#lib/review/queue.ts';
 	import { cleanReason, reasonCounter, reasonProblem } from '#lib/review/reason.ts';
 	import ScoreBlock from './ScoreBlock.svelte';
 
@@ -97,6 +97,12 @@
 	</section>
 
 	<ScoreBlock score={item.score} {id} />
+
+	{#if item.needs}
+		<p class="muted small">The Fund ranks this Home Fund applicant {item.needs.score} of 100 by its published needs formula (v{item.needs.formulaVersion}).</p>
+	{:else if isHomeFundKind(r.kind)}
+		<p class="muted small">No needs ranking yet — the Fund ranks this applicant once its evidence score is in.</p>
+	{/if}
 
 	<section aria-labelledby="{id}-evidence">
 		<h4 id="{id}-evidence">Evidence</h4>

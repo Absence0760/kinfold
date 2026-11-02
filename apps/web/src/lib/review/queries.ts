@@ -7,6 +7,7 @@ import {
 	type AppealItem,
 	type AppealRow,
 	type EvidenceRow,
+	type NeedsRow,
 	type QueueItem,
 	type QueueRequestRow,
 	type ReviewRow,
@@ -55,7 +56,7 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 	if (rows.length === 0) return [];
 
 	const ids = rows.map((r) => r.id);
-	const [scores, evidence, reviews, blocked] = await Promise.all([
+	const [scores, evidence, reviews, blocked, needs] = await Promise.all([
 		db.from('scores').select(SCORE_COLUMNS).in('request_id', ids),
 		db.from('evidence').select(EVIDENCE_COLUMNS).in('request_id', ids),
 		db
@@ -63,16 +64,20 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 			.select('request_id, decision, reason, created_at')
 			.eq('reviewer_id', viewerId)
 			.in('request_id', ids),
-		loadReviewFlags(db, ids)
+		loadReviewFlags(db, ids),
+		// `needs_records` is newer than the generated types (`fromNew` seam).
+		fromNew(db, 'needs_records').select('request_id, score, formula_version').in('request_id', ids)
 	]);
 	fail(scores.error);
 	fail(evidence.error);
 	fail(reviews.error);
+	fail(needs.error);
 	return buildQueue(
 		rows,
 		(scores.data ?? []) as ScoreRow[],
 		(evidence.data ?? []) as EvidenceRow[],
 		(reviews.data ?? []) as ReviewRow[],
+		(needs.data ?? []) as NeedsRow[],
 		// `review_flags` is newer than the generated types; see rpcNew.
 		(blocked as string[])
 	);
