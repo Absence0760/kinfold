@@ -109,10 +109,11 @@ select results_eq(
             (current_setting('test.preview')::jsonb ->> 'relationship')::text,
             (current_setting('test.preview')::jsonb ->> 'title')::text,
             (current_setting('test.preview')::jsonb ->> 'kind')::text,
+            (current_setting('test.preview')::jsonb ->> 'funding')::text,
             (current_setting('test.preview')::jsonb ->> 'status')::text,
             (current_setting('test.preview')::jsonb ->> 'amount_cents')::bigint$$,
   $$values ('Member 00a1', 'cousin', 'Rear bumper after a parking-lot hit',
-            'car_damage', 'open', 100000::bigint)$$,
+            'car_damage', 'people', 'open', 100000::bigint)$$,
   'before accepting, the invitee sees who invited them and what they are joining');
 select is((select count(*) from private.audit_log where action = 'invite.preview'),
   1::bigint, 'the preview is written down in the audit log');

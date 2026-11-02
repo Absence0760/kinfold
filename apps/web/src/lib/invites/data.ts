@@ -1,4 +1,4 @@
-import { supabase } from '#lib/supabase/client.ts';
+import { rpcNew, supabase } from '#lib/supabase/client.ts';
 import type { FundingMode, LoanStatus, RequestKind, RequestStatus } from '#lib/dashboard/labels.ts';
 import {
 	summarizeSupport,
@@ -54,6 +54,9 @@ export async function loadOwnPeopleRequests(viewerId: string): Promise<OwnedRequ
 export interface OwnerPanelData {
 	invites: InviteRow[];
 	support: SupportSummary;
+	/** Display names keyed by member id (`request_names`); only this pair sees them. */
+	supportNames: Map<string, string>;
+	ownerName: string | null;
 }
 
 /**
@@ -66,7 +69,7 @@ export async function loadOwnerPanel(requestId: string): Promise<OwnerPanelData>
 	const [invites, supporters, contributions] = await Promise.all([
 		db
 			.from('request_invites')
-			.select('id, relationship, created_at, expires_at, accepted_by, accepted_at')
+			.select('id, relationship, created_at, expires_at, revoked_at, accepted_by, accepted_at')
 			.eq('request_id', requestId)
 			.order('created_at', { ascending: false }),
 		db.from('request_supporters').select('member_id, relationship, joined_at').eq('request_id', requestId),
@@ -75,9 +78,22 @@ export async function loadOwnerPanel(requestId: string): Promise<OwnerPanelData>
 	if (invites.error) fail(invites.error);
 	if (supporters.error) fail(supporters.error);
 	if (contributions.error) fail(contributions.error);
+	const names = await rpcNew(db, 'request_names', { p_request: requestId });
+	if (names.error && names.error.code !== 'P0002') fail(names.error);
+	const rows = names.error ? [] : (names.data as { supporters?: unknown[] } | null)?.supporters ?? [];
+	const byId = new Map<string, string>();
+	for (const row of rows) {
+		const r = row as { member_id?: string; name?: string };
+		if (r?.member_id && r?.name) byId.set(r.member_id, r.name);
+	}
 	return {
-		invites: invites.data ?? [],
-		support: summarizeSupport(supporters.data ?? [], (contributions.data ?? []) as ContributionRow[])
+		// `revoked_at` is in the local schema but not yet in the generated
+		// database.types.ts (only the live stack regenerates it), so the rows
+		// arrive untyped; the shape is pinned by the select above.
+		invites: (invites.data ?? []) as unknown as InviteRow[],
+		support: summarizeSupport(supporters.data ?? [], (contributions.data ?? []) as ContributionRow[]),
+		supportNames: byId,
+		ownerName: names.error ? null : (names.data as { owner_name?: string } | null)?.owner_name ?? null
 	};
 }
 
@@ -120,6 +136,8 @@ export interface MyPledge {
 export interface SupportView {
 	request: SupportedRequest;
 	relationship: string | null;
+	/** The owner's display name: `request_names` gives a supporter their pair. */
+	ownerName: string | null;
 	/** The payee's name, when it's verified (only verified payees are readable). */
 	payeeName: string | null;
 	payeeVerified: boolean;
@@ -174,10 +192,16 @@ export async function loadSupportView(requestId: string, viewerId: string): Prom
 	if (loans.error) fail(loans.error);
 	if (me.error) fail(me.error);
 
+	// The owner's name for this pair (`request_names`); a stranger's P0002
+	// simply means nothing to show, anything else is a real failure.
+	const names = await rpcNew(db, 'request_names', { p_request: requestId });
+	if (names.error && names.error.code !== 'P0002') fail(names.error);
+	const ownerName = names.error ? null : (names.data as { owner_name?: string } | null)?.owner_name ?? null;
 	const verified = payee.data?.status === 'verified';
 	return {
 		request,
 		relationship: me.data?.relationship ?? null,
+		ownerName: ownerName,
 		payeeName: verified ? (payee.data?.legal_name ?? null) : null,
 		payeeVerified: verified,
 		// A missing figure shows as "progress not shown", never as $0 raised.
@@ -217,4 +241,46 @@ export async function pledge(requestId: string, cents: number, source: 'gift' | 
 		p_source: source
 	});
 	if (error) fail(error);
+}
+// --- cancelling a link and previewing one --------------------------------------
+
+/** Cancel one of the owner's own waiting links (`revoke_invite`). */
+export async function revokeInvite(inviteId: string): Promise<void> {
+	const { error } = await rpcNew(supabase(), 'revoke_invite', { p_invite: inviteId });
+	if (error) fail(error);
+}
+
+/**
+ * What the invite page shows before the click (`invite_preview`). Null when the
+ * link was used up, cancelled or expired — the same answer the invitee gets
+ * when they try to accept it.
+ */
+export interface InvitePreview {
+	requestId: string;
+	ownerName: string;
+	title: string;
+	kind: RequestKind;
+	amountCents: number;
+	status: RequestStatus;
+	funding: FundingMode;
+	relationship: string;
+	expiresAt: string;
+}
+
+export async function previewInvite(token: string): Promise<InvitePreview | null> {
+	const { data, error } = await rpcNew(supabase(), 'invite_preview', { p_token: token });
+	if (error && error.code !== 'P0002') fail(error);
+	if (error || !data) return null;
+	const p = data as { request_id?: string; owner_name?: string; title?: string; kind?: string; funding?: string; amount_cents?: number; status?: string; relationship?: string; expires_at?: string };
+	return {
+		requestId: p.request_id ?? '',
+		ownerName: p.owner_name ?? '',
+		title: p.title ?? '',
+		kind: p.kind as RequestKind,
+		amountCents: p.amount_cents ?? 0,
+		status: p.status as RequestStatus,
+		funding: p.funding as FundingMode,
+		relationship: p.relationship ?? '',
+		expiresAt: p.expires_at ?? ''
+	};
 }

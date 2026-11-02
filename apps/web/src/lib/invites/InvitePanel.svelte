@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { formatCents } from '#lib/dashboard/format.ts';
 	import { payeeWord, type RequestKind, type RequestStatus } from '#lib/dashboard/labels.ts';
-	import { canInvite, createInvite, loadOwnerPanel, type OwnerPanelData } from './data.ts';
+	import { canInvite, createInvite, loadOwnerPanel, revokeInvite, type OwnerPanelData } from './data.ts';
 	import { explainInviteError } from './errors.ts';
 	import {
 		checkRelationship,
@@ -46,6 +46,8 @@
 	let touched = $state(false);
 	let creating = $state(false);
 	let createError = $state<string | null>(null);
+	let cancelling = $state(false);
+	let revokeError = $state<string | null>(null);
 	let link = $state<{ url: string; relationship: string } | null>(null);
 	let copied = $state<'idle' | 'copied' | 'failed'>('idle');
 	let canShare = $state(false);
@@ -102,6 +104,25 @@
 		} finally {
 			creating = false;
 		}
+	}
+
+	// Cancelling one of your own waiting links: it stops working for anyone who
+	// opens it later. Refresh then keeps focus in this panel.
+	async function cancel(inviteId: string) {
+		if (cancelling) return;
+		cancelling = true;
+		revokeError = null;
+		try {
+			await revokeInvite(inviteId);
+			await tick();
+			await refresh();
+		} catch (err) {
+			revokeError = explainInviteError(err as { message?: string; code?: string });
+		} finally {
+			cancelling = false;
+		}
+		await tick();
+		panelHeading?.focus();
 	}
 
 	async function copy() {
@@ -216,7 +237,7 @@
 				<li>Send it only to them: whoever opens it first with a Kinfold account joins.</li>
 				<li>It works once and lasts 30 days.</li>
 				<li>We only show it now. If you lose it, make a new one.</li>
-				<li>A link can't be cancelled once made, so send it straight to the person, not to a group chat.</li>
+				<li>You can cancel a link until someone joins it; after that it's used up.</li>
 			</ul>
 		</div>
 	{/if}
@@ -247,8 +268,9 @@
 				<!-- svelte-ignore a11y_no_redundant_roles -->
 				<ul class="rows" role="list">
 					{#each s.supporters as line (line.memberId)}
+						{@const name = panel.data.supportNames.get(line.memberId)}
 						<li>
-							<span class="who">{relationshipLabel(line.relationship)}</span>
+							<span class="who">{relationshipLabel(line.relationship)}{#if name}: {name}{/if}</span>
 							<span>{pledgeText(line)}</span>
 						</li>
 					{/each}
@@ -273,11 +295,25 @@
 				<p class="muted">{count(panel.data.invites.length, 'link', 'links')} made.</p>
 				<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
 				<!-- svelte-ignore a11y_no_redundant_roles -->
+				{#if revokeError}
+					<p class="problem" role="alert">{revokeError}</p>
+				{/if}
 				<ul class="rows" role="list">
 					{#each panel.data.invites as invite (invite.id)}
 						<li>
 							<span class="who">{relationshipLabel(invite.relationship)}</span>
 							<span class="state" data-state={inviteState(invite)}>{inviteStateText(invite)}</span>
+							{#if inviteState(invite) === 'waiting'}
+								<button
+									type="button"
+									class="btn btn-ghost small"
+									onclick={() => cancel(invite.id)}
+									aria-disabled={cancelling}
+									aria-busy={cancelling}
+								>
+									Cancel link<span class="visually-hidden">{forTitle}</span>
+								</button>
+							{/if}
 						</li>
 					{/each}
 				</ul>

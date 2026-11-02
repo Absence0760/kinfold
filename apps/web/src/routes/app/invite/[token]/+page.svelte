@@ -2,6 +2,8 @@
 	import { tick } from 'svelte';
 	import { acceptInvite, loadSupportView, type SupportView } from '#lib/invites/data.ts';
 	import { explainInviteError } from '#lib/invites/errors.ts';
+	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
+	import { payeeWord, requestKindLabel, requestStatusText } from '#lib/dashboard/labels.ts';
 	import SupportPanel from '#lib/invites/SupportPanel.svelte';
 
 	let { data } = $props();
@@ -101,6 +103,24 @@
 		</p>
 	</div>
 {:else if phase.step === 'ready' || phase.step === 'accepting'}
+	{#if data.preview}
+		{@const p = data.preview}
+		<div class="block card" aria-labelledby="joining-heading">
+			<h2 id="joining-heading">Here's what you're being invited to help with</h2>
+			<p class="lead">{p.title}</p>
+			<ul class="terms">
+				<li>{formatCents(p.amountCents)} still needed, paid to {payeeWord(p.kind)} — never to the member who invited you.</li>
+				<li>{requestStatusText(p.status, p.kind, p.funding).label}</li>
+				<li>A {requestKindLabel(p.kind)} request, {formatDay(p.expiresAt)} at the latest for this link.</li>
+				<li>You were invited as their {p.relationship}.</li>
+			</ul>
+		</div>
+	{:else if !data.previewFailed}
+		<p class="muted">
+			If this link has already been used, cancelled or expired, accepting will say so — nothing is taken
+			from you.
+		</p>
+	{/if}
 	<section class="block card" aria-labelledby="what-heading" aria-busy={phase.step === 'accepting'}>
 		<h2 id="what-heading">What accepting means</h2>
 		<ul class="terms">

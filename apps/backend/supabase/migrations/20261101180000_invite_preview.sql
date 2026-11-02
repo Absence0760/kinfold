@@ -100,6 +100,7 @@ begin
     'owner_name', v_owner,
     'title', q.title,
     'kind', q.kind::text,
+    'funding', q.funding::text,
     'amount_cents', q.amount_cents,
     'status', q.status::text,
     'relationship', r.relationship,
@@ -137,6 +138,7 @@ begin
     select coalesce(
       (select jsonb_agg(o) from (
          select jsonb_build_object(
+           'member_id', sup.member_id,
            'name', coalesce((select display_name from public.members m where m.id = sup.member_id), 'Member'),
            'relationship', sup.relationship,
            'joined_at', sup.joined_at

@@ -110,6 +110,12 @@
 	{/if}
 
 	<dl class="facts">
+		{#if view.ownerName}
+			<div>
+				<dt>You're helping</dt>
+				<dd>{view.ownerName}</dd>
+			</div>
+		{/if}
 		<div>
 			<dt>Asking for</dt>
 			<dd>{formatCents(r.amount_cents)}</dd>

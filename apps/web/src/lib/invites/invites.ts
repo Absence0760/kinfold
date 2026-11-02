@@ -65,12 +65,15 @@ export interface InviteRow {
 	expires_at: string;
 	accepted_by: string | null;
 	accepted_at: string | null;
+	/** Set when the owner cancelled the link. */
+	revoked_at: string | null;
 }
 
-export type InviteState = 'waiting' | 'accepted' | 'expired';
+export type InviteState = 'waiting' | 'accepted' | 'cancelled' | 'expired';
 
 export function inviteState(invite: InviteRow, now: Date = new Date()): InviteState {
 	if (invite.accepted_at) return 'accepted';
+	if (invite.revoked_at) return 'cancelled';
 	return new Date(invite.expires_at).getTime() <= now.getTime() ? 'expired' : 'waiting';
 }
 
@@ -90,6 +93,8 @@ export function inviteStateText(invite: InviteRow, now: Date = new Date()): stri
 			const d = daysLeft(invite, now);
 			return `Not used yet, ${d} ${d === 1 ? 'day' : 'days'} left`;
 		}
+		case 'cancelled':
+			return 'Cancelled, nobody joined';
 	}
 }
 

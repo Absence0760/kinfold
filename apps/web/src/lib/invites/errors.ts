@@ -38,7 +38,7 @@ export function explainInviteError(error: DbError | null | undefined): string {
 		return 'That link was already used or cancelled. Nothing more to do; make a new link if you still want to invite someone.';
 
 	// create_invite
-	
+	if (/request_invites_relationship_check/i.test(message))
 		return 'Say who this person is to you in 1 to 40 characters.';
 
 	// pledge

@@ -69,7 +69,8 @@ describe('invite state', () => {
 		created_at: '2026-10-30T12:00:00Z',
 		expires_at: '2026-11-29T12:00:00Z',
 		accepted_by: null,
-		accepted_at: null
+		accepted_at: null,
+		revoked_at: null
 	};
 
 	it('is waiting, with days left, until used or expired', () => {
@@ -84,6 +85,12 @@ describe('invite state', () => {
 	it('is accepted once used, even after the expiry date', () => {
 		const used = { ...base, accepted_by: 'm', accepted_at: '2026-10-31T00:00:00Z' };
 		expect(inviteState(used, new Date('2027-01-01'))).toBe('accepted');
+	});
+
+	it('is cancelled once the owner revokes the link', () => {
+		const gone = { ...base, revoked_at: '2026-10-30T18:00:00Z' };
+		expect(inviteState(gone, now)).toBe('cancelled');
+		expect(inviteStateText(gone, now)).toBe('Cancelled, nobody joined');
 	});
 
 	it('expires at expires_at, matching accept_invite’s expires_at > now()', () => {

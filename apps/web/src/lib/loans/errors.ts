@@ -29,6 +29,8 @@ export function explainLoanError(error: DbError | null | undefined): string {
 	if (/schedule must be 1 to 480 months/i.test(message)) return 'Choose 1 to 480 monthly installments.';
 	if (/too many installments for this amount/i.test(message))
 		return 'That’s more installments than there are cents to repay. Choose fewer.';
+		if (/the first installment cannot be due in the past/i.test(message))
+				return 'A loan can’t be proposed with payments already overdue. Pick a first payment day from today on.';
 
 	// sign_loan.
 	const already = /^loan is already (\w+)/i.exec(message)?.[1];

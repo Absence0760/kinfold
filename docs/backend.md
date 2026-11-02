@@ -93,7 +93,7 @@ A payout that is `pending` or `sent` is live: the money is with (or on its way t
 
 | Table | Purpose |
 | --- | --- |
-| `request_invites`, `request_supporters` | Invite links (only the token's hash is stored) and the family and friends who accepted them |
+| `request_invites`, `request_supporters` | Invite links (only the token's hash is stored; `revoked_at` cancels one before it's used) and the family and friends who accepted them |
 | `contributions` | Pledges from people (`gift` / `loan`) and the pool (`pool`). Status: `pledged`; `captured` by `capture_contributions(request)` (service only) once the request is funded, every loan behind it is signed and the payment partner has confirmed; `released` if the request ends unpaid before capture; `refunded` (`mark_refunded`, with `refund_partner_ref` and `refunded_cents`, which can be less than the amount when part of it reached the payee) if it ends unpaid after. Pledges and pool grants wait for the request's payee to be verified. Strangers can give only to requests on the board; loans need an invite |
 | `family_loans` | Zero-interest loans. There is no rate column: `imputed_rate_bps` is the IRS minimum rate, kept only for tax paperwork. Also the payment day, pause allowance and agreed default plan, set with `set_loan_terms` while the loan is `proposed` (it clears both signatures) |
 | `loan_installments` | The schedule: `set_loan_schedule` puts each installment on the loan's payment day, sums exactly to the principal, and clears signatures. Constraint triggers keep the total at or below the principal, and payments plus forgiveness can't exceed it. Paying the last cent marks the loan `repaid` |
@@ -145,6 +145,9 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | Pledges are all-or-nothing | Funded when pledges reach the amount; released on withdraw, expire or refuse; money already captured is listed in `refunds_due` and marked by `mark_refunded` | `funding_test`, `hardening_test` |
 | No money moves on an unsigned loan | `capture_contributions` refuses unless the request is funded and every loan behind it is signed; a loan becomes `active` only when its request is paid, and only active or paused loans can be paused, forgiven or defaulted | `hardening_test`, `funding_test` |
 | Only people you know can lend | `pledge` requires an accepted invite and an active member for `loan`; a stranger can give only to a request on the board | `funding_test` |
+| An invite says what you're joining | `invite_preview(token)` looks the token up by hash and names the owner, title, kind, funding, amount and status before the click; the read is written in `audit_log`; a used, cancelled or expired link answers nothing at all | `invite_preview_test` |
+| A link can be handed back | `revoke_invite(invite)` for the owner only, refused once someone joined; a cancelled link never accepts and never previews | `invite_preview_test` |
+| Names stay inside an invite pair | `request_names(request)` answers an owner with their supporters' names (plus the relationship each said) and a supporter with the owner's name plus their own; no other reader reaches a `members` row | `invite_preview_test` |
 | Pool pays by band, highest first, all at once | `run_pool_allocation` (same algorithm as `apps/web/src/lib/requests/allocation.ts`) | `pool_test` |
 | The pools never mix | Every ledger journal stays within one fund and has at least two lines (deferred constraint trigger, `post_journal`) | `ledger_test`, `hardening_test` |
 | Open books | `open_books` (published monthly snapshots) and `fund_settings` readable by anyone; `fund_settings` changes logged | `rls_test`, `board_privacy_test` |
@@ -157,7 +160,7 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | Role | Can |
 | --- | --- |
 | `anon` | Read the fund rules, subscription formulas and the published open books |
-| Member (`authenticated`) | Read their own data (but not who reviewed their requests); edit their display name (not their region); create and edit drafts; add evidence; submit, withdraw and appeal through RPCs; confirm their request's public summary; pledge to requests they're invited to or that are on the board; set terms and schedules for, sign, pause and resume their own loans; close their account |
+| Member (`authenticated`) | Read their own data (but not who reviewed their requests); edit their display name (not their region); create and edit drafts; add evidence; submit, withdraw and appeal through RPCs; confirm their request's public summary; pledge to requests they're invited to or that are on the board; set terms and schedules for, sign, pause and resume their own loans; cancel their own waiting invite links and read the names of the people they're paired with; close their account |
 | Supporter | Read the requests they were invited to and how much they've raised |
 | Reviewer (active members only) | Read requests waiting for a person (never their own); record reviews (not on refused requests); see scores and the reviews they wrote |
 | Panel (active members only) | Decide appeals (never their own, nor on a request they reviewed); read full review rows on requests that aren't their own |
