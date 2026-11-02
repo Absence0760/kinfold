@@ -15,6 +15,8 @@
 //   * payout_reported: a payout was sent, failed or came back.
 //   * loan_repaid: a borrower returned money against a loan installment;
 //     `record_loan_payment` owns the rules (collecting loans, owed ceiling).
+//   * dues_captured: the partner confirmed a member's monthly dues charge;
+//     `capture_dues` owns the row, the journal moves the money into the fund.
 
 import { Db } from "../shared/rest.ts";
 
@@ -44,13 +46,19 @@ interface LoanRepaid {
   amountCents: number;
 }
 
+interface DuesCaptured {
+  paymentId: string;
+  partnerRef: string;
+}
+
 export interface ChargeEvent {
   event:
     | "charges_confirmed"
     | "money_returned"
     | "payout_created"
     | "payout_reported"
-    | "loan_repaid";
+    | "loan_repaid"
+    | "dues_captured";
   requestId: string;
   fund: "protection" | "home_fund" | "people";
   /** Only for charges_confirmed: nothing else is needed, capture reads the row. */
@@ -58,6 +66,8 @@ export interface ChargeEvent {
   payout?: PayoutReport;
   /** Only for loan_repaid: the installment the borrower returned. */
   repayment?: LoanRepaid;
+  /** Only for dues_captured: the dues payment the partner confirmed. */
+  dues?: DuesCaptured;
   /** Only for payout_created: the payout the partner opens. */
   opening?: PayoutCreation;
 }
@@ -126,6 +136,29 @@ export async function handleChargeEvent(
           p_lines: transferLines("partner_cash", "available", line.amountCents),
         });
       }
+      return;
+    }
+    case "dues_captured": {
+      const dues = event.dues;
+      if (dues === undefined) {
+        throw new Error("a dues-capture event needs the payment it confirms");
+      }
+      // The DB's answer is the figure the schema stored on the row; the
+      // journal mirrors that number, moving it from the partner's side
+      // (pending charges sit there) into the fund's own money.
+      const amountCents = Number(
+        await db.rpc("capture_dues", {
+          p_payment: dues.paymentId,
+          p_partner_ref: dues.partnerRef,
+        }),
+      );
+      await db.rpc("post_journal", {
+        p_fund: event.fund,
+        p_kind: "subscription",
+        p_ref: dues.paymentId,
+        p_partner_ref: dues.partnerRef,
+        p_lines: transferLines("partner_cash", "available", amountCents),
+      });
       return;
     }
     case "loan_repaid": {

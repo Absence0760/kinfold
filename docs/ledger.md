@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Dues get a collection flow (`…340000_dues_collection.sql`, `functions/charge-dues`)
+
+- **Dues collection rides the payment partner**: the monthly cron creates a pending dues ask at the member's OWN figure from their active subscription (`enqueue_dues`; a $0 subscription has nothing to collect), the webhook's `dues_captured` leg closes it (`capture_dues`, answers with the stored figure) and journals that number into the fund. **Reversal:** a member self-marking dues captured would fund the cooperative without the money moving; journaling the partner's word would fight the schema's figure.
+
 ## 2026-11-02 — The pool stacks after insured cover (`…330000_pool_insured_cover.sql`)
 
 - **A request's pool need now subtracts insured deductible cover before pledges** (`insured_cover_cents` sums standing claims' gross; a denied claim covers nothing), matching design.md's split into insured cover (partner insurer pays in full, minus the member's share) and the gift-funded repair fund. Band math, reserve and ordering stay the schema's bands-v1 run, so the parity tests keep their figures; `allocation.ts` and its vitest mirror the new line (two new cover cases). **Reversal:** leaving cover out of need would pool money the insurer already paid, and pooling before cover would fight the deductible's priority.

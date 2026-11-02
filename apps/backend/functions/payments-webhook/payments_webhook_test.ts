@@ -295,3 +295,36 @@ Deno.test("a repayment with zero money is refused before any call", async () => 
   );
   assertEquals(rpcLog, []);
 });
+
+// Dues capture (`dues_captured`): `capture_dues` answers with the figure the
+// schema stored, and the journal moves exactly that number into the fund.
+Deno.test("a dues-capture event closes the row and journals the DB figure", async () => {
+  const journals: string[] = [];
+  const db = {
+    storage() {
+      throw new Error("payments-webhook never touches a bucket");
+    },
+    rpc: (name: string, args: Record<string, unknown>) => {
+      if (name === "capture_dues") {
+        return Promise.resolve(4000);
+      }
+      if (name === "post_journal") {
+        journals.push(JSON.stringify(args.p_lines));
+      }
+      return Promise.resolve();
+    },
+  };
+  const event = {
+    event: "dues_captured" as const,
+    requestId: "req-1",
+    fund: "protection" as const,
+    dues: { paymentId: "pay-1", partnerRef: "dues_p1" },
+  };
+  await handleChargeEvent(event, db);
+  assertEquals(journals, [
+    JSON.stringify([
+      { code: "partner_cash", amount_cents: -4000 },
+      { code: "available", amount_cents: 4000 },
+    ]),
+  ]);
+});
