@@ -86,6 +86,38 @@ function restRpc(base: string, key: string): RpcCaller {
   };
 }
 
+/**
+ * Read rows of a table as the service role (a cron-time job, mostly). The
+ * service bypasses RLS, but only the tables the schema grants it; a job never
+ * writes through this — writes go through the guarded functions.
+ */
+export async function queryRows(
+  table: string,
+  params: Record<string, string>,
+): Promise<unknown[]> {
+  const base = stackUrl();
+  const key = serviceKey();
+  if (key === "" || base === "") {
+    throw new Error("no stack: the job cannot read the database");
+  }
+  const filter = Object.entries(params)
+    .map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`)
+    .join("&");
+  const response = await fetch(
+    `${base}/${table}${filter === "" ? "" : `?${filter}`}`,
+    {
+      headers: {
+        accept: "application/json",
+        authorization: `Bearer ${key}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`the read refused: ${response.status}`);
+  }
+  return await response.json();
+}
+
 async function getObject(
   url: string,
   key: string,

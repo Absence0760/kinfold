@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Duplicate-photo fraud signal (`functions/fraud-checks`)
+
+- **A reused photo flags high-severity `duplicate_photo` on the NEW request, one signal per other request matched** — perceptual-hash equality across requests. The member's own second photo on their own request never matches (same request_id is excluded); evidence still awaiting redaction has no perceptual hash and flags nothing — no accusation without evidence. **Reversal:** one signal with many details would collapse each decision trail; chosen shape is per-match.
+- **The Deno layer only decides WHEN to flag; the flag itself lives behind `record_fraud_signal`** (service-only, audit-logged). `queryRows` in `rest.ts` is the service's read path for cron-time jobs — reads only, writes still go through guarded functions. **Reversal:** letting a job write `private.fraud_signals` directly would dodge the audit trail and the owner rule.
+
 ## 2026-11-02 — Expiry owned by the cron (`…220000_expire_requests.sql`)
 
 - **`expire_request(uuid)` became the service's guarded way to expire a request** — only open or needs-evidence move; a draft is a member's to withdraw; the payout guard in …120500 keeps money-out requests a person's, so the cron's skip is a caught refusal, not a crash. Pledges release and unsigned loans cancel through the existing close trigger — expiry goes the same path as withdrawal. **Reversal:** deleting the function lets expiry happen as a bare table write with none of these owners.
