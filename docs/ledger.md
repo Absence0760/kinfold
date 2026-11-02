@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Loan money gets an owner (`…230000_loan_collection.sql`)
+
+- **`record_loan_payment(loan, seq, cents)` became the service's guarded way to move loan money** — nothing owned the installment write before, so a loan could quietly become "paid" with no record. Still-collecting loans only (active/paused; signed money hasn't moved, forgiven/repaid/cancelled are over), never a paused installment (the pause was agreed by both sides), and never more than what the installment owes. The full installment's paid date and the loan's `repaid` turn stay the existing triggers' jobs. **Reversal:** deleting the function puts bare writes on `loan_installments` back with no owner and no audit trail.
+- **The webhook's "records repayments" leg now has a real call**, and the daily loan-servicing job decides WHAT is due (pure, pinned by `deno test`) and calls this guarded function — the database owns overdue (the `loan_default_due` view) and pause end (`pause_ends_on`), the job never re-decides. **Reversal:** letting the job compute defaults itself would fork the overdue rules.
+
 ## 2026-11-02 — Duplicate-photo fraud signal (`functions/fraud-checks`)
 
 - **A reused photo flags high-severity `duplicate_photo` on the NEW request, one signal per other request matched** — perceptual-hash equality across requests. The member's own second photo on their own request never matches (same request_id is excluded); evidence still awaiting redaction has no perceptual hash and flags nothing — no accusation without evidence. **Reversal:** one signal with many details would collapse each decision trail; chosen shape is per-match.
