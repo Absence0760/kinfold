@@ -21,6 +21,8 @@ Last updated 2026-11-02.
 
 ## Member area gaps
 
+- [ ] **Claim denials need one atomic step.** `deny_claim` only accepts a reviewer refusal recorded in the same transaction (the same-instant check on `reviews.created_at = now()`), but `record_review` and `deny_claim` are two calls from the web (two transactions, different clocks), so the panel console can never deny a claim today. **Fix:** a `decide_claim(claim, decision, reason)` service path that records the reviewer decision and denies atomically, with pgTAP. **When:** Stage 2, claims console.
+
 Found while building the web member area (`/app`, `/app/board`, `/app/review`, `/app/requests`, `/app/invite`, `/app/loans`) on 2026-10-31. Most need a migration through `/safe-migration`; the web app explains each gap to the member rather than faking it.
 
 

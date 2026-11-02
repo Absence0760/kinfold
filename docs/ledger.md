@@ -14,6 +14,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **`mark_claim_paid` is idempotent and refuses denials** (a denied claim pays nothing, code 23514) and audit-trails the confirmation with the event's partner reference; `claims-feed` journals a confirmed payment exactly gross minus the member's share — out of the insurer's side, into `paid_out`. **Reversal:** journaling on RECORD would claim money moved the insurer never confirmed.
 
+## 2026-11-02 — Claim denial is atomic, not two web calls (decision, followups)
+
+- **`deny_claim` refuses unless a reviewer's refusal was recorded in the SAME transaction** (the schema pins `reviews.created_at = now()`). Two PostgREST calls from the console land in different transactions with different clocks, so the two-step web flow can never satisfy it; the console affordance needs a single `decide_claim` service path instead. **Reversal:** dropping the same-instant check would let anyone deny a claim without a reviewer's decision behind it.
+
 ## 2026-11-02 — Claims appear on the request page (`lib/requests/claims.ts`, ClaimsPanel)
 
 - **The member's request page now lists insured claims** (figures exactly as the schema stored them — the gap to the shop is never recomputed), and **a denied claim offers the requester an appeal** with a reason of at least 10 characters; the schema decides and its error text is shown verbatim. Claims read via `fromNew` (generated types lag), and a failed claims read is empty rather than a crash: RLS decides who sees them. **Reversal:** showing claims only in the review console would leave the requester unable to see why their deductible paid or didn't.
