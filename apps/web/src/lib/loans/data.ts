@@ -156,16 +156,18 @@ export interface RestructureRow {
 	created_by: string;
 }
 
-export const loadPendingRestructures = (db: Db, loanIds: string[]) =>
-	loanIds.length === 0
-		? []
-		: must(
-			await fromNew(db, 'loan_restructures')
-				.select('loan_id, months, first_due, stager_signed_at, other_signed_at, created_by')
-				.in('loan_id', loanIds),
-			'pending restructures'
-		);
+/** Restructures on the viewer's loans waiting for the other side to sign. */
+export async function loadPendingRestructures(db: Db, loanIds: string[]): Promise<RestructureRow[]> {
+	if (loanIds.length === 0) return [];
+	const { data, error } = await fromNew(db, 'loan_restructures')
+		.select('loan_id, months, first_due, stager_signed_at, other_signed_at, created_by')
+		.in('loan_id', loanIds);
+	if (error) throw new Error(`Couldn't load pending restructures: ${error.message}`);
+	return (data ?? []) as RestructureRow[];
+}
 
 /** The other side signs a staged restructure: both sides have agreed. */
-export const signLoanRestructure = (db: Db, loan: string) =>
-	must(await rpcNew(db, 'sign_loan_restructure', { p_loan: loan }), 'signing the restructure');
+export async function signLoanRestructure(db: Db, loan: string) {
+	const { error } = await rpcNew(db, 'sign_loan_restructure', { p_loan: loan });
+	if (error) throw error;
+}
