@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Beyond the pause allowance a Fund loan borrower asks the lending Fund to restructure (`restructure_fund_loan`)
+
+- **The borrower stages a restructure on their own collecting monthly fund loan** — smaller payments over a longer term or a new start date (design.md:137 ladder step 3). The Fund has already signed the agreement (it is the lender), so the ask only waits for the lending partner's servicing event (`apply_fund_loan_restructure`), which re-spreads **only the unpaid installments** over the new dates.
+- **A restructure never changes what's outstanding** — money already returned keeps its date and amount, so the ladder can only repay the same money over different dates, never less. **Reversal:** re-spreading paid installments too would rewrite repayment history; the ladder re-plans the future, not the past.
+- **One ask at a time**: while a restructure is un-applied a second ask is refused, and income schedules have nothing to reschedule (they are computed from income, not scheduled).
+- **A paused loan can still ask to restructure** — the ladder goes pause, then restructure; pausing never blocks the bigger agreement step.
+
 ## 2026-11-02 — A Fund loan borrower pauses and resumes by agreement (`pause_fund_loan`)
 
 - **The borrower pauses their own fund loan** within the loan's allowance (default 3 months a year, same ladder as family loans, design.md:169); the pause records an append-only `fund_loan_pauses` row with its reason, pushes unpaid installments back, and leaves what's owed unchanged — pausing buys back dates, not money.
