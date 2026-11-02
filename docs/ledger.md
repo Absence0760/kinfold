@@ -6,6 +6,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
 
+## 2026-11-02 — Subrogation money is recorded verified in one step (`record_partner_recovery`)
+
+- **When another driver is at fault, the at-fault party’s insurer should pay** (design.md: Kinfold’s cover must not subsidise other insurers). The partner insurer reports the money that moved; the schema records it **already verified, in one write** — a separate `verify_recovery` step could leave a half-verified row a retry would double-count. Retry-safe by the partner’s reference. Money moved between insurers, so it never joins Kinfold’s ledger; the pledge caps and pool needs subtract it. **Reversal:** letting members write subrogation money themselves would let a member claim money no insurer moved.
+
 ## 2026-11-02 — Quarters sum the published months, never re-derive them (`quarterlySummaries`, `/transparency`)
 
 - **The quarterly open-books report is a sum of the published monthly figures** (per fund and calendar quarter), so the report can never disagree with the month pages beneath it; a quarter with fewer than three published months carries its months count so readers see it is partial rather than guessing. **Reversal:** recomputing quarters from raw journals could publish figures the month-level small-numbers rules never approved.
