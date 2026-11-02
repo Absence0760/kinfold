@@ -25,7 +25,7 @@ Last updated 2026-11-02.
 Found while building the web member area (`/app`, `/app/board`, `/app/review`, `/app/requests`, `/app/invite`, `/app/loans`) on 2026-10-31. Most need a migration through `/safe-migration`; the web app explains each gap to the member rather than faking it.
 
 
-- [ ] **Evidence redaction isn't running.** New uploads stay `pending`, and `submit_request` refuses them, so a request made in the web app can't be submitted. **Fix:** the `redact-evidence` edge function (sets `redacted_path`, `auto_done`), which must also check that the stored file exists and its SHA-256 matches the row before redacting; seed one `auto_done` row so the member's confirm-redaction step can be exercised. **When:** Stage 1, step 1c.
+- [x] **Evidence redaction now runs.** The `redact-evidence` function sets `redacted_path` and `auto_done`, and checks the stored file exists and its SHA-256 matches the row before redacting; the seed now carries one `auto_done` row (b1) so the member's confirm-redaction step exercises locally. **When:** Stage 1, step 1c.
 - [ ] **No prepayment path**, though the agreement and `design.md` promise members can repay early. **Fix:** an extra-payment function through the payment partner. **When:** Stage 1, step 1f/1g with the partner.
 
 ## Funding and structure

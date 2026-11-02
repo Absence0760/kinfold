@@ -104,7 +104,7 @@ insert into public.covered_assets (id, member_id, kind, description, value_cents
   ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-0000000000a3', 'vehicle', '2019 Ford Focus',   1100000, current_date - 180, now() - interval '6 months');
 
 -- --- requests ---------------------------------------------------------------------------
--- b1 maria  draft          home_repair, evidence still being redacted
+-- b1 maria  draft          home_repair, redaction auto-done, member confirms it in the app
 -- b2 sam    open (board)   car_damage, pool, scored 86
 -- b3 maria  funded         car_deductible, people: sam gives and lends
 -- b4 priya  paid           car_damage, pool: pool grant, invoice, payout sent
@@ -124,7 +124,7 @@ insert into public.requests (id, member_id, kind, funding, title, description, a
 
 insert into public.evidence (request_id, kind, original_path, redacted_path, sha256, captured_in_app, redaction_status) values
   ('00000000-0000-0000-0000-0000000000b1', 'photo',
-   '00000000-0000-0000-0000-0000000000a1/b1-ceiling.jpg', null, repeat('1', 64), true, 'pending'),
+   '00000000-0000-0000-0000-0000000000a1/b1-ceiling.jpg', '00000000-0000-0000-0000-0000000000a1/b1-ceiling-redacted.jpg', repeat('1', 64), true, 'auto_done'),
   ('00000000-0000-0000-0000-0000000000b2', 'photo',
    '00000000-0000-0000-0000-0000000000a4/b2-rear.jpg', '00000000-0000-0000-0000-0000000000a4/b2-rear.jpg', repeat('2', 64), true, 'confirmed'),
   ('00000000-0000-0000-0000-0000000000b2', 'estimate',
