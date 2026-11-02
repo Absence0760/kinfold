@@ -17,6 +17,11 @@
 //     `record_loan_payment` owns the rules (collecting loans, owed ceiling).
 //   * dues_captured: the partner confirmed a member's monthly dues charge;
 //     `capture_dues` owns the row, the journal moves the money into the fund.
+//   * fund_loan_disbursed: the lending Fund's partner handed a fund loan its
+//     money; `activate_fund_loan` owns the status, audit trails the statement.
+//   * fund_loan_paid: the borrower returned money to the Fund; `record_fund_loan_payment`
+//     owns the schedule or income-cap rules. No journal: fund loan money sits
+//     with the lending Fund, not on this partner's side.
 
 import { Db } from "../shared/rest.ts";
 
@@ -51,6 +56,13 @@ interface DuesCaptured {
   partnerRef: string;
 }
 
+interface FundLoanEvent {
+  loanId: string;
+  /** Month number of the payment (income schedules count months too). */
+  seq?: number;
+  amountCents?: number;
+}
+
 export interface ChargeEvent {
   event:
     | "charges_confirmed"
@@ -58,7 +70,9 @@ export interface ChargeEvent {
     | "payout_created"
     | "payout_reported"
     | "loan_repaid"
-    | "dues_captured";
+    | "dues_captured"
+    | "fund_loan_disbursed"
+    | "fund_loan_paid";
   requestId: string;
   fund: "protection" | "home_fund" | "people";
   /** Only for charges_confirmed: nothing else is needed, capture reads the row. */
@@ -68,6 +82,8 @@ export interface ChargeEvent {
   repayment?: LoanRepaid;
   /** Only for dues_captured: the dues payment the partner confirmed. */
   dues?: DuesCaptured;
+  /** Only for fund loan events: the loan the partner is acting on. */
+  fundLoan?: FundLoanEvent;
   /** Only for payout_created: the payout the partner opens. */
   opening?: PayoutCreation;
 }
@@ -158,6 +174,43 @@ export async function handleChargeEvent(
         p_ref: dues.paymentId,
         p_partner_ref: dues.partnerRef,
         p_lines: transferLines("partner_cash", "available", amountCents),
+      });
+      return;
+    }
+    case "fund_loan_disbursed": {
+      const loan = event.fundLoan;
+      if (loan === undefined) {
+        throw new Error(
+          "a fund-loan disbursement event needs the loan it opens",
+        );
+      }
+      // Money moving is the partner's statement: the schema refuses to
+      // activate a loan that isn't signed and awaiting it.
+      await db.rpc("activate_fund_loan", { p_loan: loan.loanId });
+      return;
+    }
+    case "fund_loan_paid": {
+      const loan = event.fundLoan;
+      if (
+        loan === undefined || loan.seq === undefined ||
+        loan.amountCents === undefined
+      ) {
+        throw new Error(
+          "a fund-loan payment event needs the loan, month and amount",
+        );
+      }
+      if (loan.amountCents <= 0) {
+        throw new Error(
+          `money moving needs a positive amount: ${loan.amountCents}`,
+        );
+      }
+      // The schema owns every rule here: collecting loans, the owed ceiling
+      // on monthly schedules, and income payments capped at the month's
+      // income share. No journal: fund loan money sits with the lending Fund.
+      await db.rpc("record_fund_loan_payment", {
+        p_loan: loan.loanId,
+        p_seq: loan.seq,
+        p_amount_cents: loan.amountCents,
       });
       return;
     }

@@ -328,3 +328,52 @@ Deno.test("a dues-capture event closes the row and journals the DB figure", asyn
     ]),
   ]);
 });
+
+// Fund loan events (`fund_loan_disbursed`, `fund_loan_paid`): the lending
+// Fund's partner moves loan money; the schema owns the rules and nothing is
+// journaled — fund loan money sits with the lending Fund, not here.
+Deno.test("a fund-loan disbursement activates via the schema function", async () => {
+  const rpcLog: string[] = [];
+  const db = {
+    storage() {
+      throw new Error("payments-webhook never touches a bucket");
+    },
+    rpc: (name: string, _args: Record<string, unknown>) => {
+      rpcLog.push(name);
+      return Promise.resolve();
+    },
+  };
+  const event = {
+    event: "fund_loan_disbursed" as const,
+    requestId: "req-1",
+    fund: "home_fund" as const,
+    fundLoan: { loanId: "loan-m1" },
+  };
+  await handleChargeEvent(event, db);
+  assertEquals(rpcLog, ["activate_fund_loan"]);
+});
+
+Deno.test("a fund-loan payment refuses no money before any write", async () => {
+  const rpcLog: string[] = [];
+  const db = {
+    storage() {
+      throw new Error("payments-webhook never touches a bucket");
+    },
+    rpc: (name: string, _args: Record<string, unknown>) => {
+      rpcLog.push(name);
+      return Promise.resolve();
+    },
+  };
+  const event = {
+    event: "fund_loan_paid" as const,
+    requestId: "req-1",
+    fund: "home_fund" as const,
+    fundLoan: { loanId: "loan-i1", seq: 1, amountCents: 0 },
+  };
+  assertRejects(
+    async () => await handleChargeEvent(event, db),
+    Error,
+    "money moving needs a positive amount",
+  );
+  assertEquals(rpcLog, []);
+});
