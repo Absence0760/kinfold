@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — A signed loan's agreement gets written down (`finalize_loan_agreement`)
+
+- **Paperwork is a product, not an afterthought** (design.md:149): because Kinfold documents every loan properly, an unpaid family loan can qualify as a bad-debt tax deduction for the lender, which an informal handshake loan usually can't. So once both sides have signed, the loan-servicing event writes the agreement in plain words on the loan — amount, schedule as set, pause allowance, lien/IRS rate, default plan — and the job sweeps exactly the signed loans that have none yet.
+- **The written text is history**: written once, never edited, never re-priced; a replay is a no-op, so the loan-servicing job can run daily without fear of rewriting an agreement someone cited to an accountant.
+- **Only the event writes agreements** (service-role only): a member can't author their own agreement text after the fact, because the record of what was agreed has to come from the signing, not from whoever notices later. **Reversal:** letting the borrower or lender edit the text would let a loan's paperwork claim a different deal than the one e-signed; the ladder keeps the schema as the writer.
+
 ## 2026-11-02 — A family loan's schedule changes only by agreement (‘loan_restructures’)
 
 - **Ladder step 3 for family loans** (design.md:137, "a new schedule both sides sign"): either side stages a restructure (smaller payments over a longer term, or a new start date) on their collecting loan; the *other* side signs it, and only on that signing do the unpaid installments re-spread — on the loan's payment day, like every other schedule (`set_loan_schedule`), so the loan keeps its payday rhythm.
