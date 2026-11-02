@@ -17,9 +17,8 @@ create function pg_temp.as_service() returns void language sql as $$
 $$;
 
 create function pg_temp.member(p_id uuid) returns uuid language sql as $$
-  insert into public.members (id, handle, display_name, region, status, joined_via, created_at)
-  values (p_id, 'm' || right(p_id::text, 6), 'Test', 'CA', 'active', 'invite', now())
-  returning id;
+  insert into public.members (id, display_name, region, status)
+  values (p_id, 'Member A1', 'CA', 'active') returning id;
 $$;
 
 create function pg_temp.request(p_id uuid, p_member uuid) returns uuid language sql as $$
