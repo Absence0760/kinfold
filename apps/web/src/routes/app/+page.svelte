@@ -374,7 +374,7 @@
 						{#if rel.installments_due === 0}
 							None due yet
 						{:else}
-							{rel.installments_paid_on_time} paid of {rel.installments_due} due so far
+							{rel.installments_paid_on_time} on time of {rel.installments_due} due so far
 						{/if}
 					</dd>
 				</div>
