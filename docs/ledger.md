@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Mortgage gaps point at public help; Kinfold never becomes a counselor (`PublicHelpPanel`)
+
+- **A mortgage-gap request page carries a public-help panel**: HUD-approved housing counselors (you go to theirs, not to Kinfold — design.md says Kinfold partners with a certified agency rather than becoming one) for forbearance and loan modification, plus state and federal repair help. **Public money never joins the Fund** — the copy says so, matching 24 CFR 92.503: programme rules follow the money forever.
+- **The Fund's own bridging loan stays gated on pilot lending-licence review** (12 CFR 1026.43: federal ability-to-repay rules apply unless the lender is a certified CDFI or a 501(c)(3) lending at or below 80% AMI). **Reversal:** letting Kinfold itself counsel borrowers would put a lending licence on the wrong actor; a referral keeps the certification with the partner who holds it.
+
 ## 2026-11-02 — The Fund ranks its applicants by a published needs formula, and the ranking can be re-derived (`needs_formula`)
 
 - **Home Fund applicants are ranked by need, readiness and reliability** (design.md: the same evidence score as every request plus need, readiness and reliability — rent paid on time, family loan repayments). Each component is a banded 0–100 points figure, and the weights live in a published, versioned table (`needs_formulas`) so the formula can move with the Fund's fee economics and be audited annually. Ranking waits for a scored request and only ever touches Home Fund kinds; car requests stay ranked by the pool bands.
