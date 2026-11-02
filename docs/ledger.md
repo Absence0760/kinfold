@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The Fund ranks its applicants by a published needs formula, and the ranking can be re-derived (`needs_formula`)
+
+- **Home Fund applicants are ranked by need, readiness and reliability** (design.md: the same evidence score as every request plus need, readiness and reliability — rent paid on time, family loan repayments). Each component is a banded 0–100 points figure, and the weights live in a published, versioned table (`needs_formulas`) so the formula can move with the Fund's fee economics and be audited annually. Ranking waits for a scored request and only ever touches Home Fund kinds; car requests stay ranked by the pool bands.
+- **Every applicant row logs its formula version and an inputs hash**, so the annual fairness audit can re-derive a published score rather than argue with it; rows are append-only, so a formula change never rewrites an applicant's past ranking. Hardship details never enter the row — only banded points, matching the rule that hardship details stay private.
+- **Panel review stays the edge-case channel** (design.md): the reviewer and panel console already decide with written reasons and appeal; a needs-edge-case affordance is a console task, not a new rule. **Reversal:** an unlogged, single-weighted score would be unfalsifiable at audit, and fair-lending law asks that any ranking formula be published and bias-auditable.
+
 ## 2026-11-02 — The dues screen names its earnings check (`income_verifications` on the home)
 
 - **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
