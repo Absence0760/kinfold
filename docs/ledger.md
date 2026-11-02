@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The home shows dues, cover and plan (`lib/dashboard/membership.ts`, `/app`)
+
+- **The member's home now reads their dues** (own figure, this month's charge status from the partner: collected / asked-not-collected / failed / refunded / not asked yet), **their cover** (vehicles covered, claims paid so far) **and their directable-share plan** (weights must add to 100, or none yet is said honestly). No dues is not faked as $0: it says so. **Reversal:** showing only dues amounts would leave the member unable to tell an un-collected charge from a refunded one, which the agreement says they must see.
+
 ## 2026-11-02 — "Legitimacy score" becomes "evidence score" (web copy)
 
 - **The app and site now say "evidence score"**, per design.md's business-model review ("legitimacy score sounds like an accusation"). It measures how well the evidence supports the request; low scores ask for more evidence and never refuse. Copy-only: the schema always said `score` neutrally, so nothing moved in the database. **Reversal:** keeping "legitimacy" would imply an accusation to honest members and invite regulators to read it as a claims model.

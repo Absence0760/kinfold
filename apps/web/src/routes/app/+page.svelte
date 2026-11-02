@@ -15,6 +15,8 @@
 	} from '#lib/dashboard/labels.ts';
 	import { greeting } from '#lib/dashboard/home.ts';
 	import { showsRaised } from '#lib/dashboard/requests.ts';
+	import { allocationTargetLabel } from '#lib/dashboard/labels.ts';
+	import { duesWord } from '#lib/dashboard/membership.ts';
 	import { scoreBand } from '#lib/requests/score-band.ts';
 
 	let { data } = $props();
@@ -351,6 +353,43 @@
 			{/if}
 		{/if}
 	</section>
+
+	{#if home.membership.dues.status !== 'no dues yet'}
+		{@const dues = home.membership.dues}
+		{@const cover = home.membership.cover}
+		<section class="block" aria-labelledby="membership-h">
+			<h2 id="membership-h">Your membership</h2>
+			<p class="section-note">
+				Monthly dues are a small share of what you earn. They buy premiums on the group car cover; the
+				money itself goes to the partner insurer, never held here.
+			</p>
+			<dl class="facts wide">
+				<div>
+					<dt>Dues a month</dt>
+					<dd>{dues.monthlyCents > 0 ? `${formatCents(dues.monthlyCents)} this month` : 'Nothing to collect'}</dd>
+				</div>
+				<div>
+					<dt>Their charge this month</dt>
+					<dd>{duesWord(dues.status)}</dd>
+				</div>
+				<div>
+					<dt>Cover</dt>
+					<dd>{cover.vehicles === 0 ? 'No vehicle covered yet' : `${cover.vehicles} vehicle${cover.vehicles === 1 ? '' : 's'} covered`}</dd>
+				</div>
+				<div>
+					<dt>Covered claims paid so far</dt>
+					<dd>{cover.claimsPaidCents > 0 ? formatCents(cover.claimsPaidCents) : 'None paid yet'}</dd>
+				</div>
+			</dl>
+			{#if home.membership.plan.length > 0}
+				<p class="fine">
+					When the fund runs short, your help goes to: {home.membership.plan.map((pr) => `${allocationTargetLabel(pr.target)} (${pr.weightPct}%)`).join(', ')}. Weights must add up to 100.
+				</p>
+			{:else}
+				<p class="fine">No split set yet; the fund fills the best-evidenced requests first.</p>
+			{/if}
+		</section>
+	{/if}
 
 	{#if home.reliability}
 		{@const rel = home.reliability}

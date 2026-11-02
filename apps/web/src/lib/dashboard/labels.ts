@@ -6,6 +6,7 @@ export type RequestStatus = Enums['request_status'];
 export type FundingMode = Enums['funding_mode'];
 export type LoanStatus = Enums['loan_status'];
 export type DefaultPlan = Enums['default_plan'];
+export type AllocationTarget = Enums['allocation_target'];
 
 /**
  * How a status reads at a glance. The tone only picks a colour and an icon;
@@ -147,3 +148,11 @@ export const defaultPlanText = (plan: DefaultPlan): string => planLabels[plan];
 function capitalise(s: string): string {
 	return s.charAt(0).toUpperCase() + s.slice(1);
 }
+
+/** How the member's directable-share plan reads on their own screens. */
+export const allocationTargetLabel = (target: AllocationTarget): string =>
+	({
+		car_damage: 'car help',
+		home_help: 'home help',
+		highest_score: 'the best-evidenced requests'
+	})[target];

@@ -49,7 +49,30 @@ describe('loadHome', () => {
 		expect(home.loans).toEqual([]);
 		expect(home.giving.givenCents).toBe(100);
 		expect(home.reliability?.subscription_payments).toBe(1);
-		expect(asked.sort()).toEqual(['contributions', 'family_loans', 'my_giving_record', 'my_reliability', 'requests']);
+		expect(asked.sort()).toEqual([
+			'allocation_preferences',
+			'contributions',
+			'covered_assets',
+			'family_loans',
+			'my_giving_record',
+			'my_reliability',
+			'requests',
+			'subscription_payments',
+			'subscriptions'
+		]);
+	});
+
+	it('shows dues, cover and plan as the member reads them', async () => {
+		const dues = { data: [{ id: 's1', monthly_cents: 4000, formula_version: 1, starts_on: '2026-05-01', ends_on: null }], error: null };
+		const charge = { data: [{ period: '2026-10-01', amount_cents: 4000, status: 'captured' }], error: null };
+		const claims = { data: [{ request_id: 'r1', gross_cents: 40000, member_share_cents: 1000, paid_cents: 39000, status: 'paid' }], error: null };
+		const reqRow = { id: 'r1', title: 'A door to pay', kind: 'car_damage' as never, status: 'open' as never, funding: 'pool' as never, amount_cents: 100000, created_at: '2026-10-01T00:00:00Z' };
+		const fixtures = { requests: { data: [reqRow], error: null }, subscriptions: dues, subscription_payments: charge, claims, my_giving_record: giving, my_reliability: reliability };
+		const home = await loadHome(fakeDb(fixtures).db, 'maria', '2026-10-31');
+		expect(home.membership.dues.status).toBe('captured');
+		expect(home.membership.dues.monthlyCents).toBe(4000);
+		expect(home.membership.cover.claimsPaidCents).toBe(39000);
+		expect(home.membership.plan).toEqual([]);
 	});
 
 	it('names the lender’s relationship only to the borrower', async () => {
