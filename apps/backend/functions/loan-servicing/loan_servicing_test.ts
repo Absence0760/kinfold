@@ -4,6 +4,7 @@ import {
   applyDueDefaultPlans,
   collectDueInstallments,
   dueForCollection,
+  finalizeLoanAgreements,
 } from "./index.ts";
 
 const NOW = "2026-11-02";
@@ -205,4 +206,20 @@ Deno.test("a refused default plan (someone changed the loan) skips, not crashes"
   };
   const applied = await applyDueDefaultPlans(["loan-one", "loan-changed"], db);
   assertEquals(applied, ["loan-one"]);
+});
+
+Deno.test("the job asks the schema for the agreement sweep once and reports its count", async () => {
+  const log: string[] = [];
+  const db = {
+    storage() {
+      throw new Error("loan-servicing never touches a bucket");
+    },
+    rpc: (name: string, args: Record<string, unknown>) => {
+      log.push(`${name}:${JSON.stringify(args)}`);
+      return Promise.resolve(3);
+    },
+  };
+  const written = await finalizeLoanAgreements(db);
+  assertEquals(log, ["finalize_signed_loan_agreements:{}"]);
+  assertEquals(written, 3);
 });

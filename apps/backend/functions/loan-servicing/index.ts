@@ -11,6 +11,9 @@
 //     lists;
 //   * ended pauses: the job calls resume_ended_pauses once; the schema
 //     decides which loans' pauses ran out.
+//   * agreements: the job calls finalize_signed_loan_agreements once per run;
+//     the schema writes the written agreement for every loan both sides
+//     signed that has none yet, and never rewrites one.
 
 import { Db } from "../shared/rest.ts";
 
@@ -94,4 +97,14 @@ export async function applyDueDefaultPlans(
     }
   }
   return applied;
+}
+
+/**
+ * Write the agreement paperwork once per run: the schema sweeps exactly the
+ * signed loans with no agreement yet (and replaying a finalized one is a
+ * no-op), so this job only asks and reports how many were written.
+ */
+export async function finalizeLoanAgreements(db: Db): Promise<number> {
+  const written = await db.rpc("finalize_signed_loan_agreements", {});
+  return Number(written ?? 0);
 }
