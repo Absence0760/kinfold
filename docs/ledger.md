@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The pool stacks after insured cover (`…330000_pool_insured_cover.sql`)
+
+- **A request's pool need now subtracts insured deductible cover before pledges** (`insured_cover_cents` sums standing claims' gross; a denied claim covers nothing), matching design.md's split into insured cover (partner insurer pays in full, minus the member's share) and the gift-funded repair fund. Band math, reserve and ordering stay the schema's bands-v1 run, so the parity tests keep their figures; `allocation.ts` and its vitest mirror the new line (two new cover cases). **Reversal:** leaving cover out of need would pool money the insurer already paid, and pooling before cover would fight the deductible's priority.
+- **The `subscriptions`→dues table rename stays deferred**: it touches every fixture and the web dashboard at once, and without the stack up we can't run the rename's tests; it goes in with a stack window. **Reversal:** a blind repo-wide rename we can't test is exactly what the schema's "every rule pinned" ethos forbids.
+
 ## 2026-11-02 — Loan repayments ride the webhook (`loan_repaid` leg)
 
 - **The webhook's repayment leg only calls `record_loan_payment`** — the guard already owns collecting-loans and the owed ceiling — and **journals NOTHING**: loan money sits with the family, not on the payment partner's side, so the fund ledger says nothing about it. **Reversal:** journaling repayments as partner money would claim money moved that never touched the partner.

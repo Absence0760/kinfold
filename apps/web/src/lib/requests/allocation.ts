@@ -12,6 +12,8 @@ export interface FundingRequest {
 	amount: number;
 	/** Already raised, e.g. from family and friends. */
 	funded: number;
+	/** Already paid by insured deductible cover, stacked before pledges. */
+	covered?: number;
 	/** Legitimacy score, 0 to 100. */
 	score: number;
 }
@@ -48,7 +50,7 @@ export function allocatePool(
 
 	for (const band of [...bands.keys()].sort((a, b) => b - a)) {
 		const members = bands.get(band)!;
-		const need = (r: FundingRequest) => Math.max(0, r.amount - r.funded);
+		const need = (r: FundingRequest) => Math.max(0, r.amount - (r.covered ?? 0) - r.funded);
 		const totalNeed = members.reduce((sum, r) => sum + need(r), 0);
 		if (totalNeed === 0) continue;
 		const share = Math.min(1, left / totalNeed);
@@ -64,7 +66,7 @@ export function allocatePool(
 		const grant = grants.get(r.id) ?? 0;
 		let status: AllocationStatus;
 		if (r.score < minScore) status = 'needs-review';
-		else if (r.funded + grant >= r.amount) status = 'funded';
+		else if ((r.covered ?? 0) + r.funded + grant >= r.amount) status = 'funded';
 		else if (grant > 0) status = 'partial';
 		else status = 'waiting';
 		return { id: r.id, grant, status };

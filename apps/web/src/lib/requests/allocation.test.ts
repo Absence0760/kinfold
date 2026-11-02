@@ -54,4 +54,14 @@ describe('allocatePool', () => {
 	it('treats a negative pool as empty', () => {
 		expect(byId(allocatePool([req('a', 10, 99)], -5)).a.status).toBe('waiting');
 	});
+	it('stacks insured cover before pledges', () => {
+		// A 1,000.00 request the insurer covered 300.00 of needs only the gap.
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, covered: 300 }], 900));
+		expect(a.a).toEqual({ id: 'a', grant: 700, status: 'funded' });
+	});
+
+	it('fully covered requests need no grant', () => {
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, covered: 1000 }], 900));
+		expect(a.a).toEqual({ id: 'a', grant: 0, status: 'funded' });
+	});
 });
