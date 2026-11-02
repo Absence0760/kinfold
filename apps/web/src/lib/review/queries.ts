@@ -1,4 +1,4 @@
-import { rpcNew } from '#lib/supabase/client.ts';
+import { fromNew, rpcNew } from '#lib/supabase/client.ts';
 import type { Db } from '#lib/supabase/client.ts';
 import type { ReviewDecision, RequestStatus } from './labels.ts';
 import {
@@ -137,5 +137,37 @@ export async function decideAppeal(db: Db, appealId: string, uphold: boolean, re
 		p_uphold: uphold,
 		p_reason: reason
 	});
+	fail(error);
+}
+
+const CLAIM_COLUMNS = 'id, request_id, gross_cents, member_share_cents, paid_cents';
+
+/** A standing insured claim the console may see (RLS filters the rows). */
+export interface StandingClaim {
+	id: string;
+	request_id: string;
+	gross_cents: number;
+	member_share_cents: number;
+	paid_cents: number;
+}
+
+/**
+ * Standing claims the viewer may decide: reviewers read standing claims of
+ * the requests they may review, so RLS answers with exactly those rows.
+ */
+export async function loadStandingClaims(db: Db): Promise<StandingClaim[]> {
+	// `claims` isn't in the committed generated types yet (`fromNew` seam).
+	const result = await fromNew(db, 'claims').select(CLAIM_COLUMNS).eq('status', 'recorded').order('recorded_at');
+	fail(result.error);
+	return (result.data ?? []) as StandingClaim[];
+}
+
+/**
+ * Denies a standing claim: the reviewer's refusal and the denial are recorded
+ * in ONE transaction (`decide_claim`), because the schema only accepts a
+ * refusal recorded at the same instant the denial is written.
+ */
+export async function decideClaim(db: Db, claimId: string, reason: string): Promise<void> {
+	const { error } = await rpcNew(db, 'decide_claim', { p_claim: claimId, p_reason: reason });
 	fail(error);
 }

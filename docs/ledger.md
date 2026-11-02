@@ -14,6 +14,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **`mark_claim_paid` is idempotent and refuses denials** (a denied claim pays nothing, code 23514) and audit-trails the confirmation with the event's partner reference; `claims-feed` journals a confirmed payment exactly gross minus the member's share — out of the insurer's side, into `paid_out`. **Reversal:** journaling on RECORD would claim money moved the insurer never confirmed.
 
+## 2026-11-02 — The console decides standing claims (`/app/review`, `ClaimCard`)
+
+- **The review console now lists standing insured claims** (RLS answers with exactly the claims on requests a reviewer may review) and **offers a denial form whose reason carries the decision**, calling `decide_claim` so the refusal and the denial land together. A member's own request page keeps only the appeal affordance — denial is a reviewer's act. **Reversal:** putting the denial affordance on the request page would let the requester deny their own claim.
+
 ## 2026-11-02 — Denying a claim is one atomic decision (`decide_claim`, pgTAP `claim_decision_test`)
 
 - **`decide_claim(claim, reason)` records the reviewer's refusal and denies the claim in one transaction.** `deny_claim` only accepts a refusal recorded at the SAME instant (`reviews.created_at = now()`, and `now()` is fixed per transaction) — two PostgREST calls are two transactions with different instants, so the two-step console flow could never satisfy it. A claim denial therefore also refuses its request (the repo's rule: only a person's recorded decision can deny a claim). Reviewers can now read standing claims of what they may review, so the console can show the claim before closing it. **Reversal:** loosening the same-instant rule would let anyone deny a claim with no reviewer decision behind it.

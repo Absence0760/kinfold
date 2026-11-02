@@ -3,9 +3,11 @@
 	import { supabase } from '#lib/supabase/client.ts';
 	import { define } from '#lib/board/terms.ts';
 	import { explainDbError } from '#lib/review/errors.ts';
-	import { loadAppeals, loadQueue } from '#lib/review/queries.ts';
+	import { loadAppeals, loadQueue, loadStandingClaims } from '#lib/review/queries.ts';
 	import type { AppealItem, QueueItem } from '#lib/review/queue.ts';
+	import type { StandingClaim } from '#lib/review/queries.ts';
 	import QueueCard from './QueueCard.svelte';
+	import ClaimCard from './ClaimCard.svelte';
 	import AppealCard from './AppealCard.svelte';
 
 	let { data } = $props();
@@ -19,6 +21,7 @@
 
 	let queue = $state<Loaded<QueueItem>>({ state: 'loading' });
 	let appeals = $state<Loaded<AppealItem>>({ state: 'loading' });
+	let claims = $state<Loaded<StandingClaim>>({ state: 'loading' });
 	let confirmation = $state('');
 	let confirmationEl = $state<HTMLParagraphElement | null>(null);
 
@@ -38,9 +41,18 @@
 		}
 	}
 
+	async function refreshClaims() {
+		try {
+			claims = { state: 'ready', items: await loadStandingClaims(supabase()) };
+		} catch (err) {
+			claims = { state: 'error', message: explainDbError(err as { message?: string }) };
+		}
+	}
+
 	onMount(() => {
 		if (data.access.reviewer) refreshQueue();
 		if (data.access.panel) refreshAppeals();
+		if (data.access.reviewer) refreshClaims();
 	});
 
 	async function decided(message: string, refresh: () => Promise<void>) {
@@ -54,6 +66,7 @@
 
 	let queueHeading = $state<HTMLElement>();
 	let appealsHeading = $state<HTMLElement>();
+	let claimsHeading = $state<HTMLElement>();
 
 	// Try again swaps the error block (and the button that had focus) for the
 	// list; park focus on the section heading so keyboard users stay in place.
@@ -71,12 +84,20 @@
 		appealsHeading?.focus();
 	}
 
+	async function retryClaims() {
+		claims = { state: 'loading' };
+		await refreshClaims();
+		await tick();
+		claimsHeading?.focus();
+	}
+
 	// One live region, mounted empty, whose text changes: a region inserted
 	// already holding its text isn't reliably announced.
 	const loadingText = $derived(
 		[
 			data.access.reviewer && queue.state === 'loading' ? 'Loading the queue…' : '',
-			data.access.panel && appeals.state === 'loading' ? 'Loading appeals…' : ''
+			data.access.panel && appeals.state === 'loading' ? 'Loading appeals…' : '',
+			data.access.reviewer && claims.state === 'loading' ? 'Loading claims…' : ''
 		]
 			.filter(Boolean)
 			.join(' ')
@@ -177,6 +198,40 @@
 			<ul class="cards" role="list">
 				{#each appeals.items as item (item.appeal.id)}
 					<li><AppealCard {item} ondecided={(m) => decided(m, refreshAppeals)} /></li>
+				{/each}
+			</ul>
+		{/if}
+	</section>
+{/if}
+
+{#if data.access.reviewer}
+	<section class="block" aria-labelledby="claims-heading">
+		<div class="block-head">
+			<h2 id="claims-heading" tabindex="-1" bind:this={claimsHeading}>Claim decisions</h2>
+			{#if claims.state === 'ready'}
+				<p class="muted">{count(claims.items.length, 'standing claim', 'standing claims')}</p>
+			{/if}
+		</div>
+		{#if claims.state === 'loading'}
+			<div aria-hidden="true">
+				<p class="muted">Loading claims…</p>
+				<div class="skeleton" aria-hidden="true"></div>
+			</div>
+		{:else if claims.state === 'error'}
+			<div class="error" role="alert">
+				<p>Couldn't load claims. {claims.message}</p>
+				<button class="btn btn-ghost" type="button" onclick={retryClaims}>
+					Try again<span class="visually-hidden"> loading claims</span>
+				</button>
+			</div>
+		{:else if claims.items.length === 0}
+			<p class="empty">No standing claims. Insurer claims appear here when a request you may review has one waiting.</p>
+		{:else}
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
+				{#each claims.items as item (item.id)}
+					<li><ClaimCard claim={item} ondecided={(m) => decided(m, refreshClaims)} /></li>
 				{/each}
 			</ul>
 		{/if}
