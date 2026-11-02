@@ -6,6 +6,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
 
+## 2026-11-02 — Cover comes in filed plans, priced by risk not earnings (`cover_plans`, pgTAP `cover_plans_test`)
+
+- **The partner insurer's filed group rate lives in the data**: one premium and cap per vehicle CLASS and PLAN (Basic, Standard), with the schema refusing any write that would price Standard at or below Basic inside a class (more premium must buy at least as much cap). A member chooses their plan (`cover_choices`, `set_my_plan`) but can never write a filed rate — only the service files, and each change leaves a history row and an audit trail. **Reversal:** a single global cap (the old `fund_settings.max_request_cents` alone) can't express class-based rates without turning earnings into a cap, which rating law forbids.
+
 ## 2026-11-02 — Subrogation money is recorded verified in one step (`record_partner_recovery`)
 
 - **When another driver is at fault, the at-fault party’s insurer should pay** (design.md: Kinfold’s cover must not subsidise other insurers). The partner insurer reports the money that moved; the schema records it **already verified, in one write** — a separate `verify_recovery` step could leave a half-verified row a retry would double-count. Retry-safe by the partner’s reference. Money moved between insurers, so it never joins Kinfold’s ledger; the pledge caps and pool needs subtract it. **Reversal:** letting members write subrogation money themselves would let a member claim money no insurer moved.
