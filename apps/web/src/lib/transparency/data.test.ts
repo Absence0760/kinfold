@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { loadOpenBooks } from './data.ts';
+import { loadOpenBooks, quarterlySummaries, type QuarterlySummary } from './data.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -55,5 +55,34 @@ describe('loadOpenBooks', () => {
 		const { db } = fakeDb({ open_books: { data: [], error: null } });
 		const books = await loadOpenBooks(db);
 		expect(books).toEqual([]);
+	});
+});
+
+describe('quarterlySummaries', () => {
+	const oct = { fund: 'protection', fundLabel: 'Car help', month: '2026-10-01', yearMonth: 'October 2026', monthlyRequestsPaid: 12, paidOutCents: 500000, allocatedCents: 400000, reserveCents: 100000, monthlyPoolRuns: 4, monthlyPoolRunsShort: 1 };
+	const sep = { fund: 'protection', fundLabel: 'Car help', month: '2026-09-01', yearMonth: 'September 2026', monthlyRequestsPaid: 11, paidOutCents: 300000, allocatedCents: 200000, reserveCents: 50000, monthlyPoolRuns: 3, monthlyPoolRunsShort: 0 };
+
+	it('a full quarter sums its three months', () => {
+		const jul = { ...sep, month: '2026-07-01', yearMonth: 'July 2026', monthlyRequestsPaid: 13, paidOutCents: 100000, allocatedCents: 50000, reserveCents: 25000, monthlyPoolRuns: 2, monthlyPoolRunsShort: 0 };
+		const aug = { ...sep, month: '2026-08-01', yearMonth: 'August 2026', monthlyRequestsPaid: 14, paidOutCents: 150000, allocatedCents: 100000, reserveCents: 50000, monthlyPoolRuns: 2, monthlyPoolRunsShort: 1 };
+		const quarters: QuarterlySummary[] = quarterlySummaries([oct, sep, jul, aug]);
+		expect(quarters.length).toBe(2);
+		expect(quarters[0].quarter).toBe('Q4 2026');
+		expect(quarters[0].months).toBe(1);
+		expect(quarters[1].quarter).toBe('Q3 2026');
+		expect(quarters[1].months).toBe(3);
+		expect(quarters[1].paidOutCents).toBe(550000);
+		expect(quarters[1].requestsPaid).toBe(38);
+	});
+
+	it('a partial quarter says how many months it covers', () => {
+		const quarters: QuarterlySummary[] = quarterlySummaries([oct]);
+		expect(quarters.length).toBe(1);
+		expect(quarters[0].quarter).toBe('Q4 2026');
+		expect(quarters[0].months).toBe(1);
+	});
+
+	it('no published months is no report, not empty money', () => {
+		expect(quarterlySummaries([])).toEqual([]);
 	});
 });

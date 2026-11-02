@@ -17,6 +17,21 @@ export interface OpenBook {
 	monthlyPoolRunsShort: number;
 }
 
+/** A published quarter: the three months summed, months counted honestly. */
+export interface QuarterlySummary {
+	fund: string;
+	fundLabel: string;
+	/** "Q3 2026" for readers. */
+	quarter: string;
+	months: number;
+	requestsPaid: number;
+	paidOutCents: number;
+	allocatedCents: number;
+	reserveCents: number;
+	poolRuns: number;
+	poolRunsShort: number;
+}
+
 type Result<T> = { data: T | null; error: { message: string; code?: string } | null; status?: number };
 
 function must<T>(result: Result<T>, what: string): T {
@@ -73,5 +88,55 @@ export async function loadOpenBooks(db: Db): Promise<OpenBook[]> {
 			monthlyPoolRuns: Number(row['pool_runs']),
 			monthlyPoolRunsShort: Number(row['pool_runs_short'])
 		};
+	});
+}
+
+/** Calendar quarter a month belongs to, e.g. "Q3 2026". */
+function quarterOf(month: string): string {
+	const [year, index] = month.split('-').map(Number);
+	return `Q${Math.floor((index - 1) / 3) + 1} ${year}`;
+}
+
+/**
+ * The quarterly open-books report: the published months summed per fund and
+ * calendar quarter. Only sums of figures the schema already published — the
+ * page never recomputes a month itself. A quarter with fewer than three
+ * published months carries its `months` count so the page can say so.
+ */
+export function quarterlySummaries(books: OpenBook[]): QuarterlySummary[] {
+	const byFundQuarter = new Map<string, QuarterlySummary>();
+	for (const book of books) {
+		const quarter = quarterOf(book.month);
+		const key = `${book.fund}/${quarter}`;
+		const acc = byFundQuarter.get(key);
+		if (acc === undefined) {
+			byFundQuarter.set(key, {
+				fund: book.fund,
+				fundLabel: book.fundLabel,
+				quarter,
+				months: 1,
+				requestsPaid: book.monthlyRequestsPaid,
+				paidOutCents: book.paidOutCents,
+				allocatedCents: book.allocatedCents,
+				reserveCents: book.reserveCents,
+				poolRuns: book.monthlyPoolRuns,
+				poolRunsShort: book.monthlyPoolRunsShort
+			});
+			continue;
+		}
+		acc.months += 1;
+		acc.requestsPaid += book.monthlyRequestsPaid;
+		acc.paidOutCents += book.paidOutCents;
+		acc.allocatedCents += book.allocatedCents;
+		acc.reserveCents += book.reserveCents;
+		acc.poolRuns += book.monthlyPoolRuns;
+		acc.poolRunsShort += book.monthlyPoolRunsShort;
+	}
+	const fundOrder = ['protection', 'home_fund', 'people'];
+	/** "Q3 2026" -> sortable number: year * 10 + quarter. */
+	const rank = (quarter: string): number => Number(quarter.slice(3)) * 10 + Number(quarter.slice(1, 2));
+	return [...byFundQuarter.values()].sort((a, b) => {
+		if (rank(b.quarter) !== rank(a.quarter)) return rank(b.quarter) - rank(a.quarter);
+		return fundOrder.indexOf(a.fund) - fundOrder.indexOf(b.fund);
 	});
 }

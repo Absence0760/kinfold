@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { formatCents } from '#lib/dashboard/format.ts';
 
-	let { books, problem } = $props();
+	let { books, quarters, problem } = $props();
 </script>
 
 <svelte:head>
@@ -34,6 +34,31 @@
 				<dd>{formatCents(book.reserveCents)}</dd>
 				<dt>Pool runs</dt>
 				<dd>{book.monthlyPoolRuns} ({book.monthlyPoolRunsShort} short)</dd>
+			</dl>
+		</div>
+	{/each}
+{/if}
+
+<h2 id="quarters">The quarterly report</h2>
+{#if problem || quarters.length === 0}
+	<p class="empty">No quarters reported yet.</p>
+{:else}
+	{#each quarters as q}
+		<div class="quarter">
+			<h3>{q.quarter} · {q.fundLabel}</h3>
+			<dl>
+				<dt>Requests paid</dt>
+				<dd>{q.requestsPaid}</dd>
+				<dt>Money paid out</dt>
+				<dd>{formatCents(q.paidOutCents)}</dd>
+				<dt>Repair fund allocated</dt>
+				<dd>{formatCents(q.allocatedCents)}</dd>
+				<dt>Kept in reserve</dt>
+				<dd>{formatCents(q.reserveCents)}</dd>
+				<dt>Pool runs</dt>
+				<dd>{q.poolRuns} ({q.poolRunsShort} short)</dd>
+				<dt>Months published</dt>
+				<dd>{q.months} of 3</dd>
 			</dl>
 		</div>
 	{/each}

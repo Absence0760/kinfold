@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from '#lib/supabase/client.ts';
-import { loadOpenBooks } from '#lib/transparency/data.ts';
+import { loadOpenBooks, quarterlySummaries } from '#lib/transparency/data.ts';
 import { classifyLoadError } from '#lib/auth/errors.ts';
 
 const MESSAGE: Record<string, string> = {
@@ -15,11 +15,12 @@ const MESSAGE: Record<string, string> = {
  */
 export async function load() {
 	if (!isConfigured()) {
-		return { books: [], problem: 'The published books need the database to be configured.' };
+		return { books: [], quarters: [], problem: 'The published books need the database to be configured.' };
 	}
 	try {
-		return { books: await loadOpenBooks(supabase()), problem: null };
+		const books = await loadOpenBooks(supabase());
+		return { books, quarters: quarterlySummaries(books), problem: null };
 	} catch (e) {
-		return { books: [], problem: MESSAGE[classifyLoadError(e)] };
+		return { books: [], quarters: [], problem: MESSAGE[classifyLoadError(e)] };
 	}
 }
