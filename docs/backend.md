@@ -42,7 +42,7 @@ Money is stored as `bigint` cents. Times are `timestamptz`. Ids are UUIDs. Enums
 | `member_roles` | `reviewer`, `panel`, `admin` |
 | `fund_settings` | Rules for each pooled fund: minimum score, band size, reserve share, waiting days, request cap, kinds covered. Every change is logged to `private.fund_settings_history` |
 | `income_verifications` | Verified monthly take-home pay, how it was verified, and when it expires |
-| `subscription_formulas` | Published pricing versions: income floor, rate, cap, core share |
+| `subscription_formulas` | Published pricing versions: income floor, rate, cap, core share, and whether the rate is marginal (v2: 1% of the amount above the floor, effective 2027-01-01 — the switch is the actuarial review's, not ours) |
 | `subscriptions` | A member's monthly amount and which formula version priced it. At most one active per member |
 | `subscription_payments` | Each month's collection. Cover starts at the first captured payment (`coverage_started_on`, security invoker: a member can read only their own cover date) |
 | `allocation_preferences` | How the member splits the directable 20% of their payment. Weights must total 100 |
@@ -137,6 +137,7 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | No self-review or same-region review | `record_review` checks; roles count only for `active` members (`has_role`) | `reviews_test`, `hardening_test` |
 | Every refusal can be appealed, once, to someone independent | `record_review` can't re-decide a `refused` request; `file_appeal` allows one appeal per refusal; `decide_appeal` refuses the appellant and anyone who reviewed the request | `reviews_test`, `hardening_test` |
 | Reviewers are safe from retaliation | Members can't read `reviews` rows on their own requests; `my_request_reviews` omits `reviewer_id` | `hardening_test` |
+| Dues follow earnings, never a cliff | `subscription_amount` version 2 charges 1% of the amount ABOVE the floor (income at the floor costs $0, a cent more income costs at most a cent more), still capped like v1; the live formula stays v1 until its own `effective_from` — dues never change silently | `dues_marginal_test` |
 | No joining after the incident | `submit_request` checks `coverage_started_on` and the asset's `registered_on` against `waiting_days` | `requests_test` |
 | Evidence is redacted before anyone sees it | `submit_request` requires every redaction to be `confirmed`; the board shows only `public_summary`, and only once the member confirmed it (`on_board`); the originals bucket is owner-only | `requests_test`, `rls_test`, `board_privacy_test` |
 | The board answers a card's money questions on the card | `board_requests` carries `raised_cents` (only while `open`) and `taking_pledges` (open and the payee verified), so the page reads one view rather than asking per card | `board_progress_test` |

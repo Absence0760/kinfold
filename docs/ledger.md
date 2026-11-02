@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Marginal dues formula (`…250000_dues_marginal.sql`)
+
+- **`subscription_amount` grew a `marginal` flag on the formula rows and version 2 (1% of the amount above the $1,500 floor) entered effective 2027-01-01** — closing the $15 cliff followup without touching today's dues. **Reversal:** switching the live version now would change what every member is charged with the actuarial review unmade; design.md keeps the figures pending review, so the switch stays dated.
+- **v1 keeps its row and meaning** (published pricing history, and a member's subscription records which version priced it), so old receipts still read against the formula that made them. **Reversal:** replacing v1 in place would make past dues unreproducible.
+
 ## 2026-11-02 — The supporter's view replaces the whole-row read (`…240000_support_view.sql`)
 
 - **The "supporters read requests they back" policy was dropped and a `support_requests` barrier view took its place** — the supporter's read is now exactly the ask, the story, the status, the incident date and a payee id that hides itself until the payee is verified. The request row (score, timestamps, the payee link while unverified) stays the owner's. **Reversal:** keeping the row policy means every supporter carries the score and every private field of the row.
