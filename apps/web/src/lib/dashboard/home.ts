@@ -45,7 +45,7 @@ export function greeting(displayName: string | null | undefined): string {
  * service-role client. `today` is the member's local date (`YYYY-MM-DD`).
  */
 export async function loadHome(db: Db, uid: string, today: string): Promise<HomeData> {
-	const [requestsRes, loansRes, mineRes, givingRes, reliabilityRes, subsRes, paysRes] = await Promise.all([
+	const [requestsRes, loansRes, mineRes, givingRes, reliabilityRes, subsRes, paysRes, incomeRes] = await Promise.all([
 		db
 			.from('requests')
 			.select('id, title, kind, status, funding, amount_cents, created_at')
@@ -63,11 +63,15 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 			db.rpc('my_reliability'),
 		db
 			.from('subscriptions')
-			.select('id, monthly_cents, formula_version, starts_on, ends_on')
+			.select('id, monthly_cents, ends_on')
 			.eq('member_id', uid),
 		db
 			.from('subscription_payments')
 			.select('period, amount_cents, status')
+			.eq('member_id', uid),
+		db
+			.from('income_verifications')
+			.select('method, monthly_income_cents, verified_at, expires_at')
 			.eq('member_id', uid),
 		]);
 	const requests = must(requestsRes, 'your requests');
@@ -115,6 +119,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 	const membership = summarizeMembership(
 		must(subsRes, 'your dues'),
 		must(paysRes, 'your dues charges'),
+		must(incomeRes, 'your earnings check'),
 		must(claimsRes, 'your claims'),
 		must(assetsRes, 'your covered vehicles'),
 		must(prefsRes, 'your plan'),

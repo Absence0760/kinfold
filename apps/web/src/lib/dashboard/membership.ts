@@ -1,32 +1,38 @@
 import type { AllocationTarget } from '#lib/dashboard/labels.ts';
 
 export interface SubscriptionRow {
-  id: string;
-  monthly_cents: number;
-  formula_version: number;
-  starts_on: string;
-  ends_on: string | null;
+	id: string;
+	monthly_cents: number;
+	ends_on: string | null;
 }
 
 export interface PaymentRow {
-  period: string;
-  amount_cents: number;
-  status: string;
+	period: string;
+	amount_cents: number;
+	/** 'pending' | 'captured' | 'failed' | 'refunded' */
+	status: string;
+}
+
+export interface IncomeRow {
+	method: string;
+	monthly_income_cents: number;
+	verified_at: string;
+	expires_at: string;
 }
 
 export interface ClaimRow {
-  gross_cents: number;
-  paid_cents: number;
-  status: string;
+	gross_cents: number;
+	paid_cents: number;
+	status: string;
 }
 
 export interface AssetRow {
-  kind: string;
+	kind: string;
 }
 
 export interface PreferenceRow {
-  target: AllocationTarget;
-  weight_pct: number;
+	target: AllocationTarget;
+	weight_pct: number;
 }
 
 /**
@@ -36,72 +42,99 @@ export interface PreferenceRow {
  * yet — the monthly cron hasn't created one, which is not a failure.
  */
 export interface DuesState {
-  monthlyCents: number;
-  /** The period shown: the month `today` sits in (yyyy-MM-01). */
-  period: string;
-  /** 'no dues to collect' | 'not started' | 'pending' | 'captured' | 'failed' | 'refunded' */
-  status: string;
+	monthlyCents: number;
+	/** The period shown: the month `today` sits in (yyyy-MM-01). */
+	period: string;
+	status: string;
+}
+
+/** The earnings check the dues were priced from, and whether it is still live. */
+export interface IncomeState {
+	method: string | null;
+	monthlyIncomeCents: number;
+	verifiedAt: string | null;
+	expiresAt: string | null;
+	live: boolean;
 }
 
 export interface CoverState {
-  /** Cover is per vehicle (one premium per covered vehicle). */
-  vehicles: number;
-  claimsPaidCents: number;
-  openClaims: number;
+	/** Cover is per vehicle (one premium per covered vehicle). */
+	vehicles: number;
+	claimsPaidCents: number;
+	openClaims: number;
 }
 
 export interface PlanState {
-  target: AllocationTarget;
-  weightPct: number;
+	target: AllocationTarget;
+	weightPct: number;
 }
 
 export interface MembershipSummary {
-  dues: DuesState;
-  cover: CoverState;
-  plan: PlanState[];
+	dues: DuesState;
+	income: IncomeState;
+	cover: CoverState;
+	plan: PlanState[];
 }
 
 function duesPeriodOf(today: string): string {
-  return `${today.slice(0, 7)}-01`;
+	return `${today.slice(0, 7)}-01`;
 }
 
 export function summarizeMembership(
-  subscriptions: SubscriptionRow[],
-  payments: PaymentRow[],
-  claims: ClaimRow[],
-  assets: AssetRow[],
-  preferences: PreferenceRow[],
-  today: string
+	subscriptions: SubscriptionRow[],
+	payments: PaymentRow[],
+	income: IncomeRow[],
+	claims: ClaimRow[],
+	assets: AssetRow[],
+	preferences: PreferenceRow[],
+	today: string
 ): MembershipSummary {
-  // One active subscription at a time is enforced by the schema's index; if a
-  // member has none, dues are simply not started.
-  const active = subscriptions.find((s) => s.ends_on === null) ?? null;
-  const period = duesPeriodOf(today);
-  let dues: DuesState = { monthlyCents: 0, period, status: 'no dues yet' };
-  if (active) {
-    dues = {
-      monthlyCents: active.monthly_cents,
-      period,
-      status: active.monthly_cents === 0 ? 'no dues to collect' : 'not started'
-    };
-    if (active.monthly_cents > 0) {
-      const thisMonth = payments.find((p) => p.period === period);
-      if (thisMonth) dues.status = thisMonth.status;
-    }
-  }
+	// One active subscription at a time is enforced by the schema's index; if a
+	// member has none, dues are simply not started.
+	const active = subscriptions.find((s) => s.ends_on === null) ?? null;
+	const period = duesPeriodOf(today);
+	let dues: DuesState = { monthlyCents: 0, period, status: 'no dues yet' };
+	if (active) {
+		dues = {
+			monthlyCents: active.monthly_cents,
+			period,
+			status: active.monthly_cents === 0 ? 'no dues to collect' : 'not started'
+		};
+		if (active.monthly_cents > 0) {
+			const thisMonth = payments.find((p) => p.period === period);
+			if (thisMonth) dues.status = thisMonth.status;
+		}
+	}
 
-  return {
-    dues,
-    cover: {
-      vehicles: assets.length,
-      claimsPaidCents: claims.reduce((sum, c) => (c.status === 'paid' ? sum + c.paid_cents : sum), 0),
-      openClaims: claims.filter((c) => c.status === 'recorded').length
-    },
-    plan: preferences
-      .filter((p) => p.weight_pct > 0)
-      .sort((a, b) => b.weight_pct - a.weight_pct)
-      .map((p) => ({ target: p.target, weightPct: p.weight_pct }))
-  };
+	// The newest earnings check; live while its expiry hasn't passed. The stored
+		// timestamps are ISO, so comparing them with `today` compares dates.
+	const newest = income.reduce<IncomeRow | null>(
+		(best, row) => (best === null || row.verified_at > best.verified_at ? row : best),
+		null
+	);
+	const incomeState: IncomeState = newest === null
+		? { method: null, monthlyIncomeCents: 0, verifiedAt: null, expiresAt: null, live: false }
+		: {
+			method: newest.method,
+			monthlyIncomeCents: newest.monthly_income_cents,
+			verifiedAt: newest.verified_at,
+			expiresAt: newest.expires_at,
+			live: newest.expires_at > today
+		};
+
+	return {
+		dues,
+		income: incomeState,
+		cover: {
+			vehicles: assets.length,
+			claimsPaidCents: claims.reduce((sum, c) => (c.status === 'paid' ? sum + c.paid_cents : sum), 0),
+			openClaims: claims.filter((c) => c.status === 'recorded').length
+		},
+		plan: preferences
+			.filter((p) => p.weight_pct > 0)
+			.sort((a, b) => b.weight_pct - a.weight_pct)
+			.map((p) => ({ target: p.target, weightPct: p.weight_pct }))
+	};
 }
 
 /** How a dues status reads on the member's own screen. */
@@ -115,3 +148,11 @@ export const duesWord = (status: string): string =>
 		'no dues to collect': 'Nothing to collect — this dues plan is $0',
 		'no dues yet': 'No dues set up yet'
 	})[status] ?? status;
+
+/** How the earnings check reads, in the words design.md uses. */
+export const incomeMethodWord = (method: string): string =>
+	({
+		bank_link: 'read at your bank (through the bank-link vendor)',
+		tax_return: 'from your tax return',
+		self_attested: 'you stated it (random audits watch this path)'
+	})[method] ?? method;

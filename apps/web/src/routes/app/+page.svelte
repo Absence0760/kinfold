@@ -16,7 +16,7 @@
 	import { greeting } from '#lib/dashboard/home.ts';
 	import { showsRaised } from '#lib/dashboard/requests.ts';
 	import { allocationTargetLabel } from '#lib/dashboard/labels.ts';
-	import { duesWord } from '#lib/dashboard/membership.ts';
+	import { duesWord, incomeMethodWord } from '#lib/dashboard/membership.ts';
 	import { scoreBand } from '#lib/requests/score-band.ts';
 
 	let { data } = $props();
@@ -356,6 +356,7 @@
 
 	{#if home.membership.dues.status !== 'no dues yet'}
 		{@const dues = home.membership.dues}
+		{@const earnings = home.membership.income}
 		{@const cover = home.membership.cover}
 		<section class="block" aria-labelledby="membership-h">
 			<h2 id="membership-h">Your membership</h2>
@@ -372,6 +373,16 @@
 					<dt>Their charge this month</dt>
 					<dd>{duesWord(dues.status)}</dd>
 				</div>
+				<div>
+					<dt>The earnings it was priced from</dt>
+					<dd>{earnings.method ? incomeMethodWord(earnings.method) : 'No earnings check yet'}</dd>
+				</div>
+				{#if earnings.verifiedAt && earnings.expiresAt}
+				<div>
+					<dt>The check holds until</dt>
+					<dd>{earnings.live ? formatDay(earnings.expiresAt) : 'It has expired — a fresh earnings check is needed to price dues again'}</dd>
+				</div>
+				{/if}
 				<div>
 					<dt>Cover</dt>
 					<dd>{cover.vehicles === 0 ? 'No vehicle covered yet' : `${cover.vehicles} vehicle${cover.vehicles === 1 ? '' : 's'} covered`}</dd>

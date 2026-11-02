@@ -54,6 +54,7 @@ describe('loadHome', () => {
 			'contributions',
 			'covered_assets',
 			'family_loans',
+			'income_verifications',
 			'my_giving_record',
 			'my_reliability',
 			'requests',
@@ -64,15 +65,17 @@ describe('loadHome', () => {
 
 	it('shows dues, cover and plan as the member reads them', async () => {
 		const dues = { data: [{ id: 's1', monthly_cents: 4000, formula_version: 1, starts_on: '2026-05-01', ends_on: null }], error: null };
-		const charge = { data: [{ period: '2026-10-01', amount_cents: 4000, status: 'captured' }], error: null };
+		const charge = { data: [{ period: '2026-10-01', amount_cents: 4000, status: 'captured' }], error: null };		const income = { data: [{ method: 'bank_link', monthly_income_cents: 400000, verified_at: '2026-03-01T00:00:00Z', expires_at: '2027-03-01T00:00:00Z' }], error: null };
 		const claims = { data: [{ request_id: 'r1', gross_cents: 40000, member_share_cents: 1000, paid_cents: 39000, status: 'paid' }], error: null };
 		const reqRow = { id: 'r1', title: 'A door to pay', kind: 'car_damage' as never, status: 'open' as never, funding: 'pool' as never, amount_cents: 100000, created_at: '2026-10-01T00:00:00Z' };
-		const fixtures = { requests: { data: [reqRow], error: null }, subscriptions: dues, subscription_payments: charge, claims, my_giving_record: giving, my_reliability: reliability };
+		const fixtures = { requests: { data: [reqRow], error: null }, subscriptions: dues, subscription_payments: charge, income_verifications: income, claims, my_giving_record: giving, my_reliability: reliability };
 		const home = await loadHome(fakeDb(fixtures).db, 'maria', '2026-10-31');
 		expect(home.membership.dues.status).toBe('captured');
 		expect(home.membership.dues.monthlyCents).toBe(4000);
 		expect(home.membership.cover.claimsPaidCents).toBe(39000);
 		expect(home.membership.plan).toEqual([]);
+		expect(home.membership.income.method).toBe('bank_link');
+		expect(home.membership.income.live).toBe(true);
 	});
 
 	it('names the lender’s relationship only to the borrower', async () => {

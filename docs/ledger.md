@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The dues screen names its earnings check (`income_verifications` on the home)
+
+- **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
+
 ## 2026-11-02 — The home shows dues, cover and plan (`lib/dashboard/membership.ts`, `/app`)
 
 - **The member's home now reads their dues** (own figure, this month's charge status from the partner: collected / asked-not-collected / failed / refunded / not asked yet), **their cover** (vehicles covered, claims paid so far) **and their directable-share plan** (weights must add to 100, or none yet is said honestly). No dues is not faked as $0: it says so. **Reversal:** showing only dues amounts would leave the member unable to tell an un-collected charge from a refunded one, which the agreement says they must see.
