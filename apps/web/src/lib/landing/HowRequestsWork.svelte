@@ -9,7 +9,7 @@
 			text: 'Photos, a police report, a repair estimate, a loan statement. Kinfold will blur names, plates and faces, and you will check it before anything reaches the board.'
 		},
 		{
-			title: 'Get a legitimacy score',
+			title: 'Get a evidence score',
 			text: 'An AI model will check the evidence and explain its score, out of 100: how complete and consistent the evidence is. A low score asks for more evidence; only a person can turn a request down.'
 		},
 		{

@@ -39,7 +39,6 @@ Found while building the web member area (`/app`, `/app/board`, `/app/review`, `
 
 - [ ] **Turn on private vulnerability reporting and Dependabot alerts.** `SECURITY.md` now points reporters at GitHub's private advisory form, which is off; Dependabot alerts are off too. Both are repo settings: `gh api -X PUT repos/Absence0760/kinfold/private-vulnerability-reporting` and `gh api -X PUT repos/Absence0760/kinfold/vulnerability-alerts`.
 - [ ] **OpenSSF Best Practices badge** (Scorecard's CII check) needs the operator to sign up at bestpractices.dev and add the badge to `README.md`.
-- [ ] **Rename "legitimacy score" to "evidence score"** in the app and site (recommended in `design.md`, "Business model review"). The schema already says `score` neutrally; only copy changes.
 - [ ] **PR review and branch protection on `main`** are off by choice while pre-launch (`CLAUDE.md`). Switch them back on before Stage 1 has real members, or as soon as a second developer starts pushing. While protection is off, `dependabot-auto-merge.yml` can merge minor and patch bumps without waiting for CI.
 - [ ] **The "Hearth" Claude Doc** (the first design write-up, made before the rename) is stale: old name, no request flow, no business-model review. Update it from `design.md`, or delete it.
 - [ ] **Numbers needing actuarial review:** subscription formula v1 (floor $1,500/month take-home, 1%, $60 cap), pool minimum score 70, 10-point bands, 20% reserve, 60/90-day waiting periods, cover caps for $0 subscribers.

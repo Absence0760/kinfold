@@ -95,7 +95,7 @@
 	<p class="eyebrow">Review console</p>
 	<h1>Review</h1>
 	<p class="lead">
-		The legitimacy score advises; only a person's decision, with a written reason, can refuse a
+		The evidence score advises; only a person's decision, with a written reason, can refuse a
 		request. You see redacted evidence, never originals.
 	</p>
 	<p class="define"><strong>Redacted:</strong> {define('redacted')}</p>
@@ -136,7 +136,7 @@
 				</button>
 			</div>
 		{:else if queue.items.length === 0}
-			<p class="empty">Nothing is waiting for a reviewer. Requests appear here when they need a person: a low legitimacy score, a fraud flag or an upheld appeal.</p>
+			<p class="empty">Nothing is waiting for a reviewer. Requests appear here when they need a person: a low evidence score, a fraud flag or an upheld appeal.</p>
 		{:else}
 <!-- list-style:none removes list semantics in Safari; the role puts them back. -->
 			<!-- svelte-ignore a11y_no_redundant_roles -->

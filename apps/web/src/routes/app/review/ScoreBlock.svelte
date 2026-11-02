@@ -9,7 +9,7 @@
 </script>
 
 <section class="score" aria-labelledby="{id}-score">
-	<h4 id="{id}-score">Legitimacy score</h4>
+	<h4 id="{id}-score">Evidence score</h4>
 	{#if score}
 		<p class="value"><strong>{score.score}</strong><span aria-hidden="true"> / 100</span><span class="visually-hidden"> out of 100</span></p>
 		<p class="muted small">Band {scoreBandLabel(bandOf(score.score))}</p>

@@ -37,7 +37,7 @@ export const poolName = (kind: RequestKind): string => (isCar(kind) ? 'the repai
 
 /**
  * How that fund chooses what to pay, to follow its name: the repair fund pays
- * by legitimacy-score band; the Home Fund is meant to choose by a published
+ * by evidence-score band; the Home Fund is meant to choose by a published
  * needs formula plus the score (design.md § Product 3), which isn't live yet,
  * so it gets neither a band claim nor a formula claim.
  */

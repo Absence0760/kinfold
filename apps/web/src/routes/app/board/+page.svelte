@@ -221,7 +221,7 @@
 						</div>
 						{#if item.scoreBand != null}
 							<div class="band">
-								<dt>Legitimacy score</dt>
+								<dt>Evidence score</dt>
 								<dd>{scoreBandLabel(item.scoreBand)}</dd>
 								{#if band}
 									<dd class="band-status">{band.status}</dd>
@@ -293,9 +293,9 @@
 	{/if}
 
 	<details class="explain">
-		<summary>What the legitimacy score means</summary>
+		<summary>What the evidence score means</summary>
 		<p>
-			The legitimacy score, 0 to 100, measures how well a request's evidence supports it: photos
+			The evidence score, 0 to 100, measures how well a request's evidence supports it: photos
 			that match the estimate, report dates that line up. It isn't a judgement of the person. The
 			board shows it in 10-point bands. The community repair fund fills the highest band first, every
 			request in it at the same time, then moves down as far as its minimum score. The Community Home

@@ -82,7 +82,7 @@
 		</section>
 		<ScoreBlock score={item.score} {id} />
 	{:else}
-		<p class="note">The request's details and legitimacy score aren't shared with the panel.</p>
+		<p class="note">The request's details and evidence score aren't shared with the panel.</p>
 	{/if}
 
 	{#if item.history.length > 1}

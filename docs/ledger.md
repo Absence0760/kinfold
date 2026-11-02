@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — "Legitimacy score" becomes "evidence score" (web copy)
+
+- **The app and site now say "evidence score"**, per design.md's business-model review ("legitimacy score sounds like an accusation"). It measures how well the evidence supports the request; low scores ask for more evidence and never refuse. Copy-only: the schema always said `score` neutrally, so nothing moved in the database. **Reversal:** keeping "legitimacy" would imply an accusation to honest members and invite regulators to read it as a claims model.
+
 ## 2026-11-02 — The insurer's feed closes claims (`…360000_claim_paid.sql`, `functions/claims-feed`)
 
 - **`mark_claim_paid` is idempotent and refuses denials** (a denied claim pays nothing, code 23514) and audit-trails the confirmation with the event's partner reference; `claims-feed` journals a confirmed payment exactly gross minus the member's share — out of the insurer's side, into `paid_out`. **Reversal:** journaling on RECORD would claim money moved the insurer never confirmed.

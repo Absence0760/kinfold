@@ -121,7 +121,7 @@ export function whatHappensNext(s: RequestState): NextStep {
 				now: 'This is a draft. Only you, and family or friends you invite to support it, can see it.',
 				steps: [
 					...(blockers.length ? blockers : ['Everything’s ready. Submit it when you are.']),
-					'When you submit, your evidence is read and given a legitimacy score, usually within minutes.',
+					'When you submit, your evidence is read and given a evidence score, usually within minutes.',
 					`A good score opens it for help from ${funders}. A low one asks for more evidence; it never refuses.`
 				]
 			};

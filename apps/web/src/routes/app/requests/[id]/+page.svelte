@@ -454,7 +454,7 @@
 	{/if}
 
 	<section class="block" aria-labelledby="score-h">
-		<h2 id="score-h">Legitimacy score</h2>
+		<h2 id="score-h">Evidence score</h2>
 		<p class="note">How well the evidence backs the request, out of 100. It measures the evidence, not you.</p>
 		{#if detail.score}
 			<div class="panel score">

@@ -51,7 +51,7 @@
 	<ol class="path" aria-label="How a request works">
 		<li><strong>Draft</strong> what you need and who should be paid.</li>
 		<li><strong>Add evidence</strong>: photos, estimates, bills.</li>
-		<li><strong>Submit</strong>. It gets a legitimacy score: how well the evidence backs the request.</li>
+		<li><strong>Submit</strong>. It gets a evidence score: how well the evidence backs the request.</li>
 		<li><strong>Get help</strong> from your people or the pool, paid straight to the payee.</li>
 	</ol>
 </header>

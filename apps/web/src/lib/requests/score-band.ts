@@ -1,4 +1,4 @@
-// How a legitimacy score is put into words on member screens (home, the
+// How a evidence score is put into words on member screens (home, the
 // request page, the board). The review console shows the bare score, band and
 // reasons instead, so reviewers aren't anchored on a verdict-like label.
 //

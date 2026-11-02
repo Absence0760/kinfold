@@ -71,7 +71,7 @@
 				{@const raised = r.funded + a.grant}
 				<li class={a.status}>
 					<span class="score"
-						><span class="visually-hidden">Legitimacy score: </span>{r.score}<span
+						><span class="visually-hidden">Evidence score: </span>{r.score}<span
 							class="visually-hidden"
 						>
 							out of 100</span

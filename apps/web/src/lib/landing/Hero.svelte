@@ -27,7 +27,7 @@
 			<h1>When life goes wrong, ask the people around you, not a profit margin.</h1>
 			<p class="lead">
 				Crashed your car? Need help with a home? Post a request, upload your evidence, and get a
-				legitimacy score. Then your family and friends pay it, and later the Kinfold community too.
+				evidence score. Then your family and friends pay it, and later the Kinfold community too.
 				No interest. No late fees. Ever.
 			</p>
 			<p class="fine">
@@ -47,7 +47,7 @@
 				<span class="kind">{request.kind}</span>
 			</div>
 			<p class="score">
-				<span class="score-label">Legitimacy score</span>
+				<span class="score-label">Evidence score</span>
 				<span class="score-value"
 					><strong>{request.score}</strong> out of 100</span
 				>

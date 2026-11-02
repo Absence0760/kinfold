@@ -1,7 +1,7 @@
 // How the community repair fund (gifts and grants, not insured cover) is shared
 // out across open requests.
 //
-// Requests are grouped into legitimacy bands (90-100, 80-89, ...). The highest
+// Requests are grouped into evidence bands (90-100, 80-89, ...). The highest
 // band is filled first, and every request inside a band is filled at the same
 // time: if the pool can't cover the whole band, each request gets the same
 // share of what it still needs. Requests below `minScore` are never paid from
@@ -14,7 +14,7 @@ export interface FundingRequest {
 	funded: number;
 	/** Already paid by insured deductible cover, stacked before pledges. */
 	covered?: number;
-	/** Legitimacy score, 0 to 100. */
+	/** Evidence score, 0 to 100. */
 	score: number;
 }
 

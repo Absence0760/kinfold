@@ -18,7 +18,7 @@ export interface RequestScore {
 }
 
 export interface RequestCard extends RequestRow {
-	/** The latest legitimacy score, or null when it hasn't been scored. */
+	/** The latest evidence score, or null when it hasn't been scored. */
 	score: RequestScore | null;
 	/** Pledged or collected so far (people and pool), in cents. */
 	raisedCents: number;

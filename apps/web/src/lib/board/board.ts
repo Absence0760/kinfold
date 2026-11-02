@@ -24,7 +24,7 @@ export interface BoardItem {
 	amountCents: number | null;
 	bandMinCents: number | null;
 	bandMaxCents: number | null;
-	/** 10-point legitimacy score band: 80 means 80 to 89. */
+	/** 10-point evidence score band: 80 means 80 to 89. */
 	scoreBand: number | null;
 	/** The minimum score of the fund this request draws on (`fund_settings.min_score`); null when not read. */
 	minScore: number | null;

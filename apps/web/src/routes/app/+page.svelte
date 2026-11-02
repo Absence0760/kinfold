@@ -122,7 +122,7 @@
 				<p><strong>You haven’t asked for help yet.</strong></p>
 				<p>
 					When your car is hit or your home needs a repair, a request goes here. You’ll see its
-					legitimacy score and why, how much has been raised, and when the shop or lender is paid.
+					evidence score and why, how much has been raised, and when the shop or lender is paid.
 				</p>
 			</div>
 		{:else}
@@ -155,11 +155,11 @@
 							{#if r.score}
 								<!-- Home doesn't read reviews, so the line follows the status alone, never today's minimum. -->
 								{@const band = scoreBand(r.score.score, { status: r.status, minScore: null })}
-								<section class="score" aria-label="Legitimacy score">
+								<section class="score" aria-label="Evidence score">
 									<p class="score-line">
 										<span class="score-num">{r.score.score}</span>
 										<span>
-											<strong>Legitimacy score</strong> out of 100
+											<strong>Evidence score</strong> out of 100
 											<span class="sub">How well the evidence backs the request</span>
 										</span>
 									</p>
@@ -186,7 +186,7 @@
 									</p>
 								</section>
 							{:else if r.status === 'scoring'}
-								<p class="fine">Your legitimacy score and its reasons will show here.</p>
+								<p class="fine">Your evidence score and its reasons will show here.</p>
 							{/if}
 						</article>
 					</li>
