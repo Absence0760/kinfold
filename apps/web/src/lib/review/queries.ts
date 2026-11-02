@@ -1,6 +1,6 @@
 import { fromNew, rpcNew } from '#lib/supabase/client.ts';
 import type { Db } from '#lib/supabase/client.ts';
-import type { ReviewDecision, RequestStatus } from './labels.ts';
+import type { NeedsDecision, ReviewDecision, RequestStatus } from './labels.ts';
 import {
 	buildAppeals,
 	buildQueue,
@@ -8,6 +8,7 @@ import {
 	type AppealRow,
 	type EvidenceRow,
 	type NeedsRow,
+	type NeedsReviewRow,
 	type QueueItem,
 	type QueueRequestRow,
 	type ReviewRow,
@@ -26,6 +27,7 @@ const REQUEST_COLUMNS =
 	'id, kind, status, amount_cents, public_summary, current_score, incident_on, submitted_at';
 const SCORE_COLUMNS = 'request_id, score, reasons, model_version, created_at';
 const EVIDENCE_COLUMNS = 'id, request_id, kind, redaction_status, captured_in_app, created_at';
+const NEEDS_REVIEW_COLUMNS = 'request_id, decision, reason, formula_version, created_at';
 
 /** States a reviewer's RLS policy shows: waiting for a person, or refused. */
 const QUEUE_STATES: RequestStatus[] = ['in_review', 'needs_evidence', 'refused'];
@@ -56,7 +58,7 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 	if (rows.length === 0) return [];
 
 	const ids = rows.map((r) => r.id);
-	const [scores, evidence, reviews, blocked, needs] = await Promise.all([
+	const [scores, evidence, reviews, blocked, needs, answered] = await Promise.all([
 		db.from('scores').select(SCORE_COLUMNS).in('request_id', ids),
 		db.from('evidence').select(EVIDENCE_COLUMNS).in('request_id', ids),
 		db
@@ -65,19 +67,22 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 			.eq('reviewer_id', viewerId)
 			.in('request_id', ids),
 		loadReviewFlags(db, ids),
-		// `needs_records` is newer than the generated types (`fromNew` seam).
-		fromNew(db, 'needs_records').select('request_id, score, formula_version').in('request_id', ids)
+		// `needs_records` and `needs_reviews` are newer than the generated types.
+		fromNew(db, 'needs_records').select('request_id, score, formula_version').in('request_id', ids),
+		fromNew(db, 'needs_reviews').select(NEEDS_REVIEW_COLUMNS).in('request_id', ids)
 	]);
 	fail(scores.error);
 	fail(evidence.error);
 	fail(reviews.error);
 	fail(needs.error);
+	fail(answered.error);
 	return buildQueue(
 		rows,
 		(scores.data ?? []) as ScoreRow[],
 		(evidence.data ?? []) as EvidenceRow[],
 		(reviews.data ?? []) as ReviewRow[],
 		(needs.data ?? []) as NeedsRow[],
+		(answered.data ?? []) as NeedsReviewRow[],
 		// `review_flags` is newer than the generated types; see rpcNew.
 		(blocked as string[])
 	);
@@ -174,5 +179,24 @@ export async function loadStandingClaims(db: Db): Promise<StandingClaim[]> {
  */
 export async function decideClaim(db: Db, claimId: string, reason: string): Promise<void> {
 	const { error } = await rpcNew(db, 'decide_claim', { p_claim: claimId, p_reason: reason });
+	fail(error);
+}
+
+/**
+ * Records a needs answer beside a Home Fund applicant's ranking. The schema
+ * re-checks role, region and self-review, and refuses an applicant the Fund
+ * has not ranked yet; the score itself is never touched.
+ */
+export async function recordNeedsDecision(
+	db: Db,
+	requestId: string,
+	decision: NeedsDecision,
+	reason: string
+): Promise<void> {
+	const { error } = await rpcNew(db, 'record_needs_decision', {
+		p_request: requestId,
+		p_decision: decision,
+		p_reason: reason
+	});
 	fail(error);
 }

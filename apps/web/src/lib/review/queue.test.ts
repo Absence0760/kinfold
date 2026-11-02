@@ -6,10 +6,13 @@ import {
 	latestScores,
 	reviewOutcome,
 	scoreReasons,
+	needsOutcome,
 	type AppealRow,
 	type EvidenceRow,
 	type QueueRequestRow,
 	type ReviewRow,
+	type NeedsRow,
+	type NeedsReviewRow,
 	type ScoreRow
 } from './queue';
 
@@ -175,5 +178,55 @@ describe('appealOutcome', () => {
 	it('says what each panel decision does', () => {
 		expect(appealOutcome(true)).toMatch(/back in review/);
 		expect(appealOutcome(false)).toMatch(/refusal stands/);
+	});
+});
+
+describe('needs ranking and answers', () => {
+	it('keeps the newest formula version when ranking a request', () => {
+		const items = buildQueue(
+			[request('a', { kind: 'home_repair' })],
+			[],
+			[],
+			[],
+			[
+				{ request_id: 'a', score: 55, formula_version: 1 },
+				{ request_id: 'a', score: 72, formula_version: 2 }
+			]
+		);
+		expect(items[0].needs).toEqual({ score: 72, formulaVersion: 2 });
+	});
+
+	it('attaches needs answers oldest first, without authors', () => {
+		const items = buildQueue(
+			[request('a', { kind: 'home_repair' })],
+			[],
+			[],
+			[],
+			[{ request_id: 'a', score: 72, formula_version: 2 }],
+			[
+				{
+					request_id: 'a',
+					formula_version: 2,
+					decision: 'needs',
+					reason: 'The street floods every storm.',
+					created_at: '2026-11-02T03:00:00Z'
+				},
+				{
+					request_id: 'a',
+					formula_version: 1,
+					decision: 'not_needs',
+					reason: 'Public grants cover this one.',
+					created_at: '2026-11-01T03:00:00Z'
+				}
+			]
+		);
+		expect(items[0].needsReviews.map((r) => r.at)).toEqual(
+			['2026-11-01T03:00:00Z', '2026-11-02T03:00:00Z']
+		);
+	});
+
+	it('says the published ranking never changed', () => {
+		expect(needsOutcome('needs')).toMatch(/published ranking stays as it is/);
+		expect(needsOutcome('not_needs')).toMatch(/published ranking stays as it is/);
 	});
 });

@@ -17,6 +17,7 @@
 	import { recordReview } from '#lib/review/queries.ts';
 	import { isHomeFundKind, reviewOutcome, type QueueItem } from '#lib/review/queue.ts';
 	import { cleanReason, reasonCounter, reasonProblem } from '#lib/review/reason.ts';
+	import NeedsForm from './NeedsForm.svelte';
 	import ScoreBlock from './ScoreBlock.svelte';
 
 	let { item, ondecided }: { item: QueueItem; ondecided: (message: string) => void } = $props();
@@ -102,6 +103,27 @@
 		<p class="muted small">The Fund ranks this Home Fund applicant {item.needs.score} of 100 by its published needs formula (v{item.needs.formulaVersion}).</p>
 	{:else if isHomeFundKind(r.kind)}
 		<p class="muted small">No needs ranking yet — the Fund ranks this applicant once its evidence score is in.</p>
+	{/if}
+
+	{#if item.needs && item.needsReviews.length}
+		<section aria-labelledby="{id}-needs">
+			<h4 id="{id}-needs">Answers about this ranking</h4>
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="history" role="list">
+				{#each item.needsReviews as nr}
+					<li>
+						<strong>{nr.decision === 'needs' ? 'Needs the Fund\u2019s help' : 'Public help covers it'}</strong>
+						<span class="muted">{nr.formulaVersion} weights · {formatDay(nr.at)}</span>
+						<p>{nr.reason}</p>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
+	{#if item.needs && item.mayReview}
+		<NeedsForm requestId={r.id} ondecided={(message) => ondecided(message)} />
 	{/if}
 
 	<section aria-labelledby="{id}-evidence">

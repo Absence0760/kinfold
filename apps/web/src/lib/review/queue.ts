@@ -84,6 +84,23 @@ export interface NeedsView {
 	formulaVersion: number;
 }
 
+/** A needs answer a reviewer recorded beside a ranking (append-only). */
+export interface NeedsReviewRow {
+	request_id: string;
+	formula_version: number;
+	decision: string;
+	reason: string;
+	created_at: string;
+}
+
+/** A needs answer shown in the console: who wrote it is never exposed. */
+export interface NeedsReviewView {
+	decision: string;
+	reason: string;
+	formulaVersion: number;
+	at: string;
+}
+
 export interface QueueItem {
 	request: QueueRequestRow;
 	score: ScoreView | null;
@@ -92,6 +109,8 @@ export interface QueueItem {
 	myReviews: ReviewRow[];
 	/** The Fund's needs ranking, when one is recorded. */
 	needs: NeedsView | null;
+	/** Needs answers already on this request, oldest first, without authors. */
+	needsReviews: NeedsReviewView[];
 	/** False when the database says this viewer may not review it. */
 	mayReview: boolean;
 }
@@ -161,6 +180,8 @@ export function buildQueue(
 	myReviews: readonly ReviewRow[],
 	/** The Fund's needs ranking rows RLS lets this viewer read. */
 	needs: readonly NeedsRow[] = [],
+	/** Needs answers already on these requests, as RLS lets this viewer read them. */
+	needsReviews: readonly NeedsReviewRow[] = [],
 	/** Requests the database says this viewer may not review. */
 	mayNotReview: readonly string[] = []
 ): QueueItem[] {
@@ -174,6 +195,7 @@ export function buildQueue(
 	);
 	const ev = groupBy(evidence);
 	const mine = groupBy(myReviews);
+	const answered = groupBy(needsReviews);
 	return [...requests]
 		.sort(
 			(a, b) =>
@@ -191,6 +213,14 @@ export function buildQueue(
 					? null
 					: { score: row.score, formulaVersion: row.formula_version };
 			})(),
+			needsReviews: [...(answered.get(request.id) ?? [])]
+				.map((row) => ({
+					decision: row.decision,
+					reason: row.reason,
+					formulaVersion: row.formula_version,
+					at: row.created_at
+				}))
+				.sort((a, b) => a.at.localeCompare(b.at)),
 			mayReview: !mayNotReview.includes(request.id)
 		}));
 }
@@ -249,4 +279,11 @@ export function appealOutcome(uphold: boolean): string {
 	return uphold
 		? 'Appeal upheld. The request is back in review for a fresh decision.'
 		: 'Appeal denied. The refusal stands.';
+}
+
+/** What the console says after a needs answer lands. */
+export function needsOutcome(decision: string): string {
+	return decision === 'needs'
+		? 'Answered: this applicant needs the Fund\u2019s help. The published ranking stays as it is.'
+		: 'Answered: public help covers this one. The published ranking stays as it is.';
 }

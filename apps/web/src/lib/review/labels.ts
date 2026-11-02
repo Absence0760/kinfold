@@ -21,6 +21,34 @@ export interface DecisionOption {
 }
 
 /** The decisions `record_review` accepts, in the order the form offers them. */
+/** The `needs_decision` enum (20261102470000_needs_review.sql), written out because
+ * it is newer than the generated types. */
+export type NeedsDecision = 'needs' | 'not_needs';
+
+export interface NeedsDecisionOption {
+	value: NeedsDecision;
+	label: string;
+	effect: string;
+}
+
+/** The answers `record_needs_decision` accepts, in the order the form offers them. */
+export const NEEDS_DECISIONS: readonly NeedsDecisionOption[] = [
+	{
+		value: 'needs',
+		label: 'Needs the Fund\u2019s help',
+		effect: 'Records your answer beside the ranking. The score itself never changes.'
+	},
+	{
+		value: 'not_needs',
+		label: 'Public help covers it',
+		effect: 'Records your answer beside the ranking. The score itself never changes.'
+	}
+];
+
+export function needsDecisionLabel(decision: NeedsDecision): string {
+	return NEEDS_DECISIONS.find((o) => o.value === decision)?.label ?? decision;
+}
+
 export const REVIEW_DECISIONS: readonly DecisionOption[] = [
 	{ value: 'approve', label: 'Approve', effect: 'Opens the request for funding.' },
 	{
