@@ -26,7 +26,7 @@ Found while building the web member area (`/app`, `/app/board`, `/app/review`, `
 
 
 - [x] **Evidence redaction now runs.** The `redact-evidence` function sets `redacted_path` and `auto_done`, and checks the stored file exists and its SHA-256 matches the row before redacting; the seed now carries one `auto_done` row (b1) so the member's confirm-redaction step exercises locally. **When:** Stage 1, step 1c.
-- [ ] **No prepayment path**, though the agreement and `design.md` promise members can repay early. **Fix:** an extra-payment function through the payment partner. **When:** Stage 1, step 1f/1g with the partner.
+- [x] **No prepayment path**, though the agreement and `design.md` promise members can repay early. Landed 2026-11-02: the payment partner's `loan_repaid` webhook event calls the guarded `record_loan_payment`, which never looks at due dates — an early repayment is collected exactly like an on-date one, and the reliability record counts it honoured (`installments_paid_on_time` asks only `paid_on <= due_on`, so a prepayment is never a penalty). Pinned by the payments-webhook deno tests.
 
 ## Funding and structure
 
