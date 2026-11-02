@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — A Fund loan borrower pauses and resumes by agreement (`pause_fund_loan`)
+
+- **The borrower pauses their own fund loan** within the loan's allowance (default 3 months a year, same ladder as family loans, design.md:169); the pause records an append-only `fund_loan_pauses` row with its reason, pushes unpaid installments back, and leaves what's owed unchanged — pausing buys back dates, not money.
+- **Beyond the allowance the ask becomes a restructure** the lending partner owns: the schema refuses the pause with the allowance numbers, never a silent yes. **Reversal:** auto-approving pauses past the allowance would grow the borrower's grace period with no agreement recorded; the ladder stays finite.
+- **A paused fund loan still takes payments** — a pause is not a freeze on money moving, only on the dates; the partner may keep disbursing while the borrower catches up.
+- **The borrower may resume early at any time**; the loan-servicing service (`resume_ended_fund_pauses`) may only flip loans whose pause ran out, and the schema — not the job — decides which loans those are.
+- **Only the borrower reads their pauses** (RLS): pauses carry reasons, and reasons stay between the loan's own two sides.
+
 ## 2026-11-02 — Mortgage gaps point at public help; Kinfold never becomes a counselor (`PublicHelpPanel`)
 
 - **A mortgage-gap request page carries a public-help panel**: HUD-approved housing counselors (you go to theirs, not to Kinfold — design.md says Kinfold partners with a certified agency rather than becoming one) for forbearance and loan modification, plus state and federal repair help. **Public money never joins the Fund** — the copy says so, matching 24 CFR 92.503: programme rules follow the money forever.
