@@ -34,6 +34,7 @@
 	import AppealPanel from './AppealPanel.svelte';
 	import ClaimsPanel from './ClaimsPanel.svelte';
 	import RecoveriesPanel from './RecoveriesPanel.svelte';
+	import InspectionsPanel from './InspectionsPanel.svelte';
 	import EvidencePanel from './EvidencePanel.svelte';
 	import InvitePanel from '#lib/invites/InvitePanel.svelte';
 
@@ -514,6 +515,9 @@
 
 	{#if r.status === 'open'}
 		<RecoveriesPanel requestId={r.id} recoveries={detail.recoveries} onadded={refresh} />
+	{/if}
+	{#if detail.needsInspection || detail.inspections.length}
+		<InspectionsPanel inspections={detail.inspections} needs={detail.needsInspection} onrefresh={refresh} />
 	{/if}
 
 	{#if r.status === 'refused' || detail.appeals.length}
