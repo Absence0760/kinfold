@@ -33,6 +33,7 @@
 	import RequestForm from '../RequestForm.svelte';
 	import AppealPanel from './AppealPanel.svelte';
 	import ClaimsPanel from './ClaimsPanel.svelte';
+	import RecoveriesPanel from './RecoveriesPanel.svelte';
 	import EvidencePanel from './EvidencePanel.svelte';
 	import InvitePanel from '#lib/invites/InvitePanel.svelte';
 
@@ -509,6 +510,10 @@
 
 	{#if detail.claims.length}
 		<ClaimsPanel claims={detail.claims} onrefresh={refresh} />
+	{/if}
+
+	{#if r.status === 'open'}
+		<RecoveriesPanel requestId={r.id} recoveries={detail.recoveries} onadded={refresh} />
 	{/if}
 
 	{#if r.status === 'refused' || detail.appeals.length}

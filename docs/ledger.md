@@ -6,6 +6,10 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 - **The membership block now shows which earnings check priced dues** (bank link / tax return / self-attestation, verified on, and whether it is still live until its expiry), so a member can see that an expired check needs redoing rather than silently pricing off old income. No check yet is honest ("No earnings check yet"), never a $0 income. **Reversal:** hiding the method would make dues look like a flat fee when the whole design says they track verified earnings.
 
+## 2026-11-02 — The request page records other money for the same damage (`RecoveriesPanel`)
+
+- **Other money that covered the same damage now has a place on the request page** — the member's own cover declared at request time, another insurer's claim, FEMA/SBA/state/charity money — with a record form the requester can write through (`record_recovery`; the schema re-checks and subtracts it from pledge caps and pool needs). It is money that moved outside Kinfold, so funding, payout caps and refunds still count only pledges and payouts; the page says so rather than implying Kinfold raised it. **Reversal:** hiding the record from the page would leave the pledge caps subtracting money the member can't see, making the ask look smaller for an unexplained reason.
+
 ## 2026-11-02 — The home shows dues, cover and plan (`lib/dashboard/membership.ts`, `/app`)
 
 - **The member's home now reads their dues** (own figure, this month's charge status from the partner: collected / asked-not-collected / failed / refunded / not asked yet), **their cover** (vehicles covered, claims paid so far) **and their directable-share plan** (weights must add to 100, or none yet is said honestly). No dues is not faked as $0: it says so. **Reversal:** showing only dues amounts would leave the member unable to tell an un-collected charge from a refunded one, which the agreement says they must see.
