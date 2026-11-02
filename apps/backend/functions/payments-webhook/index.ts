@@ -13,6 +13,8 @@
 //   * payout_created: the console asked for a payout and the partner confirms
 //     opening it — the row starts `pending`; money moves on `payout_reported`.
 //   * payout_reported: a payout was sent, failed or came back.
+//   * loan_repaid: a borrower returned money against a loan installment;
+//     `record_loan_payment` owns the rules (collecting loans, owed ceiling).
 
 import { Db } from "../shared/rest.ts";
 
@@ -36,17 +38,26 @@ interface PayoutCreation {
   partnerRef: string;
 }
 
+interface LoanRepaid {
+  loanId: string;
+  seq: number;
+  amountCents: number;
+}
+
 export interface ChargeEvent {
   event:
     | "charges_confirmed"
     | "money_returned"
     | "payout_created"
-    | "payout_reported";
+    | "payout_reported"
+    | "loan_repaid";
   requestId: string;
   fund: "protection" | "home_fund" | "people";
   /** Only for charges_confirmed: nothing else is needed, capture reads the row. */
   returns?: ReturnLine[];
   payout?: PayoutReport;
+  /** Only for loan_repaid: the installment the borrower returned. */
+  repayment?: LoanRepaid;
   /** Only for payout_created: the payout the partner opens. */
   opening?: PayoutCreation;
 }
@@ -115,6 +126,28 @@ export async function handleChargeEvent(
           p_lines: transferLines("partner_cash", "available", line.amountCents),
         });
       }
+      return;
+    }
+    case "loan_repaid": {
+      const repaid = event.repayment;
+      if (repaid === undefined) {
+        throw new Error(
+          "a loan-repayment event needs the installment it returns",
+        );
+      }
+      if (repaid.amountCents <= 0) {
+        throw new Error(
+          `money moving needs a positive amount: ${repaid.amountCents}`,
+        );
+      }
+      // The schema owns every rule here: only loans actually collecting,
+      // and never more than the installment still owed. No journal: loan
+      // money sits with the family, not on the payment partner's side.
+      await db.rpc("record_loan_payment", {
+        p_loan: repaid.loanId,
+        p_seq: repaid.seq,
+        p_amount_cents: repaid.amountCents,
+      });
       return;
     }
     case "payout_created": {

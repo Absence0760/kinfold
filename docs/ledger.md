@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Loan repayments ride the webhook (`loan_repaid` leg)
+
+- **The webhook's repayment leg only calls `record_loan_payment`** — the guard already owns collecting-loans and the owed ceiling — and **journals NOTHING**: loan money sits with the family, not on the payment partner's side, so the fund ledger says nothing about it. **Reversal:** journaling repayments as partner money would claim money moved that never touched the partner.
+
 ## 2026-11-02 — Payouts get an opening door (`…320000_payout_creation.sql`, webhook leg)
 
 - **`create_payout` (service only, keyed by the partner payout reference) opens payout rows** — before, `public.payouts` had no insert path at all, so the console and the webhook had nothing to call. Rows start `pending`: money moves when `report_payout` says `sent`, and the guard (funded, named verified payee, final invoice, captured ceiling) that was already on the table does the rest. A replayed payout event is a no-op answering with the payout it made. **Reversal:** journaling at opening would count money as moved before it is.

@@ -248,3 +248,50 @@ Deno.test("a payout-created event opens one payout and journals no money", async
   await handleChargeEvent(event, db);
   assertEquals(rpcLog, ["create_payout"]);
 });
+// Loan repayment (`loan_repaid`): one guarded `record_loan_payment` call and
+// no journal — loan money sits with the family, not on the partner's side.
+Deno.test("a loan-repayment event calls record_loan_payment once and journals no money", async () => {
+  const rpcLog: string[] = [];
+  const db = {
+    storage() {
+      throw new Error("payments-webhook never touches a bucket");
+    },
+    rpc: (name: string, _args: Record<string, unknown>) => {
+      rpcLog.push(name);
+      return Promise.resolve(5000);
+    },
+  };
+  const event = {
+    event: "loan_repaid" as const,
+    requestId: "req-1",
+    fund: "protection" as const,
+    repayment: { loanId: "loan-1", seq: 3, amountCents: 10000 },
+  };
+  await handleChargeEvent(event, db);
+  assertEquals(rpcLog, ["record_loan_payment"]);
+});
+
+Deno.test("a repayment with zero money is refused before any call", async () => {
+  const rpcLog: string[] = [];
+  const db = {
+    storage() {
+      throw new Error("payments-webhook never touches a bucket");
+    },
+    rpc: (name: string, _args: Record<string, unknown>) => {
+      rpcLog.push(name);
+      return Promise.resolve(0);
+    },
+  };
+  const event = {
+    event: "loan_repaid" as const,
+    requestId: "req-1",
+    fund: "protection" as const,
+    repayment: { loanId: "loan-1", seq: 3, amountCents: 0 },
+  };
+  assertRejects(
+    async () => await handleChargeEvent(event, db),
+    Error,
+    "money moving needs a positive amount",
+  );
+  assertEquals(rpcLog, []);
+});
