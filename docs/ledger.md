@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The supporter's view replaces the whole-row read (`…240000_support_view.sql`)
+
+- **The "supporters read requests they back" policy was dropped and a `support_requests` barrier view took its place** — the supporter's read is now exactly the ask, the story, the status, the incident date and a payee id that hides itself until the payee is verified. The request row (score, timestamps, the payee link while unverified) stays the owner's. **Reversal:** keeping the row policy means every supporter carries the score and every private field of the row.
+- **The web's `fromNew` seam reads tables/views newer than the committed generated types** — same reason and same honesty note as `rpcNew`: types are regenerated only from a live stack, so new relations arrive untyped and the call site pins the shape. **Reversal:** hand-editing `database.types.ts` would put generated and handwritten truth in one file.
+
 ## 2026-11-02 — Loan money gets an owner (`…230000_loan_collection.sql`)
 
 - **`record_loan_payment(loan, seq, cents)` became the service's guarded way to move loan money** — nothing owned the installment write before, so a loan could quietly become "paid" with no record. Still-collecting loans only (active/paused; signed money hasn't moved, forgiven/repaid/cancelled are over), never a paused installment (the pause was agreed by both sides), and never more than what the installment owes. The full installment's paid date and the loan's `repaid` turn stay the existing triggers' jobs. **Reversal:** deleting the function puts bare writes on `loan_installments` back with no owner and no audit trail.

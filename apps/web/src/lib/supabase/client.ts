@@ -39,6 +39,16 @@ export async function rpcNew(db: Db, name: string, args: Record<string, unknown>
 	return untyped.rpc(name, args);
 }
 
+/**
+ * Reads a table or view the generated `database.types.ts` doesn't list yet.
+ * Same seam as `rpcNew`: the committed types lag the newest schema until the
+ * live stack regenerates them, so the rows come back untyped and the call
+ * site pins the shape. See docs/ledger.md.
+ */
+export function fromNew(db: Db, table: string) {
+	return (db as unknown as SupabaseClient).from(table);
+}
+
 /** False when the launcher didn't pass a publishable key through. */
 export function isConfigured(): boolean {
 	return PUBLIC_SUPABASE_ANON_KEY !== '';

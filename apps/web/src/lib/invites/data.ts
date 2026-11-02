@@ -1,4 +1,4 @@
-import { rpcNew, supabase } from '#lib/supabase/client.ts';
+import { fromNew, rpcNew, supabase } from '#lib/supabase/client.ts';
 import type { FundingMode, LoanStatus, RequestKind, RequestStatus } from '#lib/dashboard/labels.ts';
 import {
 	summarizeSupport,
@@ -147,21 +147,33 @@ export interface SupportView {
 }
 
 /**
- * Everything an invitee may see about a request they support: the request row
- * (the "supporters read requests they back" policy), the payee if verified,
- * progress (`request_raised_cents` answers supporters), and their own pledges
- * and loans. Null when the viewer can't see it.
+ * Everything an invitee may see about a request they support: the supporter
+ * view (`support_requests`, only what their page uses — the row and its
+ * `current_score` stay the owner's), the payee if verified, progress
+ * (`request_raised_cents` answers supporters), and their own pledges and
+ * loans. Null when the viewer can't see it.
  */
 export async function loadSupportView(requestId: string, viewerId: string): Promise<SupportView | null> {
 	const db = supabase();
-	const req = await db
-		.from('requests')
+	// `support_requests` is newer than the committed types (the `fromNew` seam).
+	const req = await fromNew(db, 'support_requests')
 		.select('id, kind, funding, title, description, amount_cents, status, incident_on, payee_id')
 		.eq('id', requestId)
 		.maybeSingle();
 	if (req.error) fail(req.error);
 	if (!req.data) return null;
-	const { payee_id, ...request } = req.data;
+	const row = req.data as unknown as SupportedRequest & { payee_id: string | null };
+	const payee_id = row.payee_id;
+	const request: SupportedRequest = {
+		id: row.id,
+		kind: row.kind,
+		funding: row.funding,
+		title: row.title,
+		description: row.description,
+		amount_cents: row.amount_cents,
+		status: row.status,
+		incident_on: row.incident_on
+	};
 
 	const [payee, raised, mine, loans, me] = await Promise.all([
 		payee_id
@@ -222,12 +234,15 @@ export async function loadSupporting(viewerId: string): Promise<(SupportedReques
 	if (rows.error) fail(rows.error);
 	const ids = (rows.data ?? []).map((r) => r.request_id);
 	if (!ids.length) return [];
-	const reqs = await db
-		.from('requests')
+	const reqs = await fromNew(db, 'support_requests')
 		.select('id, kind, funding, title, description, amount_cents, status, incident_on')
 		.in('id', ids);
 	if (reqs.error) fail(reqs.error);
-	const byId = new Map((reqs.data ?? []).map((r) => [r.id, r]));
+	// The view is newer than the committed types, so its rows arrive untyped.
+	const byId = new Map((reqs.data ?? []).map((r) => {
+		const row = r as unknown as SupportedRequest;
+		return [row.id, row];
+	}));
 	return (rows.data ?? []).flatMap((r) => {
 		const req = byId.get(r.request_id);
 		return req ? [{ ...req, relationship: r.relationship }] : [];
