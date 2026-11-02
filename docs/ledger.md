@@ -2,6 +2,10 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Payouts get an opening door (`…320000_payout_creation.sql`, webhook leg)
+
+- **`create_payout` (service only, keyed by the partner payout reference) opens payout rows** — before, `public.payouts` had no insert path at all, so the console and the webhook had nothing to call. Rows start `pending`: money moves when `report_payout` says `sent`, and the guard (funded, named verified payee, final invoice, captured ceiling) that was already on the table does the rest. A replayed payout event is a no-op answering with the payout it made. **Reversal:** journaling at opening would count money as moved before it is.
+
 ## 2026-11-02 — Evidence URLs leave a trail (`…310000_evidence_url_audit.sql`, `functions/evidence-url`)
 
 - **`record_evidence_url` audits every issuing of a reviewer's signed URL** (request + file path in jsonb) — PII reads trail their name, same as every other affordance. Only the service issues.

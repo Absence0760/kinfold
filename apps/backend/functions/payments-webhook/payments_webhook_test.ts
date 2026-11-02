@@ -220,3 +220,31 @@ Deno.test("a payout event with no payout to report is refused", async () => {
   );
   assertEquals(log, []);
 });
+
+// Payout opening (`payout_created`): the webhook calls `create_payout` once
+// and journals NOTHING — a pending payout has moved no money.
+Deno.test("a payout-created event opens one payout and journals no money", async () => {
+  const rpcLog: string[] = [];
+  const db = {
+    storage() {
+      throw new Error("payments-webhook never touches a bucket");
+    },
+    rpc: (name: string, _args: Record<string, unknown>) => {
+      rpcLog.push(name);
+      return Promise.resolve();
+    },
+  };
+  const event = {
+    event: "payout_created" as const,
+    requestId: "req-1",
+    fund: "protection" as const,
+    opening: {
+      payeeId: "payee-1",
+      amountCents: 30000,
+      invoiceEvidenceId: "inv-1",
+      partnerRef: "po_1",
+    },
+  };
+  await handleChargeEvent(event, db);
+  assertEquals(rpcLog, ["create_payout"]);
+});

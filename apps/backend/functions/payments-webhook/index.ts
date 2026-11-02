@@ -10,6 +10,8 @@
 //   * money_returned: one contribution's money came back to the partner (its
 //     request ended unpaid). One refund journal per contribution: journals are
 //     keyed by the partner's reference, so each refund is its own journal.
+//   * payout_created: the console asked for a payout and the partner confirms
+//     opening it — the row starts `pending`; money moves on `payout_reported`.
 //   * payout_reported: a payout was sent, failed or came back.
 
 import { Db } from "../shared/rest.ts";
@@ -27,13 +29,26 @@ interface PayoutReport {
   amountCents: number;
 }
 
+interface PayoutCreation {
+  payeeId: string;
+  amountCents: number;
+  invoiceEvidenceId: string;
+  partnerRef: string;
+}
+
 export interface ChargeEvent {
-  event: "charges_confirmed" | "money_returned" | "payout_reported";
+  event:
+    | "charges_confirmed"
+    | "money_returned"
+    | "payout_created"
+    | "payout_reported";
   requestId: string;
   fund: "protection" | "home_fund" | "people";
   /** Only for charges_confirmed: nothing else is needed, capture reads the row. */
   returns?: ReturnLine[];
   payout?: PayoutReport;
+  /** Only for payout_created: the payout the partner opens. */
+  opening?: PayoutCreation;
 }
 
 /**
@@ -100,6 +115,24 @@ export async function handleChargeEvent(
           p_lines: transferLines("partner_cash", "available", line.amountCents),
         });
       }
+      return;
+    }
+    case "payout_created": {
+      const creation = event.opening;
+      if (creation === undefined) {
+        throw new Error("a payout-created event needs the payout it opens");
+      }
+      // Opening is the schema's `create_payout`: idempotent by the partner
+      // payout reference, guarded by the same rules the payout must honour
+      // (funded request, named verified payee, final invoice, captured
+      // ceiling). Nothing is journaled: a pending payout has moved no money.
+      await db.rpc("create_payout", {
+        p_request: event.requestId,
+        p_payee: creation.payeeId,
+        p_amount_cents: creation.amountCents,
+        p_invoice_evidence: creation.invoiceEvidenceId,
+        p_partner_ref: creation.partnerRef,
+      });
       return;
     }
     case "payout_reported": {
