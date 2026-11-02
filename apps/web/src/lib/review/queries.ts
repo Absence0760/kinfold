@@ -1,3 +1,4 @@
+import { rpcNew } from '#lib/supabase/client.ts';
 import type { Db } from '#lib/supabase/client.ts';
 import type { ReviewDecision, RequestStatus } from './labels.ts';
 import {
@@ -32,6 +33,16 @@ function fail(error: { message: string; code?: string } | null): void {
 	if (error) throw error;
 }
 
+/** Requests the database says this viewer may not review (region or self). */
+async function loadReviewFlags(db: Db, ids: string[]): Promise<string[]> {
+	if (ids.length === 0) return [];
+	// `review_flags` is newer than the generated database types; see rpcNew.
+	const { data, error } = await rpcNew(db, 'review_flags', { p_requests: ids });
+	fail(error);
+	const flags = (data ?? {}) as Record<string, boolean>;
+	return ids.filter((id) => flags[id] === false);
+}
+
 export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> {
 	const requests = await db
 		.from('requests')
@@ -44,14 +55,15 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 	if (rows.length === 0) return [];
 
 	const ids = rows.map((r) => r.id);
-	const [scores, evidence, reviews] = await Promise.all([
+	const [scores, evidence, reviews, blocked] = await Promise.all([
 		db.from('scores').select(SCORE_COLUMNS).in('request_id', ids),
 		db.from('evidence').select(EVIDENCE_COLUMNS).in('request_id', ids),
 		db
 			.from('reviews')
 			.select('request_id, decision, reason, created_at')
 			.eq('reviewer_id', viewerId)
-			.in('request_id', ids)
+			.in('request_id', ids),
+		loadReviewFlags(db, ids)
 	]);
 	fail(scores.error);
 	fail(evidence.error);
@@ -60,7 +72,9 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 		rows,
 		(scores.data ?? []) as ScoreRow[],
 		(evidence.data ?? []) as EvidenceRow[],
-		(reviews.data ?? []) as ReviewRow[]
+		(reviews.data ?? []) as ReviewRow[],
+		// `review_flags` is newer than the generated types; see rpcNew.
+		(blocked as string[])
 	);
 }
 
@@ -115,7 +129,13 @@ export async function recordReview(
 	return data as RequestStatus;
 }
 
-export async function decideAppeal(db: Db, appealId: string, uphold: boolean): Promise<void> {
-	const { error } = await db.rpc('decide_appeal', { p_appeal: appealId, p_uphold: uphold });
+/** Record a panel decision on an appeal. The reason is stored with it. */
+export async function decideAppeal(db: Db, appealId: string, uphold: boolean, reason: string): Promise<void> {
+	// The reason argument is newer than the generated types; see rpcNew.
+	const { error } = await rpcNew(db, 'decide_appeal', {
+		p_appeal: appealId,
+		p_uphold: uphold,
+		p_reason: reason
+	});
 	fail(error);
 }

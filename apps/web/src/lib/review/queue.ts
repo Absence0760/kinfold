@@ -71,6 +71,8 @@ export interface QueueItem {
 	evidence: EvidenceRow[];
 	/** Reviews this reviewer already wrote on it, oldest first. */
 	myReviews: ReviewRow[];
+	/** False when the database says this viewer may not review it. */
+	mayReview: boolean;
 }
 
 /**
@@ -135,7 +137,9 @@ export function buildQueue(
 	requests: readonly QueueRequestRow[],
 	scores: readonly ScoreRow[],
 	evidence: readonly EvidenceRow[],
-	myReviews: readonly ReviewRow[]
+	myReviews: readonly ReviewRow[],
+	/** Requests the database says this viewer may not review. */
+	mayNotReview: readonly string[] = []
 ): QueueItem[] {
 	const score = latestScores(scores);
 	const ev = groupBy(evidence);
@@ -150,7 +154,8 @@ export function buildQueue(
 			request,
 			score: score.get(request.id) ?? null,
 			evidence: [...(ev.get(request.id) ?? [])].sort(byTimeAsc),
-			myReviews: [...(mine.get(request.id) ?? [])].sort(byTimeAsc)
+			myReviews: [...(mine.get(request.id) ?? [])].sort(byTimeAsc),
+			mayReview: !mayNotReview.includes(request.id)
 		}));
 }
 

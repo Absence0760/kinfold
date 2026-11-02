@@ -5,6 +5,7 @@
 	import { decidedLabel, formatCents, formatDay, kindLabel } from '#lib/review/labels.ts';
 	import { decideAppeal } from '#lib/review/queries.ts';
 	import { appealOutcome, type AppealItem } from '#lib/review/queue.ts';
+	import { cleanReason, reasonCounter, reasonProblem } from '#lib/review/reason.ts';
 	import ScoreBlock from './ScoreBlock.svelte';
 
 	let { item, ondecided }: { item: AppealItem; ondecided: (message: string) => void } = $props();
@@ -13,27 +14,36 @@
 	const id = $derived(`appeal-${item.appeal.id}`);
 
 	let choice = $state<'uphold' | 'deny' | ''>('');
+	let reason = $state('');
 	let tried = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 	let formEl = $state<HTMLFormElement | null>(null);
+	let reasonEl = $state<HTMLTextAreaElement | null>(null);
 
 	const choiceError = $derived(tried && choice === '' ? 'Choose uphold or deny.' : null);
+	const reasonError = $derived(tried ? reasonProblem(reason) : null);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		if (busy) return;
 		tried = true;
 		error = '';
-		if (choice === '') {
+		if (choice === '' || reasonProblem(reason)) {
 			await tick();
-			formEl?.querySelector<HTMLInputElement>('input[type="radio"]')?.focus();
+			if (choice === '') formEl?.querySelector<HTMLInputElement>('input[type="radio"]')?.focus();
+			else reasonEl?.focus();
 			return;
 		}
 		busy = true;
 		try {
-			await decideAppeal(supabase(), a.id, choice === 'uphold');
-			ondecided(appealOutcome(choice === 'uphold'));
+			// A decision is written down in, like every other decision.
+			const uphold = choice === 'uphold';
+			await decideAppeal(supabase(), a.id, uphold, cleanReason(reason));
+			choice = '';
+			reason = '';
+			tried = false;
+			ondecided(appealOutcome(uphold));
 		} catch (err) {
 			error = explainDbError(err as { message?: string; code?: string });
 		} finally {
@@ -116,6 +126,31 @@
 					<p class="field-error" id="{id}-choice-error">{choiceError}</p>
 				{/if}
 			</fieldset>
+
+			<div class="reason">
+				<label class="label" for="{id}-reason">Reason</label>
+				<span class="muted hint" id="{id}-reason-hint">
+					Another panel member reads this, without your name. Say what you weighed.
+				</span>
+			</div>
+			<textarea
+				id="{id}-reason"
+				rows="4"
+				bind:this={reasonEl}
+				bind:value={reason}
+				readonly={busy}
+				aria-required="true"
+				aria-invalid={reasonError ? 'true' : undefined}
+				aria-describedby="{id}-reason-hint{reasonError ? ` ${id}-reason-error` : ''} {id}-reason-count"
+			></textarea>
+			<div class="under">
+				{#if reasonError}
+					<p class="field-error" id="{id}-reason-error">{reasonError}</p>
+				{:else}
+					<span></span>
+				{/if}
+				<span class="muted small" id="{id}-reason-count">{reasonCounter(reason)}</span>
+			</div>
 
 			{#if error}
 				<p class="notice" role="alert">{error}</p>
@@ -246,6 +281,40 @@
 		font-weight: 600;
 	}
 
+	.reason {
+		display : grid;
+		gap : 2px;
+		margin-top : 6px;
+	}
+
+	.label {
+		font-weight : 600;
+	}
+
+	.hint {
+		font-size : 14px;
+	}
+
+	textarea {
+		width : 100%;
+		font : inherit;
+		color : var(--text);
+		background : var(--bg);
+		border : 1px solid var(--field-border);
+		border-radius : 10px;
+		padding : 10px 12px;
+		resize : vertical;
+	}
+
+	textarea[aria-invalid='true'] {
+		border-color : var(--warm);
+	}
+
+	.under {
+		display : flex;
+		justify-content : space-between;
+		gap : 12px;
+	}
 	.notice {
 		background: var(--warm-soft);
 		border-left: 4px solid var(--warm);

@@ -26,6 +26,19 @@ export function supabase(): Db {
 	return client;
 }
 
+/**
+ * Calls an RPC the generated `database.types.ts` doesn't list yet. That file is
+ * generated from a running stack (`gen:types`) and is never hand-edited, so
+ * functions added by the newest migrations aren't in it; this one seam lets the
+ * call compile until the types are regenerated. See docs/ledger.md.
+ */
+export async function rpcNew(db: Db, name: string, args: Record<string, unknown>) {
+	const untyped = db as unknown as {
+		rpc: (name: string, args: Record<string, unknown>) => { data?: unknown; error: { message: string; code?: string } | null };
+	};
+	return untyped.rpc(name, args);
+}
+
 /** False when the launcher didn't pass a publishable key through. */
 export function isConfigured(): boolean {
 	return PUBLIC_SUPABASE_ANON_KEY !== '';

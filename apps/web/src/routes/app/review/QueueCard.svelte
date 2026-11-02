@@ -136,7 +136,7 @@
 		</section>
 	{/if}
 
-	{#if isReviewable(r.status)}
+	{#if item.mayReview && isReviewable(r.status)}
 		<form class="decide" onsubmit={submit} novalidate aria-labelledby="{id}-decide" bind:this={formEl}>
 			<h4 id="{id}-decide">Your decision</h4>
 			<fieldset aria-describedby={decisionError ? `${id}-decision-error` : undefined}>
@@ -196,6 +196,8 @@
 				>
 			</button>
 		</form>
+	{:else if !item.mayReview && isReviewable(r.status)}
+		<p class="note">You may not review this one. Requests are reviewed by someone outside the requester's region.</p>
 	{:else if r.status === 'refused'}
 		<p class="note">Refused. Only an upheld appeal can reopen it; the panel decides appeals.</p>
 	{/if}

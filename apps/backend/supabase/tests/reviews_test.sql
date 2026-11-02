@@ -208,25 +208,25 @@ select isnt(public.file_appeal('00000000-0000-0000-0003-0000000000b5', 'My photo
 select pg_temp.login('00000000-0000-0000-0003-0000000000a2');
 select throws_ok(
   $$select public.decide_appeal((select id from public.appeals
-     where request_id = '00000000-0000-0000-0003-0000000000b1'), true)$$,
+     where request_id = '00000000-0000-0000-0003-0000000000b1'), true, 'The appeal restates the invoice.')$$,
   '42501', 'appeal panel only', 'a reviewer who is not on the panel cannot decide an appeal');
 
 select pg_temp.login('00000000-0000-0000-0003-0000000000a4');
 select throws_ok(
   $$select public.decide_appeal((select id from public.appeals
-     where request_id = '00000000-0000-0000-0003-0000000000b5'), true)$$,
+     where request_id = '00000000-0000-0000-0003-0000000000b5'), true, 'The photos match the report.')$$,
   '42501', 'you cannot decide your own appeal', 'a panel member cannot decide their own appeal');
 select lives_ok(
   $$select public.decide_appeal((select id from public.appeals
-     where request_id = '00000000-0000-0000-0003-0000000000b1'), true)$$,
+     where request_id = '00000000-0000-0000-0003-0000000000b1'), true, 'The refusal missed the corrected page.')$$,
   'the panel upholds an appeal');
 select lives_ok(
   $$select public.decide_appeal((select id from public.appeals
-     where request_id = '00000000-0000-0000-0003-0000000000b3'), false)$$,
+     where request_id = '00000000-0000-0000-0003-0000000000b3'), false, 'The estimate still does not fit.')$$,
   'the panel denies an appeal');
 select throws_ok(
   $$select public.decide_appeal((select id from public.appeals
-     where request_id = '00000000-0000-0000-0003-0000000000b1'), false)$$,
+     where request_id = '00000000-0000-0000-0003-0000000000b1'), false, 'A second look at it today.')$$,
   'P0002', 'appeal not found or already decided', 'an appeal is decided once');
 
 reset role;

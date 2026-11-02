@@ -176,7 +176,8 @@ select isnt(public.file_appeal('00000000-0000-0000-0009-0000000000b1', 'The esti
   'the owner appeals the refusal');
 select pg_temp.login('00000000-0000-0000-0009-0000000000a5');
 select lives_ok(
-  $$select public.decide_appeal((select id from public.appeals where request_id = '00000000-0000-0000-0009-0000000000b1'), false)$$,
+  $$select public.decide_appeal((select id from public.appeals where request_id = '00000000-0000-0000-0009-0000000000b1'), false,
+    'The re-issued quote still does not fit.')$$,
   'the panel denies the appeal');
 select pg_temp.login('00000000-0000-0000-0009-0000000000a1');
 select throws_ok(
@@ -188,12 +189,14 @@ select isnt(public.file_appeal('00000000-0000-0000-0009-0000000000b2', 'The invo
   'the owner appeals r2');
 select pg_temp.login('00000000-0000-0000-0009-0000000000a6');
 select throws_ok(
-  $$select public.decide_appeal((select id from public.appeals where request_id = '00000000-0000-0000-0009-0000000000b2'), true)$$,
+  $$select public.decide_appeal((select id from public.appeals where request_id = '00000000-0000-0000-0009-0000000000b2'), true,
+    'The shop fixed the invoice; look again.')$$,
   '42501', 'you reviewed this request; another panel member decides the appeal',
   'a panel member cannot decide an appeal on a request they reviewed');
 select pg_temp.login('00000000-0000-0000-0009-0000000000a5');
 select lives_ok(
-  $$select public.decide_appeal((select id from public.appeals where request_id = '00000000-0000-0000-0009-0000000000b2'), true)$$,
+  $$select public.decide_appeal((select id from public.appeals where request_id = '00000000-0000-0000-0009-0000000000b2'), true,
+    'The corrected invoice now matches the damage.')$$,
   'another panel member upholds it');
 select pg_temp.login('00000000-0000-0000-0009-0000000000a4');
 select is(public.record_review('00000000-0000-0000-0009-0000000000b2', 'refuse', 'Second look: still does not match.'),

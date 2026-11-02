@@ -33,6 +33,11 @@ export function explainDbError(error: DbError | null | undefined): string {
 	if (/reviews_reason_check|appeals_reason_check/i.test(message))
 		return 'The reason must be 10 to 2,000 characters.';
 
+	// A panel decision carries a reason too (appeals.decision_note).
+	if (/an appeal decision is written down in|appeals_decision_note_check/i.test(message))
+		// The same length rule the console checks before saving.
+		return 'The reason must be 10 to 2,000 characters.';
+
 	if (/^appeal panel only$/i.test(message))
 		return 'Your account doesn’t have an active appeal panel role, so the decision wasn’t saved.';
 	if (/cannot decide your own appeal/i.test(message))
