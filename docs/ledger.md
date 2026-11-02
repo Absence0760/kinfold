@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Books reconcile (`…280000_ledger_balance.sql`, `functions/reconcile`)
+
+- **`ledger_balance(fund, code)` gave the daily reconcile job a service-only read of fund-level ledger accounts** — the ledger lives in `private`, which PostgREST never exposes, so there was no honest way to ask what's in an account. Member/payee money stays theirs; members never see the books.
+- **The reconcile job publishes the newest month that ended over a week ago** and never republishes (`publish_open_books` refuses a second row per fund per month, and the job treats that as a skip). A payout returned after its month was published stays counted there — corrections land in the NEXT month's numbers, so the books are written once, honestly. Ledger differences against the partners' statements are REPORTED to the cron's log, never moved from here (statements are a fixture until the partners' feed swaps in). **Reversal:** republishing a month to absorb late returns would rewrite published public totals.
+
 ## 2026-11-02 — Income checks get an owner (`…270000_income_verification.sql`)
 
 - **`record_income_verification(member, method, cents, ref)` became the guarded way to write an income check** — active members only, no negative figures, and a bank-linked figure must carry the vendor's reference so the check can be traced back to the read that produced it (self-attested figures carry none by design). **Reversal:** deleting it hands `income_verifications` bare writes and dues priced from untraceable figures.
