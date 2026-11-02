@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Expiry owned by the cron (`…220000_expire_requests.sql`)
+
+- **`expire_request(uuid)` became the service's guarded way to expire a request** — only open or needs-evidence move; a draft is a member's to withdraw; the payout guard in …120500 keeps money-out requests a person's, so the cron's skip is a caught refusal, not a crash. Pledges release and unsigned loans cancel through the existing close trigger — expiry goes the same path as withdrawal. **Reversal:** deleting the function lets expiry happen as a bare table write with none of these owners.
+- **Staleness = nothing touched the request for its fund's `waiting_days`** (newest pledge for open, newest evidence for needs-evidence; submission itself counts if nothing followed). The figure is `fund_settings.waiting_days`, so it moves with actuarial review, not in code. **Reversal:** a per-kind staleness rule would need a schema field; not chosen, the fund's waiting period is the shared patience.
+
 ## 2026-11-02 — Payout reporting owns the outcome (`…210000_payout_reporting.sql`)
 
 - **`report_payout(uuid, outcome)` became the service's guarded way to move a payout**, replacing the webhook's bare table write: honest steps only (pending→sent/failed, sent→returned; failed/returned terminal), pending is never an outcome to report, and the same outcome twice is a no-op for replayed webhooks. **Reversal:** deleting the function puts webhook writes back on the table, with none of these rules enforced.
