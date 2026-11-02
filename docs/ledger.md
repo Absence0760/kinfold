@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — A family loan's schedule changes only by agreement (‘loan_restructures’)
+
+- **Ladder step 3 for family loans** (design.md:137, "a new schedule both sides sign"): either side stages a restructure (smaller payments over a longer term, or a new start date) on their collecting loan; the *other* side signs it, and only on that signing do the unpaid installments re-spread — on the loan's payment day, like every other schedule (`set_loan_schedule`), so the loan keeps its payday rhythm.
+- **A staged ask alone moves no money** — until both sides have signed, the schedule on the books is still the old one. One pending ask per loan; a second ask is refused while one waits.
+- **The re-spread covers exactly the money still owed**: installments already paid keep their dates and amounts, so `loan_outstanding_cents` never changes across a restructure. **Reversal:** re-spreading paid money would rewrite repayment history (and the reliability record that reads it); the ladder keeps paid installments as facts.
+
 ## 2026-11-02 — Beyond the pause allowance a Fund loan borrower asks the lending Fund to restructure (`restructure_fund_loan`)
 
 - **The borrower stages a restructure on their own collecting monthly fund loan** — smaller payments over a longer term or a new start date (design.md:137 ladder step 3). The Fund has already signed the agreement (it is the lender), so the ask only waits for the lending partner's servicing event (`apply_fund_loan_restructure`), which re-spreads **only the unpaid installments** over the new dates.
