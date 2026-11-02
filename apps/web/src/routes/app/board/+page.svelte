@@ -264,6 +264,11 @@
 									This is your request, so you can't pledge to it. Family and friends you invite
 									can give, or lend at 0%.
 								</p>
+							{:else if item.takingPledges === false}
+								<p class="aside">
+									Gifts open once this request's payee has been verified. Kinfold checks the shop or
+									lender once before money can move.
+								</p>
 							{:else if p && (p.leftCents > 0 || pledged[item.id])}
 								<PledgeForm
 									{item}

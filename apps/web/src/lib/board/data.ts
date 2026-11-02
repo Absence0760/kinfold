@@ -12,8 +12,9 @@ import { BoardLoadError } from './errors.ts';
  *   * the viewer's own request ids, from `requests` filtered to their own
  *     member id, so the page can say "Your request" without the view
  *     exposing anyone's identity;
- *   * `request_raised_cents` for open requests, which the backend shares with
- *     any active member while a request is still asking for money;
+ *   * the view's own `raised_cents` for each open request, so the whole board
+ *     needs one read; `request_raised_cents` still answers a single card
+ *     after a pledge, where the page needs the figure it moved to.
  *   * `fund_settings` (public to every member) for each fund's minimum score,
  *     so a band is worded against the fund's own bar. If it can't be read,
  *     only the band's status line is left out; the board still shows.
@@ -33,18 +34,9 @@ export async function loadBoard(viewerId: string): Promise<BoardItem[]> {
 	if (own.error) throw new BoardLoadError(own.error);
 
 	const rows = board.data ?? [];
-	const open = rows.filter((r) => r.status === 'open' && r.id).map((r) => r.id as string);
-	const raisedPairs = await Promise.all(
-		open.map(async (id) => {
-			const { data, error } = await db.rpc('request_raised_cents', { p_request: id });
-			// A missing figure shows as "progress not shown", not as $0 raised.
-			return [id, error || data == null ? null : Number(data)] as const;
-		})
-	);
-	const raised = new Map<string, number>();
-	for (const [id, cents] of raisedPairs) if (cents != null) raised.set(id, cents);
-
-	return toItems(rows, new Set((own.data ?? []).map((r) => r.id)), raised, (kind) =>
+	// The view carries each open request's progress now, so the whole board is one
+	// read; the empty map stays as the fallback for rows that predate the column.
+	return toItems(rows, new Set((own.data ?? []).map((r) => r.id)), new Map(), (kind) =>
 		settings.error ? null : minScoreFor(settings.data, fundForKind(kind))
 	);
 }

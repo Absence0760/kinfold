@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Board progress on the view (`…200000_board_progress.sql`)
+
+- **`raised_cents` and `taking_pledges` became columns on `board_requests`** rather than a per-card RPC, so one read answers the whole board (the page used to call `request_raised_cents` once per open card). `raised_cents` is filled only while a request is `open`; a finished request shares none. `taking_pledges` is the same pair of rules `pledge` applies, so the page can say gifts aren't open yet instead of refusing the first gift. **Reversal:** the view is dropped and rebuilt; returning to per-card reads is deleting the two columns and restoring the map in `loadBoard`.
+- **The web reads those columns as optional** (`BoardRow & { raised_cents?…, taking_pledges?… }`): the local schema has them, the committed generated `database.types.ts` doesn't until the live stack regenerates it. A row without them shows "progress not shown", never $0. **Reversal:** once `gen:types` runs, the optionals can become required.
+
 ## 2026-11-02 — Payee kind fits the request (`…190000_payee_fits.sql`)
 
 - **`payee_fits(request_kind, payee_kind)` is the single mapping the web form and the database read.** `submit_request` refuses a mismatch, so money can't aim at the wrong place: cars at a shop, a repair at a contractor, home money at a lender, seller or title company. Call: one small function rather than a table check, because the rule is about a *pair* of kinds, not one row. **Reversal:** if counsel ever wants shops on home money, only that function's body changes.
@@ -10,6 +15,7 @@ The record of judgment calls taken on the operator's behalf while building the r
 ## 2026-11-01 — CI gate, repo hygiene
 
 - **CI runs the tests on every push to `main`** (`.github/workflows/ci.yml`): `pnpm check`, `test:web`, `test:scripts`, then pgTAP with the Supabase stack started by `supabase/setup-cli`. Follows the single-emitter pattern in [README-ci-gate.md](../.github/workflows/README-ci-gate.md): one `changes` filter job, heavy jobs gated on it, `ci-gate` as the aggregator with `if: always()`. Action SHAs pinned like the other workflows. **e2e stays out of CI**: `test:web:e2e` still runs only on demand (`setup:e2e` per machine), so CI can't pay for the Chromium download yet.
+- **`docs/STACK.md` said "no CI job yet"** and now says what is and isn't in CI, because the stale sentence would have talked the next person into adding a duplicate job. **Reversal:** none — the copy follows the workflow file.
 - **Backend rules are verified only in CI on this machine.** No Docker daemon (user not in the docker group, sudo needs a password) and no Supabase CLI installed, so `dev:db:up` and `test:backend:db` can't run locally here. Backend changes therefore land with their pgTAP tests, and CI turns them green or red the same day; a red run is fixed in the same session, not shelved.
 - **Work lands on `main`, path-scoped** (CLAUDE.md, pre-launch no-PR decision): the checkout sat on a scratch branch `full_roadmap` sitting on the same commit as `main`; switched back to `main` and left the scratch branch alone (deleting it is the operator's call).
 - **Push is blocked from this machine**: the account has pull-only permission on `Absence0760/kinfold` (SSH and token both refused). Commits stay local; the push needs the operator's own credential. Flagged in the session report.

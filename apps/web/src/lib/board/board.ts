@@ -9,6 +9,10 @@ export { scoreBandLabel } from '#lib/requests/score-band.ts';
 export type RequestKind = Database['public']['Enums']['request_kind'];
 export type RequestStatus = Database['public']['Enums']['request_status'];
 export type BoardRow = Database['public']['Views']['board_requests']['Row'];
+/** A `board_requests` row plus the two progress columns the local schema's view
+ * carries and the committed generated types don't yet (only the live stack
+ * regenerates them); rows arrive with them, so they're read optionally. */
+export type BoardRowProgress = BoardRow & { raised_cents?: number | null; taking_pledges?: boolean };
 
 /** One request on the board, as the page shows it. */
 export interface BoardItem {
@@ -30,6 +34,8 @@ export interface BoardItem {
 	monthOf: string | null;
 	/** Pledged or collected so far; null when the backend doesn't share it. */
 	raisedCents: number | null;
+	/** Whether a pledge would be accepted now (open and the payee verified); null when the row predates the view's column. */
+	takingPledges: boolean | null;
 	/** The viewer posted this request. */
 	own: boolean;
 }
@@ -77,7 +83,7 @@ export const statusLabel = (status: RequestStatus): string => STATUS_LABELS[stat
 
 /** Rows missing the fields the board can't do without are dropped. */
 export function toItems(
-	rows: BoardRow[],
+	rows: BoardRowProgress[],
 	ownIds: ReadonlySet<string>,
 	raised: ReadonlyMap<string, number>,
 	minScoreOf: (kind: RequestKind) => number | null = () => null
@@ -97,7 +103,8 @@ export function toItems(
 			minScore: minScoreOf(r.kind),
 			area: r.area,
 			monthOf: r.month_of,
-			raisedCents: raised.get(r.id) ?? null,
+			raisedCents: r.raised_cents ?? raised.get(r.id) ?? null,
+			takingPledges: r.taking_pledges ?? null,
 			own: ownIds.has(r.id)
 		});
 	}

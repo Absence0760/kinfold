@@ -27,7 +27,6 @@ Last updated 2026-10-31.
 
 Found while building the web member area (`/app`, `/app/board`, `/app/review`, `/app/requests`, `/app/invite`, `/app/loans`) on 2026-10-31. Most need a migration through `/safe-migration`; the web app explains each gap to the member rather than faking it.
 
-- [ ] **The board can't tell whether a request is taking pledges** (payee verified) or how much it has raised, so the page calls `request_raised_cents` once per open card and only finds out about an unverified payee on pledge. **Fix:** add `taking_pledges` and, for open requests only, `raised_cents` columns to `board_requests`. **When:** before the board has more than a few dozen open requests.
 
 - [ ] **Evidence redaction isn't running.** New uploads stay `pending`, and `submit_request` refuses them, so a request made in the web app can't be submitted. **Fix:** the `redact-evidence` edge function (sets `redacted_path`, `auto_done`), which must also check that the stored file exists and its SHA-256 matches the row before redacting; seed one `auto_done` row so the member's confirm-redaction step can be exercised. **When:** Stage 1, step 1c.
 - [ ] **`evidence-original` accepts any file type and size.** The web app checks, the server doesn't. **Fix:** set `allowed_mime_types` and `file_size_limit` on the bucket in a migration. **When:** before any hosted environment.

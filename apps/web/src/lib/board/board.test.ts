@@ -35,6 +35,7 @@ function item(over: Partial<BoardItem> = {}): BoardItem {
 		area: 'Pacific',
 		monthOf: '2026-10-01',
 		raisedCents: 0,
+		takingPledges: true,
 		own: false,
 		...over
 	};
@@ -80,7 +81,7 @@ describe('toItems', () => {
 		const [i] = toItems([row()], new Set(), new Map());
 		expect(Object.keys(i).sort()).toEqual(
 			['amountCents', 'area', 'bandMaxCents', 'bandMinCents', 'id', 'kind', 'minScore', 'monthOf', 'own',
-				'raisedCents', 'scoreBand', 'status', 'summary'].sort()
+				'raisedCents', 'scoreBand', 'status', 'summary', 'takingPledges'].sort()
 		);
 	});
 });
