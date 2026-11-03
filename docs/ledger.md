@@ -106,14 +106,14 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **Fraud standing was invisible to the people who act on it**: `private.fraud_signals` decides scoring (`in_review` on a high-severity finding) but nothing let a reviewer read it — the console promised fraud signals with no door behind the promise. New door: kind + severity, high first, resolved findings gone.
 - **The match `detail` stays private** (photo hashes, cross-reference ids): a reviewer sees THAT a pattern was found, not HOW the checks matched, so the checks' keying can't be reverse-engineered from the console. The read answers through the function, not a table policy — `private.fraud_signals` keeps its no-raw-reads default and only the door can be called.
 - **Every look is on the trail** (`fraud_signals.read`, count only): fraud standing is PII-adjacent, and this repo audit-logs every privileged read of member-adjacent state.
-- **A console refusal is not a broken queue**: the read treats 42501 as “not for this role” (panel members keep their queue), while any other failure still reaches the console loudly.
+- **A console refusal is not a broken queue**: the read treats 42501 as "not for this role" (panel members keep their queue), while any other failure still reaches the console loudly.
 - **Reversal:** if findings should stay entirely inside scoring, delete the door and the `findings` leg (`queries.ts`, `queue.ts`, the card block); the triggers that move statuses never consult these fields, and the web layers carry everything else.
 
 ## 2026-11-02 — A pending identity check is named on the home, not left implicit
 
 - **Silence is the worst failure mode for a new member**: signing up leaves a member `pending_verification`, and every read the member area does comes back empty — an empty home reads as "there is nothing here", not as "you cannot post yet". The home now carries an identity-check block (status via `identityWord`, plus what passing unlocks) while the check is outstanding, so the reason is on the page the member is already looking at.
 - **Status comes from the member's own row, read through normal RLS** (`members.select('status, joined_at').eq('id', uid)`): the account's state is the member's own fact, and the schema already lets a member read their own row — no new read door was opened.
-- **Nothing is claimed about the vendor**: the block says Kinfold keeps only the vendor’s reference and the outcome, never the documents, matching 1b; it does not invent a retry button the schema has no door for.
+- **Nothing is claimed about the vendor**: the block says Kinfold keeps only the vendor's reference and the outcome, never the documents, matching 1b; it does not invent a retry button the schema has no door for.
 - **Reversal:** if the check's state should belong only to a dedicated onboarding page, delete the block and the `identity` field (with its two loader arguments); the tests cover both halves and nothing in the schema depends on them.
 
 ## 2026-11-02 — The phone app (roadmap 1a) stays unbuilt while the toolchain is missing
@@ -140,7 +140,7 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **The written text is history**: written once, never edited, never re-priced; a replay is a no-op, so the loan-servicing job can run daily without fear of rewriting an agreement someone cited to an accountant.
 - **Only the event writes agreements** (service-role only): a member can't author their own agreement text after the fact, because the record of what was agreed has to come from the signing, not from whoever notices later. **Reversal:** letting the borrower or lender edit the text would let a loan's paperwork claim a different deal than the one e-signed; the ladder keeps the schema as the writer.
 
-## 2026-11-02 — A family loan's schedule changes only by agreement (‘loan_restructures’)
+## 2026-11-02 — A family loan's schedule changes only by agreement ('loan_restructures')
 
 - **Ladder step 3 for family loans** (design.md:137, "a new schedule both sides sign"): either side stages a restructure (smaller payments over a longer term, or a new start date) on their collecting loan; the *other* side signs it, and only on that signing do the unpaid installments re-spread — on the loan's payment day, like every other schedule (`set_loan_schedule`), so the loan keeps its payday rhythm.
 - **A staged ask alone moves no money** — until both sides have signed, the schedule on the books is still the old one. One pending ask per loan; a second ask is refused while one waits.
@@ -202,7 +202,7 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 ## 2026-11-02 — Subrogation money is recorded verified in one step (`record_partner_recovery`)
 
-- **When another driver is at fault, the at-fault party’s insurer should pay** (design.md: Kinfold’s cover must not subsidise other insurers). The partner insurer reports the money that moved; the schema records it **already verified, in one write** — a separate `verify_recovery` step could leave a half-verified row a retry would double-count. Retry-safe by the partner’s reference. Money moved between insurers, so it never joins Kinfold’s ledger; the pledge caps and pool needs subtract it. **Reversal:** letting members write subrogation money themselves would let a member claim money no insurer moved.
+- **When another driver is at fault, the at-fault party's insurer should pay** (design.md: Kinfold's cover must not subsidise other insurers). The partner insurer reports the money that moved; the schema records it **already verified, in one write** — a separate `verify_recovery` step could leave a half-verified row a retry would double-count. Retry-safe by the partner's reference. Money moved between insurers, so it never joins Kinfold's ledger; the pledge caps and pool needs subtract it. **Reversal:** letting members write subrogation money themselves would let a member claim money no insurer moved.
 
 ## 2026-11-02 — Quarters sum the published months, never re-derive them (`quarterlySummaries`, `/transparency`)
 
