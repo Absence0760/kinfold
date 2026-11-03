@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The board's web loader took the same db seam, so its fallbacks are pinned
+
+- **The gap**: `loadBoard` read the `supabase()` singleton, so vitest couldn't hand it a fake client and its two fallbacks were eyeball-only - a `fund_settings` read that fails must leave the board standing with NO minimum (the page then drops the band's status line) rather than inventing a bar, and the fund that words a band comes from `fundForKind(kind)`, which is the same mapping the eligibility card and the request form rely on.
+- **The decision**: same convention as the invite loaders the day before - `loadBoard(db, ...)`, `pledgeGift(db, ...)`, `loadRaised(db, ...)` with the board page, its retry and the pledge form passing `supabase()`. Then `board/data.test.ts` pins the own-row marking, the fund's own minimum words the band (repair fund's bar vs Home Fund's, deliberately different in the fixture so a swapped mapping fails), the settings-failure fallback, and that a refused board read throws `BoardLoadError` keeping the code for `explainBoardError`.
+- **Why the mapping matters on the board**: a band's words are the only fairness claim a member sees before a person reviews; read against the wrong fund's minimum a Home Fund request would look like the repair fund pays it by band.
+- **Reversal:** keep the singleton if the board grows and the loader moves to a shared, page-level read (the view column would already carry the fund's minimum); then this test moves to the view's shape rather than the loader's calls.
+
 ## 2026-11-03 — The invite loaders take the db seam so their display gates can be tested
 
 - **The gap**: `invites/data.ts` called the `supabase()` singleton inside every loader, so nothing could hand it a fake client and vitest had no way to reach its display gates - the payee-name/verified check, progress-as-nothing-rather-than-$0, a stranger's request reading as nothing, a `request_names` P0002 being silence while any other code is a real failure. Every one of those was load-bearing on a supporter's page and eyeball-only.
