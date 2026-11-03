@@ -2,7 +2,8 @@
 	import { formatCents } from '#lib/dashboard/format.ts';
 	import { shareWord } from '#lib/transparency/data.ts';
 
-	let { books, quarters, problem, formulas, formulaProblem, grants, grantProblem } = $props();
+	// A page's `$props()` is the page context: the load result sits under `data` (see the other route pages).
+	let { data } = $props();
 </script>
 
 <svelte:head>
@@ -18,12 +19,12 @@
 	says how many months it covers. The grant report at the bottom lists the money funders have reported in.
 </p>
 
-{#if problem}
-	<p class="problem">{problem}</p>
-{:else if books.length === 0}
+{#if data.problem}
+	<p class="problem">{data.problem}</p>
+{:else if data.books.length === 0}
 	<p class="empty">No month has passed its settlement lag yet — the first month's books publish once it is seven days over.</p>
 {:else}
-	{#each books as book}
+	{#each data.books as book}
 		<div class="book">
 			<h2>{book.yearMonth} · {book.fundLabel}</h2>
 			<dl>
@@ -43,10 +44,10 @@
 {/if}
 
 <h2 id="quarters">The quarterly report</h2>
-{#if problem || quarters.length === 0}
+{#if data.problem || data.quarters.length === 0}
 	<p class="empty">No quarters reported yet.</p>
 {:else}
-	{#each quarters as q}
+	{#each data.quarters as q}
 		<div class="quarter">
 			<h3>{q.quarter} · {q.fundLabel}</h3>
 			<dl>
@@ -68,13 +69,13 @@
 {/if}
 
 <h2 id="formula">How members are chosen</h2>
-{#if formulaProblem}
-	<p class="empty">{formulaProblem}</p>
-{:else if formulas.length === 0}
+{#if data.formulaProblem}
+	<p class="empty">{data.formulaProblem}</p>
+{:else if data.formulas.length === 0}
 	<p class="empty">No needs formula has been published yet.</p>
 {:else}
 	<ul class="formulas">
-		{#each formulas as f}
+		{#each data.formulas as f}
 			<li>
 				Version {f.version}, used from {f.effectiveFrom}: need {shareWord(f.needBps)}, readiness
 				{shareWord(f.readinessBps)}, reliability {shareWord(f.reliabilityBps)}.
@@ -89,13 +90,13 @@
 {/if}
 
 <h2 id="grants">The grant report</h2>
-{#if grantProblem}
-	<p class="empty">{grantProblem}</p>
-{:else if grants.length === 0}
+{#if data.grantProblem}
+	<p class="empty">{data.grantProblem}</p>
+{:else if data.grants.length === 0}
 	<p class="empty">No grant money has been reported in yet.</p>
 {:else}
 	<ul>
-		{#each grants as g}
+		{#each data.grants as g}
 			<li>
 				{g.fundLabel} from {g.source}{g.federal ? ' (federally funded)' : ''}: {formatCents(g.amountCents)} across
 				{g.grants} grant{g.grants === 1 ? '' : 's'}.

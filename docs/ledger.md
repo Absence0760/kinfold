@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The transparency page reads its load result under `data`, like every other route page
+
+- **Why it was broken**: in Kit v3 a page component's `$props()` is the page context (`{ data, form, params, error }`) — the load result sits under `data`, which is how every other route page already read it. `/transparency` alone destructured the seven load keys straight off the context, so the build-time prerender died (`Cannot read properties of undefined`) and the page would have shipped blank in the SPA fallback too.
+- **`data.x` in the template over local aliases**: destructuring into locals trips Svelte's `state_referenced_locally` warning (they'd capture only the initial value if the page ever re-rendered); `data.x` reads the context directly and stays honest. The loader's shape in `+page.ts` and the vitest pins under it didn't move.
+- **Reversal:** if the loader should stop being page-context-shaped, re-destructure in `+page.svelte` and drop the `data.` prefixes, or split each section into its own `.svelte` component with its own loader; either way `#lib/transparency/data.ts` and its test pins stay as they are.
+
 ## 2026-11-02 — The Fund loan console offers the fair-lending self-test and treats the schema's "already recorded" refusal as its marker
 
 - **Only unsecured loans carry the form**: loans secured by the home answer on the credit union's government monitoring form (1002.13), which is service-only, so offering a self-test there would be a form the borrower can never complete. The schema refuses the same thing; the console just doesn't offer it.
