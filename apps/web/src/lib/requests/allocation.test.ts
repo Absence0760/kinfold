@@ -64,4 +64,31 @@ describe('allocatePool', () => {
 		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, covered: 1000 }], 900));
 		expect(a.a).toEqual({ id: 'a', grant: 0, status: 'funded' });
 	});
+
+	const shareRule = { stepBps: 1000, capBps: 3000 };
+
+	it('no paid requests in three years means no share: the pool grants the whole need', () => {
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, paid3y: 0 }], 2000, { share: shareRule }));
+		expect(a.a).toEqual({ id: 'a', grant: 1000, status: 'funded' });
+	});
+
+	it('one paid request moves a tenth of the need to the member\u2019s own share', () => {
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, paid3y: 1 }], 2000, { share: shareRule }));
+		expect(a.a.grant).toBe(900);
+		expect(a.a.status).toBe('partial');
+	});
+
+	it('the share caps at three tenths whatever the count', () => {
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, paid3y: 4 }], 2000, { share: shareRule }));
+		expect(a.a.grant).toBe(700);
+	});
+
+	it('a bigger share still fills, never refuses: the claimant waits for no more', () => {
+		// A share that leaves the band short of the pool means the request is
+		// granted and partial - the member carries the rest themselves; nothing
+		// about the rule answers "needs-review" or drops the row.
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, paid3y: 9 }], 2000, { share: shareRule }));
+		expect(a.a.grant).toBe(700);
+		expect(a.a.status).toBe('partial');
+	});
 });

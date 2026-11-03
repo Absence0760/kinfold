@@ -3,7 +3,7 @@
 // request boards and pools and check the money invariants hold for every one.
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { allocatePool, type FundingRequest } from './allocation';
+import { allocatePool, type FundingRequest, type ShareRule } from './allocation';
 
 /** A dollar amount with whole cents, as the app stores money. */
 const dollars = (max: number) => fc.integer({ min: 0, max: max * 100 }).map((c) => c / 100);
@@ -25,6 +25,40 @@ const board = fc
 	.map((rs): FundingRequest[] => rs.map((r, i) => ({ id: `r${i}`, ...r })));
 
 const need = (r: FundingRequest) => Math.max(0, r.amount - r.funded);
+
+/** A board whose members also carry how often their pool requests were paid. */
+const shareBoard = fc
+	.array(
+		fc.record({
+			amount: dollars(50_000),
+			fundedShare: fc.double({ min: 0, max: 1.2, noNaN: true }),
+			coveredShare: fc.double({ min: 0, max: 0.9, noNaN: true }),
+			score: fc.integer({ min: 0, max: 100 }),
+			paid3y: fc.integer({ min: 0, max: 12 })
+		}),
+		{ maxLength: 30 }
+	)
+	.map((rs): FundingRequest[] =>
+		[
+			...rs.map((r, i) => ({
+				id: `r${i}`,
+				amount: r.amount,
+				funded: Math.round(r.amount * r.fundedShare * 100) / 100,
+				covered: Math.round(r.amount * r.coveredShare * 100) / 100,
+				score: r.score,
+				paid3y: r.paid3y
+			}))
+		]);
+
+/** The share rule the pool reads (mirrors the seeded `share_rules` v1). */
+const SHARE_V1 = { stepBps: 1000, capBps: 3000 };
+
+/** What the member still needs the pool for, once their own share is out. */
+const needWithShare = (r: FundingRequest, share: ShareRule) => {
+	const gap = Math.max(0, r.amount - (r.covered ?? 0) - r.funded);
+	const carry = Math.min(share.capBps, (r.paid3y ?? 0) * share.stepBps);
+	return gap - Math.floor(gap * carry / 10000);
+};
 const band = (score: number) => Math.floor(score / 10) * 10;
 // Float sums of cent amounts can drift by far less than a cent.
 const EPS = 1e-6;
@@ -108,6 +142,24 @@ describe('allocatePool properties', () => {
 						expect(m.grant).toBeGreaterThanOrEqual(best * m.need - 0.01 - EPS);
 					}
 				}
+			})
+		);
+	});
+
+	it('with the published share rule the pool never overgrants and no grant exceeds the need with the member\u2019s share taken out', () => {
+		fc.assert(
+			fc.property(shareBoard, dollars(200_000), (requests, pool) => {
+				const { allocations, remainingPool } = allocatePool(requests, pool, { share: SHARE_V1 });
+				const granted = allocations.reduce((sum, a) => sum + a.grant, 0);
+				expect(granted).toBeLessThanOrEqual(pool + EPS);
+				expect(granted + remainingPool).toBeLessThanOrEqual(pool + EPS);
+				allocations.forEach((a, i) => {
+					expect(a.grant).toBeGreaterThanOrEqual(0);
+					// A share only ever shrinks the grant: it is money the member
+					// carries, never a bigger grant and never a refusal.
+					expect(a.grant).toBeLessThanOrEqual(need(requests[i]) + EPS);
+					expect(a.grant).toBeLessThanOrEqual(needWithShare(requests[i], SHARE_V1) + EPS);
+				});
 			})
 		);
 	});
