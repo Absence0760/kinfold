@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The invite loaders take the db seam so their display gates can be tested
+
+- **The gap**: `invites/data.ts` called the `supabase()` singleton inside every loader, so nothing could hand it a fake client and vitest had no way to reach its display gates - the payee-name/verified check, progress-as-nothing-rather-than-$0, a stranger's request reading as nothing, a `request_names` P0002 being silence while any other code is a real failure. Every one of those was load-bearing on a supporter's page and eyeball-only.
+- **The decision**: follow the convention the newer loaders already use (`loadCover(db, ...)`, `loadFundLoans(db, ...)`, `loadLoans(db, ...)`) - add `db: Db` as the first parameter to the nine invite loaders and have the four pages and one `+page.ts` pass `supabase()`. Then add `invites/data.test.ts` (fakeDb chain like the other loader tests) and pin the gates, plus `canInvite` against the six statuses `create_invite` accepts (the four closed ones read false).
+- **Why this shape instead of mocking the singleton**: the db-as-parameter is already the repo's pattern for anything that wants a test, and it makes the seam explicit at the call site - a page now says which client it read with.
+- **Reversal:** if the loaders kept `supabase()` internally, the same gates would need a global seam per test (fragile across concurrent pages) - only worth keeping if the client itself must stay global for a page-lifecycle reason; the client is already created lazily and shared.
+
 ## 2026-11-03 — The ops console can SEE reconcile differences; the reserve panel waits
 
 - **The gap this closes**: `record_ledger_difference` wrote alerts into an append-only, service-granted table that nothing could read - the reconcile cron found differences and the operators had no place to look. Roadmap 1e says "reconciliation and reserve panels join in 2h", and the reconciliation half of that is a door problem, not a 2h problem: a reviewer needs to SEE an alert, and the ledger books behind it stay behind the service.
