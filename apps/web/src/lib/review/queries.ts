@@ -296,3 +296,46 @@ export async function loadLedgerDifferences(db: Db, limit = 20): Promise<LedgerD
 		at: r.recorded_at
 	}));
 }
+
+/** One fund's latest allocation run, as the console shows it. */
+export interface PoolRun {
+	fund: string;
+	/** The fund's money the run started from, cents. */
+	availableCents: number;
+	/** What the run left in reserve for the next band, cents. */
+	reserveCents: number;
+	/** What the run paid out, cents. */
+	allocatedCents: number;
+	algorithmVersion: string;
+	at: string;
+}
+
+/**
+ * What each fund's latest allocation run left in reserve (roadmap 1e's reserve
+ * panel). The door answers the latest run per fund with the fund-level figures
+ * only - money, allocated, reserve, the algorithm version, and when it ran.
+ * Money is never moved from here; a difference or a thin reserve waits for a
+ * person's eyes.
+ */
+export async function loadPoolRuns(db: Db, limit = 12): Promise<PoolRun[]> {
+	// `review_pool_runs` is newer than the generated types; see rpcNew.
+	const { data, error } = await rpcNew(db, 'review_pool_runs', { p_limit: limit });
+	fail(error);
+	const rows = (data ?? []) as unknown as Array<{
+		fund: string;
+		available_cents: number;
+		reserve_cents: number;
+		allocated_cents: number;
+		algorithm_version: string;
+		run_at: string;
+	}>;
+	// Only these fields cross; the door already omits everything else.
+	return rows.map((r) => ({
+		fund: r.fund,
+		availableCents: r.available_cents,
+		reserveCents: r.reserve_cents,
+		allocatedCents: r.allocated_cents,
+		algorithmVersion: r.algorithm_version,
+		at: r.run_at
+	}));
+}

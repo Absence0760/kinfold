@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { decideClaim, loadAuditTail, loadFraudSignals, loadLedgerDifferences, loadStandingClaims } from './queries.ts';
+import { decideClaim, loadAuditTail, loadFraudSignals, loadLedgerDifferences, loadPoolRuns, loadStandingClaims } from './queries.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -174,5 +174,59 @@ describe('loadLedgerDifferences', () => {
 		const rows = await loadLedgerDifferences(db);
 		expect(asked).toEqual(['review_ledger_differences']);
 		expect(rows).toEqual([]);
+	});
+});
+
+describe('loadPoolRuns', () => {
+	it('the latest run per fund reads newest first, with the three money figures kept', async () => {
+		const { db, asked } = fakeDb({
+			review_pool_runs: {
+				data: [
+					{
+						fund: 'protection',
+						available_cents: 51000,
+						reserve_cents: 21000,
+						allocated_cents: 30000,
+						algorithm_version: 'v1',
+						run_at: '2026-11-03T00:00:00Z'
+					},
+					{
+						fund: 'home_fund',
+						available_cents: 25000,
+						reserve_cents: 5000,
+						allocated_cents: 20000,
+						algorithm_version: 'v1',
+						run_at: '2026-10-30T00:00:00Z'
+					}
+				],
+				error: null
+			}
+		});
+		const runs = await loadPoolRuns(db);
+		expect(asked).toEqual(['review_pool_runs']);
+		expect(runs.map((r) => r.fund)).toEqual(['protection', 'home_fund']);
+		expect(runs[0].reserveCents).toBe(21000);
+		expect(runs[0].allocatedCents).toBe(30000);
+		expect(runs[0].availableCents).toBe(51000);
+		// The run’s settings and id never cross; only these fields are kept.
+		expect(Object.keys(runs[0])).toEqual(['fund', 'availableCents', 'reserveCents', 'allocatedCents', 'algorithmVersion', 'at']);
+	});
+
+	it('a fund whose money is all in reserve reads as a thin fund, not an error', async () => {
+		// A run that paid nothing still leaves the reserve figure, so the console can
+		// answer why a fund has nothing to pay this week.
+		const { db } = fakeDb({
+			review_pool_runs: { data: [{ fund: 'protection', available_cents: 9000, reserve_cents: 9000, allocated_cents: 0, algorithm_version: 'v1', run_at: '2026-11-03T00:00:00Z' }], error: null }
+		});
+		const runs = await loadPoolRuns(db);
+		expect(runs).toHaveLength(1);
+		expect(runs[0].allocatedCents).toBe(0);
+	});
+
+	it('a clean board - no runs recorded - reads as nothing, and a refusal throws', async () => {
+		const { db } = fakeDb({ review_pool_runs: { data: [], error: null } });
+		expect(await loadPoolRuns(db)).toEqual([]);
+		const { db: refused } = fakeDb({ review_pool_runs: { data: null, error: { message: 'pool runs are read by the operations console', code: '42501' } } });
+		await expect(loadPoolRuns(refused)).rejects.toThrow(/operations console/);
 	});
 });

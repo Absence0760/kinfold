@@ -3,12 +3,12 @@
 	import { supabase } from '#lib/supabase/client.ts';
 	import { define } from '#lib/board/terms.ts';
 	import { explainDbError } from '#lib/review/errors.ts';
-	import { loadAppeals, loadAuditTail, loadLedgerDifferences, loadQueue, loadStandingClaims } from '#lib/review/queries.ts';
+	import { loadAppeals, loadAuditTail, loadLedgerDifferences, loadPoolRuns, loadQueue, loadStandingClaims } from '#lib/review/queries.ts';
 	import { auditWord, formatCents, accountWord, fundWord } from '#lib/review/labels.ts';
 	import { formatDay } from '#lib/dashboard/format.ts';
 	import type { AppealItem, QueueItem } from '#lib/review/queue.ts';
 	import type { StandingClaim } from '#lib/review/queries.ts';
-	import type { AuditRow, LedgerDifference } from '#lib/review/queries.ts';
+	import type { AuditRow, LedgerDifference, PoolRun } from '#lib/review/queries.ts';
 	import QueueCard from './QueueCard.svelte';
 	import ClaimCard from './ClaimCard.svelte';
 	import AppealCard from './AppealCard.svelte';
@@ -27,6 +27,7 @@
 	let claims = $state<Loaded<StandingClaim>>({ state: 'loading' });
 	let trail = $state<Loaded<AuditRow>>({ state: 'loading' });
 	let differences = $state<Loaded<LedgerDifference>>({ state: 'loading' });
+	let runs = $state<Loaded<PoolRun>>({ state: 'loading' });
 	let confirmation = $state('');
 	let confirmationEl = $state<HTMLParagraphElement | null>(null);
 
@@ -62,6 +63,14 @@
 		}
 	}
 
+	async function refreshRuns() {
+		try {
+			runs = { state: 'ready', items: await loadPoolRuns(supabase()) };
+		} catch (err) {
+			runs = { state: 'error', message: explainDbError(err as { message?: string }) };
+		}
+	}
+
 	async function refreshClaims() {
 		try {
 			claims = { state: 'ready', items: await loadStandingClaims(supabase()) };
@@ -76,6 +85,7 @@
 		if (data.access.reviewer) refreshClaims();
 		if (data.access.reviewer) refreshTrail();
 		if (data.access.reviewer) refreshDifferences();
+		if (data.access.reviewer) refreshRuns();
 	});
 
 	async function decided(message: string, refresh: () => Promise<void>) {
@@ -122,7 +132,8 @@
 			data.access.panel && appeals.state === 'loading' ? 'Loading appeals…' : '',
 			data.access.reviewer && claims.state === 'loading' ? 'Loading claims…' : '',
 			data.access.reviewer && trail.state === 'loading' ? 'Reading the trail…' : '',
-			data.access.reviewer && differences.state === 'loading' ? 'Reading the alerts…' : ''
+			data.access.reviewer && differences.state === 'loading' ? 'Reading the alerts…' : '',
+			data.access.reviewer && runs.state === 'loading' ? 'Reading the reserves…' : ''
 		]
 			.filter(Boolean)
 			.join(' ')
@@ -310,6 +321,36 @@
 		{/if}
 		<!-- The reconciliation itself is the service's (functions/reconcile): the console
 		only shows the alert the schema recorded, never a client-side comparison. -->
+	</section>
+
+	<section class="block" aria-labelledby="reserve-heading">
+		<h2 id="reserve-heading">What each fund's latest run left in reserve</h2>
+		<p class="muted">
+			Each line is one fund's money as its latest weekly allocation run saw it: what the
+			run paid, and what it left in reserve for the next band. Reading these changes
+			nothing; a thin reserve waits for a person's eyes, not for a decision here.
+		</p>
+		{#if runs.state === 'loading'}
+			<p class="muted">Reading the reserves…</p>
+		{:else if runs.state === 'error'}
+			<p class="muted">Couldn't load the runs. {runs.message}</p>
+		{:else if runs.items.length === 0}
+			<p class="muted">No allocation run has been recorded yet.</p>
+		{:else}
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
+				{#each runs.items as run}
+					<li>
+						<strong>{fundWord(run.fund)}</strong>
+						<span class="muted">
+							paid {formatCents(run.allocatedCents)} · reserve {formatCents(run.reserveCents)}
+							of {formatCents(run.availableCents)} · {run.algorithmVersion} · {formatDay(run.at)}
+						</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 {/if}
 
