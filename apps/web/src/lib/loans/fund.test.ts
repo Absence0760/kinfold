@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
 import {
+	fundLoanMissed,
 	loadFundLoans,
 	loadFundLoan,
 	pauseFundLoan,
@@ -107,6 +108,8 @@ describe('loadFundLoan', () => {
 			fund_loan_installments: { data: [{ loan_id: 'm1', seq: 1, due_on: '2026-02-01', amount_cents: 5000, paid_cents: 0 }], error: null },
 			fund_loan_pauses: { data: [{ loan_id: 'm1', months: 1, started_on: '2026-01-05' }], error: null },
 			fund_loan_restructures: { data: [{ loan_id: 'm1', months: 24, first_due: '2026-03-01', applied_at: null }], error: null },
+			// The schema's view decides what ran out: unpaid, due, ten days late.
+			fund_loan_missed_installments: { data: [{ loan_id: 'm1', seq: 1, due_on: '2026-01-02', owed_cents: 3000 }], error: null },
 			fund_loan_outstanding_cents: { data: 5000, error: null }
 		});
 		const detail = await loadFundLoan(db, 'm1');
@@ -115,6 +118,7 @@ describe('loadFundLoan', () => {
 			'fund_loan_installments',
 			'fund_loan_pauses',
 			'fund_loan_restructures',
+			'fund_loan_missed_installments',
 			'fund_loan_outstanding_cents'
 		]);
 
@@ -122,12 +126,41 @@ describe('loadFundLoan', () => {
 		expect(detail.loan).toEqual(monthly);
 		expect(detail.outstandingCents).toBe(5000);
 		expect(detail.restructure).toEqual({ loan_id: 'm1', months: 24, first_due: '2026-03-01', applied_at: null });
+		// The console names the rows the schema listed — not a client-side guess.
+		expect(detail.missed).toEqual([{ loan_id: 'm1', seq: 1, due_on: '2026-01-02', owed_cents: 3000 }]);
+	});
+	it('an income schedule lists no missed installments at all', async () => {
+		const { db, asked } = fakeDb({
+			fund_loans: { data: [income], error: null },
+			fund_loan_installments: { data: [], error: null },
+			fund_loan_pauses: { data: [], error: null },
+			fund_loan_restructures: { data: [], error: null },
+			fund_loan_missed_installments: { data: [], error: null },
+			fund_loan_outstanding_cents: { data: 120000, error: null }
+		});
+		const detail = await loadFundLoan(db, 'i1');
+		if (detail === null) throw new Error('fixture has the loan');
+		expect(detail.missed).toEqual([]);
+		expect(fundLoanMissed(detail.missed)).toEqual({ count: 0, owedCents: 0 });
 	});
 
 	it('a loan the viewer is not the borrower of reads as null', async () => {
 		const { db } = fakeDb({ fund_loans: { data: [], error: null } });
 		const detail = await loadFundLoan(db, 'someone-else');
 		expect(detail).toBeNull();
+	});
+});
+
+describe('the missed-installment note on a Fund loan', () => {
+	it('the console names the rows the schema listed, and only their owed money', () => {
+		const rows = [
+			{ loan_id: 'm1', seq: 2, due_on: '2026-09-01', owed_cents: 8000 },
+			{ loan_id: 'm1', seq: 3, due_on: '2026-09-05', owed_cents: 10000 }
+		];
+		expect(fundLoanMissed(rows)).toEqual({ count: 2, owedCents: 18000 });
+	});
+	it('a loan with nothing overdue has nothing to name', () => {
+		expect(fundLoanMissed([])).toEqual({ count: 0, owedCents: 0 });
 	});
 });
 

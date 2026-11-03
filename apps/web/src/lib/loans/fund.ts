@@ -47,6 +47,17 @@ export interface FundRestructureRow {
 	applied_at: string | null;
 }
 
+/** What the schema's `fund_loan_missed_installments` view lists for one loan. */
+export interface FundMissedRow {
+	loan_id: string;
+	/** Which installment on the agreed schedule ran out (the view's own name). */
+	seq: number;
+	/** The date that passed more than ten days ago. */
+	due_on: string;
+	/** Still owed on that installment, as the schema worked it out. */
+	owed_cents: number;
+}
+
 /** Fund loans read in the borrower's own frame: the Fund signed at once. */
 export function fundLoanStatusText(status: string): { label: string; tone: Tone } {
 	if (status === 'proposed') return { label: 'Waiting for you to sign', tone: 'action' };
@@ -80,6 +91,8 @@ export interface FundLoanDetail {
 	pauses: FundPauseRow[];
 	/** The borrower's staged ask waiting for the partner's event, or null. */
 	restructure: FundRestructureRow | null;
+	/** Installments more than ten days late and unpaid (the schema's view). */
+	missed: FundMissedRow[];
 	outstandingCents: number;
 }
 
@@ -157,13 +170,19 @@ export async function loadFundLoan(db: Db, loanId: string): Promise<FundLoanDeta
   const loan = ((loanRow.data ?? [])[0] ?? null) as FundLoanRow | null;
   if (loan === null) return null;
 
-  const [inst, pauses, restructures, outstanding] = await Promise.all([
+  const [inst, pauses, restructures, missed, outstanding] = await Promise.all([
     fromNew(db, 'fund_loan_installments').select('loan_id, seq, due_on, amount_cents, paid_cents').eq('loan_id', loanId).order('due_on'),
     fromNew(db, 'fund_loan_pauses').select('loan_id, months, started_on').eq('loan_id', loanId),
     fromNew(db, 'fund_loan_restructures').select('loan_id, months, first_due, applied_at').eq('loan_id', loanId),
+    // The schema, not the page, decides what counts as overdue: unpaid,
+    // due, and more than ten days late, on a loan still collecting. A Fund
+    // loan keeps its OWN view - its pauses push unpaid dates back instead of
+    // flagging rows, so the family view would list none of them. Income
+    // schedules have no installment rows, so they list nothing either.
+    fromNew(db, 'fund_loan_missed_installments').select('*').eq('loan_id', loanId),
     rpcNew(db, 'fund_loan_outstanding_cents', { p_loan: loanId })
   ]);
-  for (const r of [inst, pauses, restructures])
+  for (const r of [inst, pauses, restructures, missed])
     if (r.error) throw new Error(`Couldn't load the Fund loan schedule: ${r.error.message}`);
 
   return {
@@ -171,6 +190,7 @@ export async function loadFundLoan(db: Db, loanId: string): Promise<FundLoanDeta
     installments: (inst.data ?? []) as FundInstallmentRow[],
     pauses: (pauses.data ?? []) as FundPauseRow[],
     restructure: (restructures.data ?? []).find((r: FundRestructureRow) => r.applied_at === null) ?? null,
+    missed: (missed.data ?? []) as FundMissedRow[],
     outstandingCents: cents(outstanding, 'the Fund loan balance')
   };
 }
@@ -237,6 +257,15 @@ export interface FundLoanAction {
 	pause: boolean;
 	resume: boolean;
 	restructure: boolean;
+}
+/** What the schema's missed-installment view says about one Fund loan: how
+ * many payments ran out, and the money still owed on just those. The schema
+ * decides what counts (unpaid, due, more than ten days late, still
+ * collecting) - these figures never come from date maths in the page. */
+export function fundLoanMissed(rows: FundMissedRow[]): { count: number; owedCents: number } {
+	let owed = 0;
+	for (const m of rows) owed += m.owed_cents;
+	return { count: rows.length, owedCents: owed };
 }
 /** Why a restructure ask of `months` payments would be refused, or null. Mirrors
  * `restructure_fund_loan` so the console refuses before sending. Income

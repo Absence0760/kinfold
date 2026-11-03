@@ -2,7 +2,7 @@
 	import { tick } from 'svelte';
 	import { invalidate } from '$app/navigation';
 	import { formatCents, formatDay, localToday } from '#lib/dashboard/format.ts';
-	import { fundLoanStatusText, loadFundLoan, pauseEnd, fundLoanActions } from '#lib/loans/fund.ts';
+	import { fundLoanMissed, fundLoanStatusText, loadFundLoan, pauseEnd, fundLoanActions } from '#lib/loans/fund.ts';
 	import type { FundLoanDetail } from '#lib/loans/fund.ts';
 	import { pauseMonthsUsed, pauseMonthsLeft } from '#lib/loans/loan.ts';
 	import { monthsWord } from '#lib/loans/words.ts';
@@ -87,17 +87,19 @@
 	);
 	const view = $derived.by(() => {
 		if (!detail) return null;
-		const { loan, pauses, installments, outstandingCents } = detail;
+		const { loan, pauses, installments, missed, outstandingCents } = detail;
 		const pausedUntil = pauseEnd(pauses, loan.id);
 		const used = pauseMonthsUsed(pauses, today);
 		const left = pauseMonthsLeft(loan.pause_months_per_year, used);
 		const unpaid = installments.filter((i) => i.paid_cents < i.amount_cents);
 		const openAsk = detail.restructure;
 		const actions = fundLoanActions(loan.status, outstandingCents, left, loan.schedule, openAsk !== null);
+		const late = fundLoanMissed(missed);
 		return {
 			loan,
 			installments,
 			unpaid,
+			late,
 			openAsk,
 			pausedUntil,
 			used,
@@ -206,6 +208,17 @@
 					<dd>{view.installments.length} monthly payments. The amounts add up to exactly what was lent: no interest, nothing lost to rounding.</dd>
 				</div>
 			{/if}
+		{/if}
+		{#if view.late.count > 0}
+			<div>
+				<dt>Payment dates that ran out</dt>
+				<dd>
+					{view.late.count} of your monthly payments are more than ten days late and unpaid
+					- {formatCents(view.late.owedCents)} still owed on just those. Nothing is charged for a
+					late payment: it starts a conversation with the lending Fund (a reminder and the pause
+					offer), and money already owed never changes because of it.
+				</dd>
+			</div>
 		{/if}
 		{#if l.lien_bps > 0}
 			<div>
