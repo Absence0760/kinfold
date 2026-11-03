@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The ops console can SEE reconcile differences; the reserve panel waits
+
+- **The gap this closes**: `record_ledger_difference` wrote alerts into an append-only, service-granted table that nothing could read - the reconcile cron found differences and the operators had no place to look. Roadmap 1e says "reconciliation and reserve panels join in 2h", and the reconciliation half of that is a door problem, not a 2h problem: a reviewer needs to SEE an alert, and the ledger books behind it stay behind the service.
+- **The decision**: a reviewer/admin-only door, `review_ledger_differences(limit)`, answers fund, account and BOTH figures (the partner's statement and the ledger's own number) newest first, audit-logging its own read like every privileged read. The console page lists them under "Differences on the books" beside the trail. No client-side re-derivation anywhere: the mirror keeps the row's shape and the figures as recorded, so a difference can't be hidden in the browser.
+- **Why fund-level is allowed to cross**: these are the same class of aggregates `open_books` already publishes to everyone - fund accounts, never member, payee or vendor keys - and the test asserts a `member_id` key never appears in what the door answers.
+- **What stays deferred**: the reserve panel. The reserve accounts exist in the schema, but a panel over them is money-management display with its own product decisions (how much of the reserve to show, and to whom) - left for 2h proper, per the roadmap line.
+- **Reversal:** if the alert table were ever made readable by reviewers directly (a read policy over `ledger_differences`), this door collapses into the table grant and the TS mirror reads the table - the mirror's shape stays, and the audit-log hook for "the alerts were read" would need to move onto the table's read path to stay visible on the trail.
+
 ## 2026-11-03 — Every test name the docs claim was checked against the repo, and three were ambiguous
 
 - **The audit**: each backticked test name in the 81 tracked `.md` files was resolved to a real artifact - a pgTAP `*.sql` in `supabase/tests`, a deno `*_test.ts` beside its function, or a vitest `*.test.ts` under `src/`. Every 14-digit migration prefix was checked the same way. Result after the fixes: 0 unknown claims.

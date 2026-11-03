@@ -58,7 +58,7 @@ applies before it touches a file are pinned there, without a stack. `pnpm check:
 
 `apps/backend` is a Supabase project. Migrations live in `apps/backend/supabase/migrations` and pgTAP tests in `apps/backend/supabase/tests`; change the schema through a new migration plus a test, then `pnpm gen:types`. The schema overview, the invariants the database enforces and the edge functions are in [backend.md](backend.md).
 
-A pgTAP file's `select plan(N)` must equal the number of top-level assertions it makes — `is`, `is_ok`, `is_not_null`, `isnull`/`isnot`, `isnt`, `like`, `results_eq`, `ok`, `lives_ok`, `throws_ok`, `throws_like` — each call is one test, and a suite that runs short of its plan FAILS in `pnpm test:backend:db` (pgTAP reports the gap as a failure, not a pass). So a suite that can't be run here is audited by counting, not by eyeballing: `grep -cE "^select (is|is_ok|is_not_null|isnull|isnot|isnt|like|results_eq|ok|lives_ok|throws_ok|throws_like)\(" <file>` must print the same number the file's `plan()` claims. All 59 suites agree on 2026-11-03.
+A pgTAP file's `select plan(N)` must equal the number of top-level assertions it makes — `is`, `is_ok`, `is_not_null`, `isnull`/`isnot`, `isnt`, `like`, `results_eq`, `ok`, `lives_ok`, `throws_ok`, `throws_like` — each call is one test, and a suite that runs short of its plan FAILS in `pnpm test:backend:db` (pgTAP reports the gap as a failure, not a pass). So a suite that can't be run here is audited by counting, not by eyeballing: `grep -cE "^select (is|is_ok|is_not_null|isnull|isnot|isnt|like|results_eq|ok|lives_ok|throws_ok|throws_like)\(" <file>` must print the same number the file's `plan()` claims. All 60 suites agree on 2026-11-03.
 
 ## Clients
 
