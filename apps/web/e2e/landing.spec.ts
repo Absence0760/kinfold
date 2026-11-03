@@ -375,6 +375,11 @@ test('a dead link answers the error page, not a blank shell', async ({ page }) =
 	await expect(page.locator('body')).toContainText('The link may be old or mistyped.');
 	// A 404 offers no retry: the copy's `retry: false` reaches the screen.
 	await expect(page.getByRole('button', { name: /try again/i })).toHaveCount(0);
+	// What replaces the retry: exactly one way home, so the visitor is never
+	// left standing in an error with nowhere to go.
+	await expect(page.locator('.actions')).toHaveCount(1);
+	await expect(page.locator('.actions a')).toHaveCount(1);
+	await expect(page.locator('.actions a')).toHaveText('Go to the Kinfold home page');
 });
 
 test.describe('without JavaScript', () => {
