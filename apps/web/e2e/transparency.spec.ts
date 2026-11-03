@@ -53,3 +53,21 @@ test('the counselor section names nobody the schema did not publish', async ({ p
 	await expect(page.locator('#counsel + ul')).toHaveCount(0);
 	await expect(page.locator('#counsel + a')).toHaveCount(0);
 });
+
+test('a failed read never shows money as zero', async ({ page }) => {
+	 await gotoHydrated(page, '/transparency');
+	 // Every published figure needs the stack, so in this build none of it
+	 // renders: the page must not print a stand-in $0 or an empty money cell.
+	 const content = await page.content();
+	 expect(/\$[\d,]+/.test(content)).toBe(false);
+	 expect(/USD|per month|monthly payment/.test(content)).toBe(false);
+	 // The counselor section keeps its heading and its one notice line, so a
+	 // reader sees the gap explained rather than a blank figure column.
+	 const notices = page.locator('#counsel + p');
+	 await expect(notices).toHaveCount(1);
+	 // The other figures answer for themselves too: six more lines.
+	 const allNotices = page.locator('p.empty, p.problem');
+	 await expect(allNotices).toHaveCount(7);
+	 // Nothing here names a counselor: the Fund's agency only arrives on a row.
+	 await expect(page.locator('#counsel + a')).toHaveCount(0);
+});
