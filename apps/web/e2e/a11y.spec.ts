@@ -152,7 +152,7 @@ async function screenReaderProblems(page: Page) {
 
 
 // WCAG's reflow promise, which is the roadmap's "large text from day one": a
-// reader at 200%% zoom has the layout of a 320px-wide screen, and a page that
+// reader at 200% zoom has the layout of a 320px-wide screen, and a page that
 // answers it with a sideways scroll makes them drag diagonally to read a line.
 for (const route of publicRoutes) {
 	test(`${route} reflows at 320 CSS px without a sideways scroll`, async ({ page }) => {
@@ -179,9 +179,6 @@ for (const route of publicRoutes) {
 	});
 }
 
-// WCAG's contrast promise, the last half of the accessibility bullet: text a
-// reader can see but cannot tell from its background is unreadable for low
-// vision, so every run of text is measured against the colors the page paints.
 // The last assistive preference the site promises: people who ask their browser
 // for reduced motion get a page that never animates and never smooth-scrolls.
 async function motionProblems(page: Page) {
@@ -319,6 +316,47 @@ async function positiveTabindexProblems(page: Page) {
 	});
 }
 
+// WCAG's contrast promise, the last half of the accessibility bullet: text a
+// reader can see but cannot tell from its background is unreadable for low
+// vision, so every run of text is measured against the colors the page paints.
+// WCAG 2.4.4 link purpose: a screen reader can pull the page's links into a
+// list read one at a time, so two links that announce the same name have to
+// lead the reader to the same place.
+async function linkPurposeProblems(page: Page) {
+	return await page.evaluate(() => {
+		const byName = new Map();
+		const resolve = document.createElement('a');
+		for (const el of document.body.querySelectorAll('a[href]')) {
+			const style = getComputedStyle(el);
+			if (style.display === 'none' || style.visibility === 'hidden') continue;
+			const name = (el.getAttribute('aria-label') || el.textContent || '').trim();
+			if (!name) continue;
+			// Compare RESOLVED destinations: the menu writes `#how-it-works` while
+			// a card writes `/#how-it-works`; the attribute strings differ, the
+			// place a reader lands does not.
+			resolve.setAttribute('href', el.getAttribute('href') || '');
+			const seen = byName.get(name);
+			if (seen === undefined) {
+				byName.set(name, [resolve.href]);
+			} else {
+				seen.push(resolve.href);
+			}
+		}
+		const found = [];
+		for (const entry of byName.entries()) {
+			const [name, hrefs] = entry;
+			const distinct = [];
+			for (const href of hrefs) {
+				if (distinct.indexOf(href) === -1) distinct.push(href);
+			}
+			if (distinct.length > 1) {
+				found.push(`link "${name}" leads to ${distinct.length} places: ${distinct.join(' and ')} - a link list conflates them`);
+			}
+		}
+		return found;
+	});
+}
+
 async function contrastProblems(page: Page) {
 	const problems = await page.evaluate(() => {
 		const found = [];
@@ -427,6 +465,11 @@ test.describe('with JavaScript blocked', () => {
 			await page.waitForLoadState('networkidle');
 			expect(await contrastProblems(page)).toEqual([]);
 		});
+		test(`${route} keeps one name for one destination without JavaScript`, async ({ page }) => {
+			await page.goto(route);
+			await page.waitForLoadState('networkidle');
+			expect(await linkPurposeProblems(page)).toEqual([]);
+		});
 	}
 });
 
@@ -443,6 +486,13 @@ for (const route of publicRoutes) {
 // The design ships a dark scheme too (tokens via prefers-color-scheme), so
 // contrast - the one rule that depends on what the page paints - has to hold
 // in both. The browser setting is Playwright's, not a class swap.
+for (const route of publicRoutes) {
+	test(`${route} announces one destination per link name`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		expect(await linkPurposeProblems(page)).toEqual([]);
+	});
+}
+
 for (const route of publicRoutes) {
 	test(`${route}: the Tab walk has no trap and no positive tabindex`, async ({ page }) => {
 		await gotoHydrated(page, route);
