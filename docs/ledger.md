@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The error page an unknown path answers is an audited public surface
+
+- **The decision**: `a11y.spec.ts` now audits a fourth surface - `/no-such-page-anywhere`, which the static adapter answers with the error page through its 200.html fallback - and `landing.spec.ts` pins what that page actually says: the heading "We can't find that page", the body "The link may be old or mistyped.", and no retry button (a 404's copy carries `retry: false`).
+- **Why the error page counts as public**: a mistyped link, a stale bookmark and a removed page all land a visitor there, and a keyboard or screen-reader user has to be able to read what went wrong and stop. Vitest pins the copy function; only the e2e build can pin that the fallback actually puts it on the wire and that the "try again" control a 404 refuses never reaches the screen.
+- **Why no separate spec file**: these are the public surfaces' rules, and the error page shares the `(site)` layout with the others - a fourth route in the same audit keeps one named problem list instead of a second file that checks a subset.
+- **Reversal:** if a project starts prerendering error pages (serving the copy server-side), the audit keeps working but the fallback comment moves; if the member area grows its own error page, it joins once a stack-configured project exists.
+
 ## 2026-11-03 — The ledger checks its own conventions: every entry dated, reversible, newest first
 
 - **The decision**: `check_docs_hygiene.mjs` now reads `docs/ledger.md` as a ledger, not just as markdown - every `## ` entry must open with an ISO decision date, must contain a `**Reversal` bullet, and the dates must never step forward down the file.
