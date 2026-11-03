@@ -4,10 +4,17 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 ## 2026-11-02 — The member area's no-stack ENTRY is e2e-covered: /app must redirect to /signin
 
-- **The redirect was already the rule** (`app/+layout.ts` sends an unconfigured visitor to `signinUrl(url)`); what `e2e/member-entry.spec.ts` pins is the browser-visible consequence, for every member route that exists (`/app`, `/app/board`, `/app/cover`, `/app/loans`, `/app/review`), each keeping its own return path in `?next=`: the preview build's member area is never a half-empty shell or a crash through the SPA fallback.
+- **The redirect was already the rule** (`app/+layout.ts` sends an unconfigured visitor to `signinUrl(url)`); what `e2e/member-entry.spec.ts` pins is the browser-visible consequence, for all seven unparameterised member routes (`/app`, `/app/board`, `/app/cover`, `/app/invite`, `/app/loans`, `/app/requests/new`, `/app/review`), each keeping its own return path in `?next=`: the preview build's member area is never a half-empty shell or a crash through the SPA fallback.
 - **Waiting on the notice, not on goto's response**: the redirect is client-side (Kit's router runs the layout's load after hydration), so `page.goto` resolves while the URL is still `/app`; asserting the /signin notice (which only exists after the navigation) makes the test deterministic, and `retries: 0` means it can't be flaked away.
 - **Same no-stack rule as the /signin entry**, so both stay in the default suite: neither path touches the stack, only the sign-in flow behind it does.
 - **Reversal:** if `/app` should instead render an empty member area with a notice when unconfigured, delete `e2e/member-entry.spec.ts` and change `app/+layout.ts` to stop redirecting; the sign-in entry (`e2e/signin.spec.ts`) stays either way.
+
+## 2026-11-02 — Proof of liability stays the partner's filing step, not a new local column
+
+- **What the roadmap still asks for**: `roadmap.md` 2b and [followups.md](followups.md) name "proof of liability cover" as the last cover term. Rating filings ask an applicant for proof of liability (the report naming the party at fault) before collision cover applies - it is a demand made *before* a claim exists, and a claim that reaches Kinfold has already passed it.
+- **Why not a `claims.proved_by` column**: the feed is the partner's, so any local proof field would be a copy of a check we can neither perform nor verify here - a column the partner says they ran, and nothing more. design.md keeps liability with the member's own insurer ("the pool never replaces the cover the law requires"), which is a term on the member's side, not a per-claim claim.
+- **What stands in locally**: the request-side analogue is already built - evidence, reviews with written reasons, fraud signals and appeals decide whether a request is credible before money moves. That is where Kinfold's own liability judgement lives.
+- **Reversal:** if the state's filing rules turn out to demand the liable party's identity on the claim itself, add a `liability` text column on `public.claims`, require it in `record_claim`, and show it on the member's claims card; the feed contract then has to carry it.
 
 ## 2026-11-02 — The cover console shows the filed annual deductible and what this year has used
 

@@ -6,7 +6,8 @@ import { expect, test } from '@playwright/test';
 // that is what keeps a preview build from serving a half-empty member area or
 // crashing through the SPA fallback. Runs on both viewports.
 
-const memberRoutes = ['/app', '/app/board', '/app/cover', '/app/loans', '/app/review'];
+const memberRoutes = ['/app', '/app/board', '/app/cover', '/app/invite',
+	'/app/loans', '/app/requests/new', '/app/review'];
 
 for (const route of memberRoutes) {
 	test(`${route} sends an unconfigured visitor to sign-in`, async ({ page }) => {
