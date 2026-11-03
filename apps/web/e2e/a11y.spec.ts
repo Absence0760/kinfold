@@ -485,6 +485,43 @@ async function documentTitleProblems(page: Page) {
 // error pages are standalone, so the audit demands the page's OWN printed words
 // name the preview status - head metadata does not count, a screen reader and
 // a reader-mode browser read the body.
+// In-page jumps are navigation: a fragment link whose target id drifted (a
+// section renamed its id, the nav not updated) silently lands the reader at
+// the top of the page - and a target inside a display:none subtree lands them
+// on nothing. Every same-document fragment link on a public page must point at
+// an element that carries that id and is actually visible.
+async function staleAnchorsProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		const ids: Record<string, true> = {};
+		for (const el of document.querySelectorAll('[id]')) ids[el.id] = true;
+		for (const a of document.querySelectorAll('a[href]')) {
+			const href = a.getAttribute('href') || '';
+			if (href.indexOf('#') === -1) continue;
+			const u = new URL(href, document.location.href);
+			if (u.hash === '') continue;
+			if (u.href.split('#')[0] !== document.location.href.split('#')[0]) continue;
+			const id = u.hash.slice(1); // URL.hash keeps the leading #
+			const name = (a.textContent || '').replace(/\s+/g, ' ').trim();
+			if (id === '') {
+				found.push('the link "' + name + '" ends in a bare #: a dead anchor that lands nowhere');
+				continue;
+			}
+			if (!ids[id]) {
+				found.push('the link "' + name + '" jumps to #' + id + ' but no element carries that id: the reader lands at the top of the page instead of the section');
+				continue;
+			}
+			const targetEl = document.getElementById(id);
+			if (targetEl === null) continue;
+			const style = getComputedStyle(targetEl);
+			if (style.display === 'none' || style.visibility === 'hidden') {
+				found.push('the link "' + name + '" jumps to #' + id + ' but that element is hidden: the reader arrives at nothing');
+			}
+		}
+		return found;
+	});
+}
+
 async function previewStatusProblems(page: Page) {
 	return await page.evaluate(() => {
 		const words = (document.body.innerText || '').replace(/\s+/g, ' ');
@@ -633,6 +670,7 @@ for (const route of publicRoutes) {
 	test(`${route} announces its design-preview status`, async ({ page }) => {
 		await gotoHydrated(page, route);
 		expect(await previewStatusProblems(page)).toEqual([]);
+		expect(await staleAnchorsProblems(page)).toEqual([]);
 	});
 }
 
@@ -641,6 +679,7 @@ for (const route of prerenderedPublicRoutes) {
 		await page.goto(route);
 		await page.waitForLoadState('networkidle');
 		expect(await previewStatusProblems(page)).toEqual([]);
+		expect(await staleAnchorsProblems(page)).toEqual([]);
 	});
 }
 
