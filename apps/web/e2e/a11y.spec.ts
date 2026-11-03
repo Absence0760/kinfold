@@ -217,7 +217,7 @@ async function focusRingProblems(page: Page) {
 			// style, so an ancestor's hiding must be walked for, not read off the
 			// element: exactly this is what makes Tab skip the element.
 			let hidden = false;
-			for (let p = el; p; p = p.parentElement) {
+			for (let p: Element | null = el; p; p = p.parentElement) {
 				const style = getComputedStyle(p);
 				if (style.display === 'none' || style.visibility === 'hidden') {
 					hidden = true;
