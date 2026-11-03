@@ -505,6 +505,42 @@ async function documentTitleProblems(page: Page) {
 // the words that mark it are exactly the ones a careful reader would catch. The
 // audit reads the page's printed words and names each placeholder it finds with
 // the words around it, so the copy line is findable.
+// A slip that prints a word twice back to back ("not a a profit margin") is a
+// copy failure every reader hears: screen readers say it aloud twice, and so does
+// a careful human. The audit walks the page's own text nodes - never class names,
+// attributes or script - and names each adjacent repeat with the words around it,
+// so the copy line is findable. Repeats across element boundaries (markup on both
+// halves) are out of scope: this reads the copy as it sits in the file.
+async function duplicatedWordsProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		const queue = [document.body];
+		while (queue.length > 0) {
+			const el = queue.pop();
+			if (el === undefined || el === null)
+				break;
+			const kids = el.childNodes;
+			for (let i = 0; i < kids.length; i += 1) {
+				const node = kids[i];
+				if (node.nodeType === 3) {
+					const text = (node.nodeValue || '').replace(/\s+/g, ' ');
+					for (const hit of text.matchAll(/\b([a-z]{1,})\s+\1\b/gi)) {
+						const around = text.slice(Math.max(0, hit.index - 24), hit.index + hit[0].length + 24).trim();
+						found.push('the printed copy repeats a word back to back as "' + hit[0] + '" near "' + around + '": a slip every reader hears the page say twice');
+					}
+				} else if (node.nodeType === 1) {
+					const name = (node as HTMLElement).tagName.toUpperCase();
+					if (name !== 'SCRIPT' && name !== 'STYLE' && name !== 'NOSCRIPT') {
+						queue.push(node as HTMLElement);
+					}
+				}
+			}
+		}
+		return found;
+	});
+}
+
+
 async function scaffoldWordsProblems(page: Page) {
 	return await page.evaluate(() => {
 		const found = [];
@@ -757,6 +793,7 @@ for (const route of publicRoutes) {
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
+		expect(await duplicatedWordsProblems(page)).toEqual([]);
 	});
 }
 
@@ -769,6 +806,7 @@ for (const route of prerenderedPublicRoutes) {
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
+		expect(await duplicatedWordsProblems(page)).toEqual([]);
 	});
 }
 
