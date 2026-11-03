@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Document titles are audited for content and for telling the surfaces apart
+
+- **The decision**: WCAG 2.4.2 (document title) joined the audit in two shapes - every public surface carries exactly one non-empty `<title>` (hydrated, and on the prerendered no-JS copy where the rule matters most), and one test collects titles across all four public surfaces and demands the Set has no duplicates, because a screen reader announces the title at page load and a reader with tabs or bookmarks open cannot tell identical titles apart.
+- **Distinctness is a cross-surface rule**: unlike the per-page rules it needs all four surfaces in one test; hydrated pass only - the no-JS copy of client-side pages carries no title of its own (nothing to announce, the standing unjudged precedent), while the prerendered copies are covered by the per-surface content check.
+- **Third sighting of the stale-server trap, now with a policy**: duplicating the landing title on the transparency page first stayed green because a previous run's preview server on 7790 was reused serving the previous build - the tests read the wrong artifact. Every teeth-proof now must confirm the served build is the current one (kill the listener, or grep the built HTML for the mutation) before trusting either colour of result.
+- **What it found**: nothing to fix - titles are descriptive and distinct today (`Sign in · Kinfold`, `We can't find that page · Kinfold` from the error page's copy, landing and transparency own).
+- **Reversal:** if surfaces ever legitimately share a title (two views of the same document), the distinctness test narrows to the reader-landmark set rather than weakening the content check.
+
 ## 2026-11-03 — The reduced-motion rule now forbids motion-property transitions, judged per property
 
 - **The decision**: the motion rule grew the transition clause its own Reversal bullet had promised: under reduced motion, no element may run a transition on width/height/transform/left/right/top/bottom - the properties that can MOVE content. Not blanket: a color hover transition is not motion and accusing it would pressure the site into dropping harmless polish, so the rule filters by property.
