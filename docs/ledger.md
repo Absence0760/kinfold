@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Reflow gets teeth too: no public page may need a sideways scroll at 320 CSS px
+
+- **The decision**: `a11y.spec.ts` grew a second check per public surface - resize the viewport to 320 CSS px and demand the document answer with no sideways scroll (`scrollWidth` at most the viewport), naming overflowing elements as culprits only when they can really cause a scroll.
+- **Why 320 CSS px**: that is how WCAG states reflow - content stays readable at 200% zoom without a horizontal scroll, which is exactly the roadmap phrase "usable with a screen reader and large text from day one". The first half of that phrase had rules; the "large text" half had none, so a page built for wide screens would have passed the whole accessibility audit.
+- **Why not browser zoom**: a 320px viewport asks the same layout question, and the audit already pins the viewport meta separately, so zooming would test the same thing through a noisier mechanism.
+- **The name list only accuses real offenders**: an element inside a container that clips it (`overflow: hidden` or a scrollable shell) or inside a closed `<details>` menu (the mobile nav keeps its layout but shows nothing) cannot make the page scroll, so flagging one would blame a page a reader can already use. With the filter off, the audit itself names those elements as the culprit - proof the filter reads rather than silences.
+- **Reversal:** if the member consoles gain their own error or wide-table pages once a configured stack joins the audit, the same rule applies per surface; if the site ever ships a legitimately scrollable widget (a comparison table inside a scrollable shell), the scrollWidth check is the one to keep and the name list to read - the page still answers with no document-level scroll.
+
 ## 2026-11-03 — A skip link is only honest if it is the page's first keyboard stop
 
 - **The decision**: the accessibility audit grew an ordering rule - when a page offers a skip link, that link must be the first focusable element on the page; anything else that takes focus first is reported by name (tag and class).
