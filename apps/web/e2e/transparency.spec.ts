@@ -13,14 +13,14 @@ test('transparency page renders its title and heading', async ({ page }) => {
 
 test('every section is present and the unconfigured notice is visible', async ({ page }) => {
 	await gotoHydrated(page, '/transparency');
-	for (const id of ['quarters', 'formula', 'share', 'grants', 'reach']) {
+	for (const id of ['quarters', 'formula', 'share', 'counsel', 'grants', 'reach']) {
 		await expect(page.locator(`#${id}`)).toBeVisible();
 	}
 
 	const notices = page.locator('p.problem, p.empty');
-	await expect(notices).toHaveCount(6);
-	// The five sections (books, weights, share rule, grants, fairness share) each
-	// show their line: one `p.problem` for the books plus five `p.empty`s.
+	await expect(notices).toHaveCount(7);
+	// The six sections (books, weights, share rule, the counselor, grants, fairness
+	// share) each show their line: one `p.problem` for the books plus six `p.empty`s.
 	await expect(notices.nth(0)).toContainText('need the database to be configured');
 });
 test('the share-rule section reads like a share rule, not like the books', async ({ page }) => {

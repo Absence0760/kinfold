@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { formatCents } from '#lib/dashboard/format.ts';
 import { reachShareBps, shareWord } from '#lib/transparency/data.ts';
+import { formatDay } from '#lib/dashboard/format.ts';
 
 	// A page's `$props()` is the page context: the load result sits under `data` (see the other route pages).
 	let { data } = $props();
@@ -18,7 +19,8 @@ import { reachShareBps, shareWord } from '#lib/transparency/data.ts';
 	The fairness measure below names the share of a fund's granted money that reached households with no family lender
 	of their own.
 	Quarters below are the published months summed; a quarter with fewer than three published months
-	says how many months it covers. The share rule says what part of a repair a member carries themselves; the grant report lists the money funders have reported in.
+	says how many months it covers. The share rule says what part of a repair a member carries themselves; the grant report lists the money funders have reported in, and the counselor names the one agency
+	the Fund partners with to keep a stalled mortgage at the bank.
 </p>
 
 {#if data.problem}
@@ -110,6 +112,28 @@ import { reachShareBps, shareWord } from '#lib/transparency/data.ts';
 		How often a member's pool requests were paid sets how much of the next repair they carry themselves: the
 		fund's grant to them shrinks by that share and they pay the rest. A smaller grant is never a refusal and
 		never a wait. Older versions stay listed so a member can ask which rule priced their share.
+	</p>
+{/if}
+
+<h2 id="counsel">The certified housing counselor</h2>
+{#if data.counselProblem}
+	<p class="empty">{data.counselProblem}</p>
+{:else if data.counsel === null}
+	<p class="empty">No certified agency is in effect yet — the Fund names one only with its certification on paper.</p>
+{:else}
+	<ul class="counsel">
+		<li>
+			<strong>{data.counsel.agencyName}</strong>, certified under {data.counsel.certifiedUnder} and
+			HUD-approved on {formatDay(data.counsel.hudApprovedOn)}, the agency the Fund partners with since
+			{formatDay(data.counsel.effectiveFrom)}; its own contact page:
+			<a href={data.counsel.contactUrl}>{data.counsel.agencyName}</a>.
+		</li>
+	</ul>
+	<p class="note">
+		Keeping a mortgage the bank already holds is the bank's to decide, so Kinfold never becomes a counselor and
+		never asks one on a member's behalf: it names the one agency it partners with, and the member goes to theirs
+		asking for forbearance (a pause the bank agrees to) or a modification (easier terms). Older versions stay
+		listed in the table so a fairness auditor can ask which agency was named beside a request.
 	</p>
 {/if}
 

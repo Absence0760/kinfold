@@ -156,6 +156,50 @@ export async function loadGrantReport(db: Db): Promise<GrantRow[]> {
 	}));
 }
 
+/** The agency the Fund partners with, as published: name plus the credential
+ * the row claims, so a page can say which agency and under what CFR it acts. */
+export interface CertifiedCounsel {
+	version: number;
+	agencyName: string;
+	/** A link a member can follow to reach the agency. */
+	contactUrl: string;
+	/** The day the agency’s HUD approval was verified, as stored. */
+	hudApprovedOn: string;
+	/** The CFR the agency is certified under, stored exactly. */
+	certifiedUnder: string;
+	effectiveFrom: string;
+}
+
+/**
+ * The Fund’s one certified housing counselor (design.md: it partners with one
+ * agency, certified under 24 CFR part 214, for every applicant and for the
+ * relief step, rather than becoming one). Which version is current is the
+ * schema’s own door, so this page never re-decides which agency is standing.
+ * Null means no certified agency is in effect yet, which is the honest answer
+ * a page shows instead of naming an agency the Fund has not certified.
+ */
+export async function loadCertifiedCounsel(db: Db): Promise<CertifiedCounsel | null> {
+	const versionResult = await rpcNew(db, 'housing_counsel_version', {});
+	if (versionResult.error) throw new LoadError('the certified housing counselor', versionResult.error, undefined);
+	const version = Number(versionResult.data ?? 0);
+	if (version === 0) return null;
+	// housing_counsel is newer than the committed generated types (`fromNew` seam).
+	const result = await fromNew(db, 'housing_counsel')
+		.select('version, agency_name, contact_url, hud_approved_on, certified_under, effective_from')
+		.eq('version', version);
+	const rows = must<Record<string, unknown>[]>(result, 'the published housing counselor');
+	const row = rows[0];
+	if (!row) return null;
+	return {
+		version,
+		agencyName: String(row['agency_name']),
+		contactUrl: String(row['contact_url']),
+		hudApprovedOn: String(row['hud_approved_on']),
+		certifiedUnder: String(row['certified_under']),
+		effectiveFrom: String(row['effective_from'])
+	};
+}
+
 export function shareWord(bps: number): string {
 	const pct = bps / 100;
 	return pct % 1 === 0 ? `${pct}%` : `${pct.toFixed(1)}%`;

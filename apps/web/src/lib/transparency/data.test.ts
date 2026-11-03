@@ -4,12 +4,14 @@ import {
 	loadGrantReport,
 	loadNeedsFormulas,
 	loadOpenBooks,
+	loadCertifiedCounsel,
 	loadShareRules,
 	quarterlySummaries,
 	shareWord,
 	reachShareBps,
 	type GrantRow,
-	type QuarterlySummary
+	type QuarterlySummary,
+	type CertifiedCounsel
 } from './data.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
@@ -196,5 +198,47 @@ describe('loadGrantReport', () => {
 	it('a refused read fails loudly rather than hiding the funding', async () => {
 		const { db } = fakeDb({ grant_report: { data: null, error: { message: 'permission denied for function grant_report' } } });
 		await expect(loadGrantReport(db)).rejects.toThrow(/permission denied/);
+	});
+});
+
+describe('loadCertifiedCounsel', () => {
+	it('the standing agency is the version the schema says is current', async () => {
+		const { db, asked } = fakeDb({
+			housing_counsel_version: { data: 2, error: null },
+			housing_counsel: {
+				data: [{ version: 2, agency_name: 'Next Certified Agency', contact_url: 'https://next.example/counsel', hud_approved_on: '2026-06-01', certified_under: '24 CFR part 214', effective_from: '2027-01-01' }],
+				error: null
+			}
+		});
+		const counsel: CertifiedCounsel | null = await loadCertifiedCounsel(db);
+		expect(asked).toEqual(['housing_counsel_version', 'housing_counsel']);
+		expect(counsel).toEqual({
+			version: 2,
+			agencyName: 'Next Certified Agency',
+			contactUrl: 'https://next.example/counsel',
+			hudApprovedOn: '2026-06-01',
+			certifiedUnder: '24 CFR part 214',
+			effectiveFrom: '2027-01-01'
+		});
+	});
+
+	it('no agency in effect yet answers null, and the table is never read', async () => {
+		const { db, asked } = fakeDb({
+			housing_counsel_version: { data: 0, error: null },
+			housing_counsel: { data: [], error: null }
+		});
+		const counsel = await loadCertifiedCounsel(db);
+		expect(counsel).toBeNull();
+		expect(asked).toEqual(['housing_counsel_version']);
+	});
+
+	it('a version the table no longer carries answers null rather than a blank name', async () => {
+		const { db } = fakeDb({ housing_counsel_version: { data: 3, error: null }, housing_counsel: { data: [], error: null } });
+		expect((await loadCertifiedCounsel(db))).toBeNull();
+	});
+
+	it('a refused read fails loudly rather than naming no agency', async () => {
+		const { db } = fakeDb({ housing_counsel_version: { data: 2, error: null }, housing_counsel: { data: null, error: { message: 'permission denied for table housing_counsel' } } });
+		await expect(loadCertifiedCounsel(db)).rejects.toThrow(/permission denied/);
 	});
 });
