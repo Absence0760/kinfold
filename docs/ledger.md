@@ -7,6 +7,12 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **Dues buy premiums, not grants**: design.md has dues paying premiums (paid in full to the insurer), gifts and grants funding capped repair grants, and dues leftovers going to reserves or back to members. But dues money journalled straight into `available`, the pool's own-money account, so a dues dollar could fund a pool grant — neither lawful nor designed. New fund-level `dues` account: dues money arrives there, premiums move `dues` → `premiums`, and `available` only ever holds money the fund itself holds.
 - **Reversal:** if dues money should pool with the fund's own money again, delete the `dues` account and the rewritten `pay_cover_premium` in 20261102530000_dues_account.sql; the ledger checks (balanced journals, no fund mixing) hold either way.
 
+## 2026-11-02 — The original vision is kept on `main` as history, verbatim (`docs/vision.md`)
+
+- **Why keep it at all**: `origin/dev` held only the first write-up — "Low to zero monthly payments and have insurance" — and it is the raw origin of the rules `design.md` now states in researched form. Losing the wording makes the reversals recorded in this ledger unreadable, so it is kept on `main` rather than deleted with the branch.
+- **Kept verbatim, marked as history**: spelling and grammar are the original's, fenced as source so nothing in it can be mistaken for current advice, and the header says `design.md` wins where they disagree (the earnings-priced pool, the unqualified "everything is public", the unpriced premiums are all reversed there).
+- **Reversal:** if the early wording should stay off `main` (embarrassing, or a confidentiality concern about the founder's notes), delete `docs/vision.md` and the README pointer; the branch itself, and its deletion, are untouched either way.
+
 ## 2026-11-02 — A feed claim over the filed caps is refused, never silently truncated
 
 - **A bad feed entry must not bend the books**: the partner's claims feed can carry an amount the filed terms would not pay (wrong plan, wrong class, or a claim above the vehicle's own value). `record_claim` now checks the limit — the filed deductible cap for the member's plan and the vehicle's rating-law class, and the vehicle's value — and raises rather than clamping, so a silent truncation can never invent a paid-in-full claim that isn't lawful.
