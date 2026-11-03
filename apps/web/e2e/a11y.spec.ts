@@ -206,6 +206,58 @@ async function motionProblems(page: Page) {
 	return problems;
 }
 
+// WCAG 2.4.11: a keyboard reader must SEE where focus is. The walk presses
+// real Tab keys so :focus-visible matches the way a keyboard reader's does,
+// and every stop must paint a ring.
+async function focusRingProblems(page: Page) {
+	const reachable = await page.evaluate(() => {
+		let count = 0;
+		for (const el of document.body.querySelectorAll('a[href], button, summary, input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])')) {
+			// Chromium does not inherit display:none into a child's computed
+			// style, so an ancestor's hiding must be walked for, not read off the
+			// element: exactly this is what makes Tab skip the element.
+			let hidden = false;
+			for (let p = el; p; p = p.parentElement) {
+				const style = getComputedStyle(p);
+				if (style.display === 'none' || style.visibility === 'hidden') {
+					hidden = true;
+					break;
+				}
+			}
+			if (hidden) continue;
+			// A closed <details> hides its contents without display:none at all,
+			// and the browser skips them on Tab; counting them would accuse the
+			// walk.
+			const holder = el.closest('details');
+			if (holder && !holder.hasAttribute('open')) continue;
+			count += 1;
+		}
+		return count;
+	});
+	const found = [];
+	for (let i = 0; i < reachable; i += 1) {
+		await page.keyboard.press('Tab');
+		const stop = await page.evaluate(() => {
+			const el = document.activeElement;
+			if (!el || el === document.body || el === document.documentElement) {
+				return { fell: true, name: '' };
+			}
+			const style = getComputedStyle(el);
+			const width = parseFloat(style.outlineWidth || '0');
+			const ringed = style.outlineStyle !== 'none' && width >= 2;
+			const cls = el.getAttribute('class');
+			const name = cls ? `${el.tagName}.${cls}` : (el.id ? `${el.tagName}#${el.id}` : el.tagName);
+			return { fell: false, name, ringed, width };
+		});
+		if (stop.fell) {
+			found.push(`tab stop ${i + 1}: the walk left the page, so a stop was skipped`);
+		} else if (!stop.ringed) {
+			found.push(`tab stop at ${stop.name} shows no ring: outline ${stop.width}px`);
+		}
+	}
+	return found;
+}
+
 async function contrastProblems(page: Page) {
 	const problems = await page.evaluate(() => {
 		const found = [];
@@ -319,6 +371,14 @@ test.describe('with JavaScript blocked', () => {
 
 // A reduced-motion context is a browser setting, so it belongs to the whole
 // pass: the same rule list reads the page the reader's preference produced.
+
+for (const route of publicRoutes) {
+	test(`${route} paints a focus ring at every keyboard stop`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		expect(await focusRingProblems(page)).toEqual([]);
+	});
+}
+
 test.describe('with reduced motion', () => {
 	test.use({ reducedMotion: 'reduce' });
 	for (const route of publicRoutes) {
