@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The counselor asks and the agency phrase are worded once, in one module
+
+- **The decision**: `counselorAsks` ("forbearance (a pause the bank agrees to) or a loan modification (easier terms)") and `agencyLine` (the standing agency named with its CFR and its HUD-approved day) now live in `requests/public-help.ts` and are imported by the loan console (`bankReliefNote`), the mortgage-gap panel (`publicHelpCounselLine`), the landing mortgage ladder (`PayingItBack`) and the transparency note. Before, four copies of the same two definitions sat in four files, and the landing had already drifted once ("loan modification (new, easier terms)").
+- **Why one module for copy rather than four sentences**: the ladder copy is the thing a fairness auditor quotes beside a request, and a landing page that defines forbearance differently from the member panel is a claim mismatch no test on either page alone would catch. One source makes the drift impossible rather than merely unreached.
+- **The landing keeps the generic wording**: it is prerendered and public, so it cannot read the standing row; it shares the definitions but names no agency. That is why `counselorAsks` is the constant and `agencyLine` is the function.
+- **Reversal:** if the asks ever become per-fund or per-kind wording, `counselorAsks` becomes a function of the request kind - the call sites stay, only the constant gains a parameter.
+
 ## 2026-11-03 — The counselor section is pinned e2e only where a stack-free build can speak
 
 - **Also pinned, same build, no stack**: a failed read never prints money as zero (`$` figures and payment words absent) and the counselor section keeps its one notice line with no contact link - the page explains the gap instead of faking a figure.
