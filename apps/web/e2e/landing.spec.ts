@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { compareSavings, type SavingsInput } from '../src/lib/finance/amortization.ts';
 import { formatUsd } from '../src/lib/core/format.ts';
 import { navSections } from '../src/lib/landing/sections.ts';
+import { counselorAsks } from '../src/lib/requests/public-help.ts';
 import { gotoHydrated } from './helpers.ts';
 
 // Runs in both projects (desktop and phone).
@@ -65,6 +66,16 @@ test.describe('savings calculator', () => {
 		await expect(calc.locator('.big')).toHaveText('$0');
 		await expect(note).toContainText('Add a family or friends share to see the difference.');
 	});
+});
+
+test('the mortgage copy asks for the two things a counselor can ask a bank for', async ({ page }) => {
+	// The landing page is prerendered, so this copy is static - and it shares its
+	// wording with the counselor line the member panels generate from the row.
+	await gotoHydrated(page, '/#repay');
+	await expect(page.locator('#repay .mortgage ul')).toContainText(
+		`Connect you to a HUD-approved housing counselor to ask your bank for ${counselorAsks}`
+	);
+	await expect(page.getByRole('link', { name: /housing counselor/i })).toHaveCount(0);
 });
 
 test.describe('without JavaScript', () => {
