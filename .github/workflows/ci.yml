@@ -11,6 +11,13 @@ name: CI
 # on it and a skipped job counts as passing, so a docs-only push reports the
 # gate green without a second workflow.
 #
+# docs (markdown) is the one gate that runs on EVERY push, code or docs-only:
+# `check_docs_hygiene.mjs` reads every tracked .md file and fails on a tab, a
+# trailing space, a triple blank, a table whose rows disagree on width, or a
+# relative link/anchor with nothing behind it. roadmap.md's promise is that the
+# docs stay readable wherever they are rendered, and a docs-only push is exactly
+# the push that would otherwise sail past every gate.
+#
 # e2e (Playwright) IS in CI: the public prerendered site needs no stack, so the
 # public site's e2e specs run on every code push. `e2e` job installs Chromium
 # (`setup:e2e`), then Playwright builds the site and serves it itself
@@ -55,6 +62,26 @@ jobs:
             esac
           done
           echo "code=$code" >> "$GITHUB_OUTPUT"
+
+  docs:
+    name: docs
+    # Not gated on the code filter: markdown conformance is a question a docs-only
+    # push has to answer for itself, and this job is cheap (no pnpm install, no
+    # stack, no browser).
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+
+      - name: Markdown hygiene and link audit
+        run: node scripts/check_docs_hygiene.mjs
 
   web:
     name: web
@@ -155,17 +182,20 @@ jobs:
   ci-gate:
     name: CI gate
     if: always()
-    needs: [changes, web, backend, e2e]
+    needs: [changes, docs, web, backend, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate job results
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
+          DOCS_RESULT: ${{ needs.docs.result }}
           WEB_RESULT: ${{ needs.web.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
         run: |
-          for r in "$CHANGES_RESULT" "$WEB_RESULT" "$BACKEND_RESULT"; do
+          # The docs gate is not skippable: it runs on every push, so a docs-only push that
+          # breaks the markdown fails the gate instead of sailing past it.
+          for r in "$CHANGES_RESULT" "$DOCS_RESULT" "$WEB_RESULT" "$BACKEND_RESULT"; do
             case "$r" in
               success|skipped) ;;
               *) echo "heavy job did not pass: $r"; exit 1 ;;
