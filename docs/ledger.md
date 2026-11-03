@@ -17,6 +17,14 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **Why no separate spec file**: these are the public surfaces' rules, and the error page shares the `(site)` layout with the others - a fourth route in the same audit keeps one named problem list instead of a second file that checks a subset.
 - **Reversal:** if a project starts prerendering error pages (serving the copy server-side), the audit keeps working but the fallback comment moves; if the member area grows its own error page, it joins once a stack-configured project exists.
 
+## 2026-11-03 — The roadmap table checks its own step ids: unique, and never going back
+
+- **The decision**: `check_docs_hygiene.mjs` now reads `docs/roadmap.md` as a plan, not just as markdown - every row whose first cell is a step id (`1a`, `2i`, ...) must be unique in the file, and the ids must never step backwards down the page.
+- **Why the roadmap specifically**: it is the artifact this build works against, row by row. A duplicated step row makes it ambiguous which leg is actually landed - the reader who checks the first match reads a leg as done while the second, older-looking copy still reads open. A row filed out of stage order hides a leg from the reader who walks the table top to bottom, which is how every reviewer checks progress. Both slips are silent in a diff.
+- **The rank is the stage number times a hundred plus the letter**: ordering is judged on the id itself, never on the row''s text, so rewording a step never moves its place.
+- **Gate rows are not step rows**: Stage 0's rows have no id in their first cell, so this rule only speaks where the plan numbers its steps. The unlanded ones (1a, 2i, 3f) are still judged by their own blocked notes, not by this check.
+- **Reversal:** if a stage ever numbers steps non-monotonically on purpose (say a 3z that must build before a 3d), the ordering check is the one to relax - drop the monotonic `if` and keep the uniqueness one, since a duplicate id is ambiguous under any numbering.
+
 ## 2026-11-03 — The ledger checks its own conventions: every entry dated, reversible, newest first
 
 - **The decision**: `check_docs_hygiene.mjs` now reads `docs/ledger.md` as a ledger, not just as markdown - every `## ` entry must open with an ISO decision date, must contain a `**Reversal` bullet, and the dates must never step forward down the file.
