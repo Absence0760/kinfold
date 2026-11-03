@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Touch targets: every visible control needs a 24x24 box (WCAG 2.5.8)
+
+- **The decision**: the audit now measures the box of every visible `a`/`button` and demands 24x24 CSS px - a finger has to be able to hit the control, and the phone context is where readers actually tap. Carve-outs come from the standard itself: elements with no box at all stay out of the sequence (the same hidden/closed-details convention the walk rules use), and links inside a paragraph are prose links the standard exempts (they move with the text, not independently).
+- **The boundary is now a decision, not an accident**: measuring the public surfaces first (a probe test printed every rect) showed the phone nav menu sits at exactly 24x24. Shipping the rule at the boundary means the margin is recorded in the design's own file rather than one pixel of drift passing silently.
+- **Teeth**: a CSS rule pinning the nav links to 18px tall made the rule name six of them by size (`hit target svelte-nkp01n is 85x18px, under the 24x24 a finger needs`); restored byte-exact (`git diff --stat` empty), green.
+- **What it found**: nothing today - every visible target clears 24 on both projects; the rule guards the next control added too small.
+- **Reversal:** if the design later ships a genuinely small control (an inline icon in a dense header), the exemption grows to a named `data-e2e-small-target` marker on the exception rather than lowering the floor.
+
 ## 2026-11-03 — The language tag is validated, and icon SVGs get the alt rule they cannot inherit
 
 - **The decision**: two half-watched halves of the screen-reader audit were finished. (1) `html lang` only had to exist - any value passed, including garbage. It now has to be a usable tag: 2-3 letters with optional -region groups, and the reserved `und`/`zxx` are rejected, because the point of the attribute is that a reader's tools can switch languages. (2) Inline icon SVGs are pictures the img-alt rule cannot see, so each must be hidden from readers (`aria-hidden`, `role=presentation`) or name itself (`aria-label` or a direct `<title>` child).
