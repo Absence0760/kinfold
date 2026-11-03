@@ -16,7 +16,7 @@
 	import { greeting } from '#lib/dashboard/home.ts';
 	import { showsRaised } from '#lib/dashboard/requests.ts';
 	import { allocationTargetLabel } from '#lib/dashboard/labels.ts';
-	import { duesWord, incomeMethodWord } from '#lib/dashboard/membership.ts';
+	import { duesWord, identityWord, incomeMethodWord } from '#lib/dashboard/membership.ts';
 	import { scoreBand } from '#lib/requests/score-band.ts';
 
 	let { data } = $props();
@@ -403,6 +403,28 @@
 			{:else}
 				<p class="fine">No split set yet; the fund fills the best-evidenced requests first.</p>
 			{/if}
+		</section>
+	{/if}
+
+	{#if home.membership.identity.status !== 'active'}
+		{@const idn = home.membership.identity}
+		<section class="block" aria-labelledby="identity-h">
+			<h2 id="identity-h" tabindex="-1">Your identity check</h2>
+			<p class="section-note">
+				Signing up takes a check that you really are who you say you are, done through a
+				verification vendor. Kinfold keeps only the vendor’s reference and the outcome — never the
+				documents — and the check is what lets you post, pay and lend.
+			</p>
+			<dl class="facts">
+				<div>
+					<dt>Status</dt>
+					<dd>{identityWord(idn.status)}</dd>
+				</div>
+				<div>
+					<dt>When it passes</dt>
+					<dd>You become a member who can post a request, take a pledge and lend a gift or a loan.</dd>
+				</div>
+			</dl>
 		</section>
 	{/if}
 

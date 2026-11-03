@@ -18,6 +18,7 @@ function fakeDb(fixtures: Record<string, Fixture>) {
 		const chain: Record<string, unknown> = {};
 		for (const m of ['select', 'eq', 'or', 'order', 'in']) chain[m] = () => chain;
 		chain.then = (ok: (v: Fixture) => unknown, bad: (e: unknown) => unknown) => Promise.resolve(result).then(ok, bad);
+		chain.maybeSingle = () => Promise.resolve(fixtures[name] ?? { data: null, error: null });
 		return chain;
 	};
 	const db = { from: query, rpc: query } as unknown as Db;
@@ -56,6 +57,7 @@ describe('loadHome', () => {
 			'covered_assets',
 			'family_loans',
 			'income_verifications',
+			'members',
 			'my_giving_record',
 			'my_reliability',
 			'requests',
@@ -69,7 +71,7 @@ describe('loadHome', () => {
 		const charge = { data: [{ period: '2026-10-01', amount_cents: 4000, status: 'captured' }], error: null };		const income = { data: [{ method: 'bank_link', monthly_income_cents: 400000, verified_at: '2026-03-01T00:00:00Z', expires_at: '2027-03-01T00:00:00Z' }], error: null };
 		const claims = { data: [{ request_id: 'r1', gross_cents: 40000, member_share_cents: 1000, paid_cents: 39000, status: 'paid' }], error: null };
 		const reqRow = { id: 'r1', title: 'A door to pay', kind: 'car_damage' as never, status: 'open' as never, funding: 'pool' as never, amount_cents: 100000, created_at: '2026-10-01T00:00:00Z' };
-		const fixtures = { requests: { data: [reqRow], error: null }, subscriptions: dues, subscription_payments: charge, income_verifications: income, claims, my_giving_record: giving, my_reliability: reliability };
+		const fixtures = { requests: { data: [reqRow], error: null }, subscriptions: dues, subscription_payments: charge, income_verifications: income, claims, my_giving_record: giving, my_reliability: reliability, members: { data: { status: 'active', joined_at: '2026-03-31' }, error: null } };
 		const home = await loadHome(fakeDb(fixtures).db, 'maria', '2026-10-31');
 		expect(home.membership.dues.status).toBe('captured');
 		expect(home.membership.dues.monthlyCents).toBe(4000);

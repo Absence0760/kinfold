@@ -71,11 +71,18 @@ export interface PlanState {
 	weightPct: number;
 }
 
+/** The member's own account state: identity check done or not, and when they joined. */
+export interface IdentityState {
+	status: string | null;
+	joinedAt: string | null;
+}
+
 export interface MembershipSummary {
 	dues: DuesState;
 	income: IncomeState;
 	cover: CoverState;
 	plan: PlanState[];
+	identity: IdentityState;
 }
 
 function duesPeriodOf(today: string): string {
@@ -90,6 +97,8 @@ export function summarizeMembership(
 	assets: AssetRow[],
 	premiumCents: number,
 	preferences: PreferenceRow[],
+	memberStatus: string | null,
+	memberJoinedAt: string | null,
 	today: string
 ): MembershipSummary {
 	// One active subscription at a time is enforced by the schema's index; if a
@@ -134,6 +143,7 @@ export function summarizeMembership(
 			claimsPaidCents: claims.reduce((sum, c) => (c.status === 'paid' ? sum + c.paid_cents : sum), 0),
 			openClaims: claims.filter((c) => c.status === 'recorded').length
 		},
+		identity: { status: memberStatus, joinedAt: memberJoinedAt },
 		plan: preferences
 			.filter((p) => p.weight_pct > 0)
 			.sort((a, b) => b.weight_pct - a.weight_pct)
@@ -152,6 +162,15 @@ export const duesWord = (status: string): string =>
 		'no dues to collect': 'Nothing to collect — this dues plan is $0',
 		'no dues yet': 'No dues set up yet'
 	})[status] ?? status;
+
+/** How the member’s own identity check reads on their screen. */
+export const identityWord = (status: string | null): string =>
+	({
+		pending_verification: 'Not done yet — the check has to pass before you can post',
+		active: 'Done',
+		suspended: 'Suspended',
+		closed: 'Closed'
+	})[status ?? ''] ?? (status ?? 'no account row yet');
 
 /** How the earnings check reads, in the words design.md uses. */
 export const incomeMethodWord = (method: string): string =>

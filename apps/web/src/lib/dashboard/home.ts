@@ -45,7 +45,7 @@ export function greeting(displayName: string | null | undefined): string {
  * service-role client. `today` is the member's local date (`YYYY-MM-DD`).
  */
 export async function loadHome(db: Db, uid: string, today: string): Promise<HomeData> {
-	const [requestsRes, loansRes, mineRes, givingRes, reliabilityRes, subsRes, paysRes, incomeRes] = await Promise.all([
+	const [requestsRes, loansRes, mineRes, givingRes, reliabilityRes, subsRes, paysRes, incomeRes, memberRes] = await Promise.all([
 		db
 			.from('requests')
 			.select('id, title, kind, status, funding, amount_cents, created_at')
@@ -73,6 +73,11 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 			.from('income_verifications')
 			.select('method, monthly_income_cents, verified_at, expires_at')
 			.eq('member_id', uid),
+		db
+			.from('members')
+			.select('status, joined_at')
+			.eq('id', uid)
+			.maybeSingle(),
 		]);
 	const requests = must(requestsRes, 'your requests');
 	const loans = must(loansRes, 'your loans');
@@ -120,6 +125,11 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 	};
 	const titles = new Map(must(titlesRes, 'loan requests').map((t) => [t.id, t.title]));
 	const supporters = must(supportersRes, 'supporters');
+	// The member's own account row: whether the identity check has passed. A
+	// pending member sees why the app refuses them, not an empty screen.
+	const memberRow = must(memberRes, 'your account');
+	const memberStatus = memberRow === null ? null : memberRow.status;
+	const memberJoinedAt = memberRow === null ? null : memberRow.joined_at;
 	const membership = summarizeMembership(
 		must(subsRes, 'your dues'),
 		must(paysRes, 'your dues charges'),
@@ -128,6 +138,8 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 		must(assetsRes, 'your covered vehicles'),
 		premiumCents,
 		must(prefsRes, 'your plan'),
+		memberStatus,
+		memberJoinedAt,
 		today
 	);
 

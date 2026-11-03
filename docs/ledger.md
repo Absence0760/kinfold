@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — A pending identity check is named on the home, not left implicit
+
+- **Silence is the worst failure mode for a new member**: signing up leaves a member `pending_verification`, and every read the member area does comes back empty — an empty home reads as "there is nothing here", not as "you cannot post yet". The home now carries an identity-check block (status via `identityWord`, plus what passing unlocks) while the check is outstanding, so the reason is on the page the member is already looking at.
+- **Status comes from the member's own row, read through normal RLS** (`members.select('status, joined_at').eq('id', uid)`): the account's state is the member's own fact, and the schema already lets a member read their own row — no new read door was opened.
+- **Nothing is claimed about the vendor**: the block says Kinfold keeps only the vendor’s reference and the outcome, never the documents, matching 1b; it does not invent a retry button the schema has no door for.
+- **Reversal:** if the check's state should belong only to a dedicated onboarding page, delete the block and the `identity` field (with its two loader arguments); the tests cover both halves and nothing in the schema depends on them.
+
 ## 2026-11-02 — The phone app (roadmap 1a) stays unbuilt while the toolchain is missing
 
 - **Decision:** `apps/mobile` is not scaffolded. The Flutter/Dart toolchain isn't on this machine, so anything written would be code nothing can compile, check or test — the repo rule ships tests with code, and an untestable shell would quietly claim more than it does. The web member area carries every affordance built so far, so nothing built elsewhere is blocked on it.
