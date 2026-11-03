@@ -464,7 +464,25 @@
 					<dt>Requests paid</dt>
 					<dd>{rel.requests_paid}</dd>
 				</div>
+				{#if home.share}
+					{@const share = home.share}
+					<div>
+						<dt>Pool requests paid in three years</dt>
+						<dd>{share.requestsPaid3y}</dd>
+					</div>
+					<div>
+						<dt>Your own share of the next repair</dt>
+						<dd>{share.shareBps / 100}% (rule v{share.shareRuleVersion})</dd>
+					</div>
+				{/if}
 			</dl>
+			{#if home.share}
+				<p class="section-note">
+					How often your pool requests were paid sets how much of the next repair you pay
+					yourself: the fund's grant to you shrinks by that share, and you pay the rest.
+					A smaller grant is never a refusal and never a wait.
+				</p>
+			{/if}
 		</section>
 	{/if}
 {:catch err}

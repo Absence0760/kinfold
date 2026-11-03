@@ -13,11 +13,23 @@ export interface LoanCard extends LoanSummary {
 	lenderRelationship: string | null;
 }
 
+/** What the published share rule computes for this member (`my_share`). */
+export interface ShareRow {
+	/** Pool requests this member had paid in the last three years. */
+	requestsPaid3y: number;
+	/** Percentage points of the still-needed amount the member carries. */
+	shareBps: number;
+	/** Which published `share_rules` version priced the share. */
+	shareRuleVersion: number;
+}
+
 export interface HomeData {
 	requests: RequestCard[];
 	loans: LoanCard[];
 	giving: GivingSummary;
 	reliability: ReliabilityRow | null;
+	/** The member's own share under the published rule, null if unreadable. */
+	share: ShareRow | null;
 
 	membership: MembershipSummary;
 }
@@ -92,7 +104,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 	const loanRequestIds = [...new Set(loans.map((l) => l.request_id).filter((id): id is string => id !== null))];
 	const none = Promise.resolve({ data: [], error: null, status: 200 });
 
-	const [scoresRes, contribRes, instRes, pausesRes, forgRes, missedRes, titlesRes, supportersRes, claimsRes, assetsRes, prefsRes, premiumRes] = await Promise.all([
+	const [scoresRes, contribRes, instRes, pausesRes, forgRes, missedRes, titlesRes, supportersRes, claimsRes, assetsRes, prefsRes, premiumRes, shareRes] = await Promise.all([
 		requestIds.length
 			? db.from('scores').select('request_id, score, reasons, model, model_version, created_at').in('request_id', requestIds)
 			: none,
@@ -114,11 +126,22 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 		db.from('covered_assets').select('kind').eq('member_id', uid),
 		db.from('allocation_preferences').select('target, weight_pct').eq('member_id', uid),
 		// `cover_premium_cents` is newer than the committed generated types (`rpcNew` seam).
-		rpcNew(db, 'cover_premium_cents', { p_member: uid })
+		rpcNew(db, 'cover_premium_cents', { p_member: uid }),
+		// `my_share` is newer than the committed generated types (`rpcNew` seam).
+		rpcNew(db, 'my_share', {})
 	]);
 
 	if (premiumRes.error) throw new LoadError('your premiums', premiumRes.error);
 	const premiumCents = (premiumRes.data as number | null) ?? 0;
+	// Soft read: a missing share row means the card says nothing about the rule,
+	// it never makes the home fail - the reliability record itself is the read
+	// that must answer.
+	const shareRow = (shareRes.data as Record<string, unknown>[] | null)?.[0] ?? null;
+	const share = shareRow === null ? null : {
+		requestsPaid3y: Number(shareRow.requests_paid_3y),
+		shareBps: Number(shareRow.share_bps),
+		shareRuleVersion: Number(shareRow.rule_version)
+	};
 	const loanInputs = {
 		installments: must(instRes, 'loan schedules'),
 		pauses: must(pausesRes, 'loan pauses'),
@@ -169,6 +192,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 		requests: buildRequestCards(requests, must(scoresRes, 'scores'), must(contribRes, 'contributions')),
 		loans: loanCards,
 		giving: givingSummary(giving[0] ?? null, mine),
-		reliability: reliability[0] ?? null
+		reliability: reliability[0] ?? null,
+		share
 	};
 }

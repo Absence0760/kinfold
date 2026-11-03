@@ -50,6 +50,7 @@ describe('loadHome', () => {
 		expect(home.loans).toEqual([]);
 		expect(home.giving.givenCents).toBe(100);
 		expect(home.reliability?.subscription_payments).toBe(1);
+		expect(home.share).toBeNull();
 		expect(asked.sort()).toEqual([
 			'allocation_preferences',
 			'contributions',
@@ -60,6 +61,7 @@ describe('loadHome', () => {
 			'members',
 			'my_giving_record',
 			'my_reliability',
+			'my_share',
 			'requests',
 			'subscription_formulas',
 			'subscription_payments',
@@ -83,6 +85,15 @@ describe('loadHome', () => {
 		expect(home.membership.plan).toEqual([]);
 		expect(home.membership.income.method).toBe('bank_link');
 		expect(home.membership.income.live).toBe(true);
+	});
+
+	it('reads the published share rule for the member', async () => {
+		const fixtures = {
+			my_reliability: reliability,
+			my_share: { data: [{ requests_paid_3y: 2, share_bps: 2000, rule_version: 1 }], error: null }
+		};
+		const home = await loadHome(fakeDb(fixtures).db, 'maria', '2026-10-31');
+		expect(home.share).toEqual({ requestsPaid3y: 2, shareBps: 2000, shareRuleVersion: 1 });
 	});
 
 	it('names the lender’s relationship only to the borrower', async () => {
