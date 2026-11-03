@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Focus order gets a second shape: the walk is compared against the page's rects
+
+- **The decision**: WCAG 2.4.3 watched from two sides. The positive-tabindex rule covers rewiring of SOURCE order; a CSS reorder (flex `order`, grid placement) leaves source order honest but breaks the VISUAL promise, so the audit now compares the rects of consecutive Tab stops: focus may not move left along a line (tops overlap within a line's height) and may not jump up the page.
+- **Why rects and why tolerance**: absolute pixels are brittle under wrapping and font sizing, so the line test compares tops within the taller element's height and only accuses horizontal movement on the same line; the upward test is unqualified because any upward move - on a single column or a wrapped line - is the reading-order break a reader hits.
+- **Teeth**: reversing the desktop nav visually (flex `row-reverse` on `.links` in app.css, source order untouched) made the rule name five leftward moves on the desktop tests; restored byte-exact, green.
+- **What it found**: nothing today - the site never reorders focusables visually, so the rule stands next to the tabindex rule as the other half of the same promise.
+- **Reversal:** a deliberate two-column reader layout (a narrow sticky rail on the left, main text on the right) would need the line test widened to a column comparison rather than removing the upward check - the rail must still Tab in reading order.
+
 ## 2026-11-03 — The docs gate now demands every file path the ledger cites still resolves
 
 - **The decision**: `check_docs_hygiene.mjs` reads every inline-code span in `docs/ledger.md` that looks like a repo path and fails naming any that is no longer a tracked path. A ledger entry points at the code its decision changed; when that file is renamed the pointer rots silently and the reader of the decision cannot find what was changed - the same class of drift the link rule catches, one syntax (inline code, not markdown links) away.
