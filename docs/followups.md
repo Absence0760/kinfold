@@ -28,6 +28,7 @@ Found while building the web member area (`/app`, `/app/board`, `/app/review`, `
 
 - [x] **Evidence redaction now runs.** The `redact-evidence` function sets `redacted_path` and `auto_done`, and checks the stored file exists and its SHA-256 matches the row before redacting; the seed now carries one `auto_done` row (b1) so the member's confirm-redaction step exercises locally. **When:** Stage 1, step 1c.
 - [x] **No prepayment path**, though the agreement and `design.md` promise members can repay early. Landed 2026-11-02: the payment partner's `loan_repaid` webhook event calls the guarded `record_loan_payment`, which never looks at due dates — an early repayment is collected exactly like an on-date one, and the reliability record counts it honoured (`installments_paid_on_time` asks only `paid_on <= due_on`, so a prepayment is never a penalty). Pinned by the payments-webhook deno tests.
+- [ ] **The loans console has no Fund loan actions yet**: `pause_fund_loan`, `resume_fund_loan` and `restructure_fund_loan` are borrower-callable doors, but `/app/loans` only lists the Fund’s loans (`loadFundLoans`) and has no Fund loan forms and no detail page — the family loan detail route reads `family_loans`, so a Fund loan id there is "not found". **Fix:** a Fund loan console with pause, resume and restructure forms (no terms, schedule or signature forms — the Fund signs at once). **When:** next pass on the loans console.
 
 ## Funding and structure
 

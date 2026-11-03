@@ -3,6 +3,8 @@
 	import { invalidate } from '$app/navigation';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import { loanStatusText } from '#lib/dashboard/labels.ts';
+	import { fundLoanStatusText } from '#lib/loans/fund.ts';
+	import type { FundLoanSummary } from '#lib/loans/fund.ts';
 	import type { LoanListItem } from '#lib/loans/data.ts';
 	import Badge from './Badge.svelte';
 
@@ -45,6 +47,9 @@
 		retrying ? 'Reloading your loans…' : phase === 'loading' ? 'Loading your loans…' : phase === 'ready' ? 'Your loans have loaded.' : ''
 	);
 
+	// The load returns one slot holding [family loans, Fund loans].
+	const family = (pair: [LoanListItem[], FundLoanSummary[]]) => pair[0];
+	const fund = (pair: [LoanListItem[], FundLoanSummary[]]) => pair[1];
 	const borrowed = (loans: LoanListItem[]) => loans.filter((l) => l.role === 'borrower');
 	const lent = (loans: LoanListItem[]) => loans.filter((l) => l.role === 'lender');
 </script>
@@ -59,6 +64,7 @@
 	<p class="lead">
 		Loans between you and the family and friends you invited. Every one is zero interest with no late
 		fees: you repay exactly what was lent, and a missed payment starts a conversation, never a charge.
+		The lending Fund lends the same way \u2014 0%, no credit check, and it never forecloses.
 	</p>
 </header>
 
@@ -112,6 +118,39 @@
 	</section>
 {/snippet}
 
+{#snippet fundList(items: FundLoanSummary[], heading: string, id: string, empty: string)}
+	<section class="block" aria-labelledby={id}>
+		<h2 {id}>{heading}</h2>
+		{#if items.length === 0}
+			<p class="empty">{empty}</p>
+		{:else}
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
+				{#each items as f (f.loan.id)}
+					{@const st = fundLoanStatusText(f.loan.status)}
+					<li>
+						<div class="card-head">
+							<h3>You borrowed {formatCents(f.loan.principal_cents)} from the lending Fund</h3>
+							<Badge tone={st.tone} label={st.label} />
+						</div>
+						<p class="line">
+							<strong>{formatCents(f.outstandingCents)}</strong> left to repay
+							{#if f.next}
+								· next {formatCents(f.next.owedCents)} on {formatDay(f.next.dueOn)}
+							{:else if f.shareCents > 0}
+								· up to {formatCents(f.shareCents)} a month, sized from your income
+							{/if}
+						</p>
+						{#if f.loan.lien_bps > 0}
+							<p class="meta">Its lien sits behind the bank’s and behind any public-assistance liens, and all the liens together stay at or below 105% of the home’s value.</p>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	</section>
+{/snippet}
+
 <p class="visually-hidden" role="status">{liveText}</p>
 
 {#await data.loans}
@@ -120,8 +159,8 @@
 			<div class="skeleton" aria-hidden="true"></div>
 		{/each}
 	</div>
-{:then loans}
-	{#if loans.length === 0}
+{:then pair}
+	{#if family(pair).length === 0 && fund(pair).length === 0}
 		<div class="empty big">
 			<p><strong>No loans yet.</strong></p>
 			<p>
@@ -131,7 +170,8 @@
 			</p>
 			<p>
 				A loan starts with a request: ask for help, then invite family and friends, who can give or
-				lend at 0%.
+				lend at 0%. The lending Fund lends the same way — 0%, with no credit check — to members whose
+				home needs it, and it never forecloses.
 			</p>
 			<div class="cta">
 				<a class="btn btn-primary" href="/app/requests/new">Ask for help</a>
@@ -140,12 +180,13 @@
 		</div>
 	{:else}
 		{@render list(
-			borrowed(loans),
+			borrowed(family(pair)),
 			'Money you borrowed',
 			'borrowed-h',
 			'You haven’t borrowed from anyone through Kinfold.'
 		)}
-		{@render list(lent(loans), 'Money you lent', 'lent-h', 'You haven’t lent to anyone through Kinfold.')}
+		{@render list(lent(family(pair)), 'Money you lent', 'lent-h', 'You haven’t lent to anyone through Kinfold.')}
+		{@render fundList(fund(pair), 'Money the lending Fund lent you', 'fund-h', 'The lending Fund hasn’t lent you anything yet.')}
 	{/if}
 {:catch}
 	<div class="error" role="alert">

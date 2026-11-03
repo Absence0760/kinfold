@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The loans console shows the Fund's loans in their own section, and reads their money from the schema
+
+- **Their own section, not mixed into "Money you borrowed"**: a family loan has a lender member on the other side, an invitation pair and a written agreement; a Fund loan has none of those — the Fund signed at once and the money reached the payee through the partner's disbursement. Listing both under one heading would read as if a person had lent the money, so the Fund's loans get their own heading and their own cards, with no agreement page.
+- **Money figures come through the schema's own doors**: outstanding is read from `fund_loan_outstanding_cents` and each income month's cap from `fund_loan_income_due_cents`, so the console never re-derives money that the schema capped from live income; the only client arithmetic is one unpaid installment's owed amount. If either door is refused the page fails loudly rather than showing loans with no figures.
+- **Read-only today**: `pause_fund_loan`, `resume_fund_loan` and `restructure_fund_loan` are borrower-callable doors, but the console has no Fund loan forms yet, and there is no Fund loan detail page — recorded in `docs/followups.md` so the gap stays visible rather than being half-built.
+- **Reversal:** if Fund loans should ride in the family loans list instead, delete `apps/web/src/lib/loans/fund.ts` and the `fundList` snippet in the loans page; the money, the doors and the tests are untouched either way.
+
 ## 2026-11-02 — Dues money gets its own account so it can never buy a pool grant
 
 - **Dues buy premiums, not grants**: design.md has dues paying premiums (paid in full to the insurer), gifts and grants funding capped repair grants, and dues leftovers going to reserves or back to members. But dues money journalled straight into `available`, the pool's own-money account, so a dues dollar could fund a pool grant — neither lawful nor designed. New fund-level `dues` account: dues money arrives there, premiums move `dues` → `premiums`, and `available` only ever holds money the fund itself holds.
