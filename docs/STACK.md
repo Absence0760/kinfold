@@ -69,7 +69,7 @@ Every module under `apps/web/src/lib` has a matching `*.test.ts` — the one exc
 
 ## Clients
 
-- **Member app: Flutter, toolchain installed** at `~/sdk/flutter` (channel stable, Flutter 3.47.9, Dart 3.13.7), symlinked into `~/.local/bin` so a fresh shell answers `which flutter dart`. `flutter test` runs headless with `flutter_test`, and the Linux desktop target compiles; the Android toolchain (SDK and Java) is not installed, so a phone build is an open item. Built as `apps/mobile`: the member shell's Dart layers — sign-in through an injectable provider seam, the failure words, the standing words, the profile read — ship with `flutter test` coverage (23 tests, headless). Evidence capture needs the phone camera with device attestation, which a web page can't give.
+- **Member app: Flutter, toolchain installed** at `~/sdk/flutter` (channel stable, Flutter 3.47.9, Dart 3.13.7), symlinked into `~/.local/bin` so a fresh shell answers `which flutter dart`. `flutter test` runs headless with `flutter_test`, and the Linux desktop target compiles; the Android toolchain (SDK and Java) is not installed, so a phone build is an open item. Built as `apps/mobile`: the member shell's Dart layers — the sign-in step wired through an injectable provider seam (configured check, the stack’s own call, the answer classified to the member’s words), the failure words, the standing words, the profile read — ship with `flutter test` coverage (29 tests, headless). Evidence capture needs the phone camera with device attestation, which a web page can't give.
 - **Reviewer console: planned** as authenticated routes in a later web app, not in the public marketing site.
 
 ## Domain rules
