@@ -34,7 +34,7 @@
 		</a>
 		<nav class="links" aria-label="Sections">
 			{#each navSections as s (s.id)}
-				<a href="#{s.id}">{s.label}</a>
+				<a href="/#{s.id}">{s.label}</a>
 			{/each}
 		</nav>
 		<span class="badge">Design preview</span>
@@ -55,7 +55,7 @@
 			</summary>
 			<nav aria-label="Sections, menu">
 				{#each navSections as s (s.id)}
-					<a href="#{s.id}" onclick={() => (menuOpen = false)}>{s.label}</a>
+					<a href="/#{s.id}" onclick={() => (menuOpen = false)}>{s.label}</a>
 				{/each}
 			</nav>
 		</details>

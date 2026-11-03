@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The shared nav bar's section links are page-root-qualified, not bare fragments
+
+- **What was broken**: the site chrome renders on every prerendered page, but the nav's section ids (`requests`, `board`, ...) exist only on the landing page, so a bare `#requests` on `/transparency` pointed at that page's own missing anchor — a silent dead link. Kit's prerender link check (`prerender_missing_id`) only surfaced it once `/transparency` stopped crashing outright.
+- **`/#id` over suppressing the check**: the link's real target is the landing page's section, so it says so; a `handleMissingId` that only warns would hide a broken nav on every page (root `CLAUDE.md`: fix at the source, never silence).
+- **Skip link stays a bare fragment**: `#main` exists on every page (the `(site)` layout's `<main id="main">`), so it belongs to the page it is on.
+- **Reversal:** if the nav should only be offered on the landing page, delete the absolute `/#id` links in `SiteNav.svelte` and gate the bar in `(site)/+layout.svelte`; either way the fragments keep pointing at the landing page's sections, never at a per-page anchor.
+
 ## 2026-11-02 — The annual deductible caps a member's paid-back dollars; the member's share rises once it runs out
 
 - **A filed term, not a rule invented here**: rating law lets a member recover at most the annual deductible in an insurance year, so `annual_deductible_cents` sits on `cover_plans` beside its premium and cap and the partner files it (`set_annual_deductible`, service only) — the seeded value (three claims' worth of that class's cap) is a local stand-in like every other number on that table.
