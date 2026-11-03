@@ -107,3 +107,52 @@
 	<ChoosePlan rates={cover.filed} onchanged={onchanged} />
 {/if}
 {/if}
+
+<style>
+	.page-head {
+		margin-bottom: 32px;
+	}
+
+	h1 {
+		font-size: clamp(28px, 5vw, 38px);
+		overflow-wrap: anywhere;
+	}
+
+	.lead {
+		color: var(--muted);
+		margin-top: 8px;
+		max-width: 620px;
+	}
+
+	.block {
+		margin-top: 32px;
+	}
+
+	.block h2 {
+		font-size: 22px;
+	}
+
+	.assets,
+	rates {
+		list-style: none;
+		margin: 12px 0 0;
+		padding: 0;
+		display: grid;
+		gap: 8px;
+	}
+
+	.section-note {
+		color: var(--muted);
+		font-size: 15px;
+		margin-top: 8px;
+	}
+
+	.note {
+		margin-top: 16px;
+		padding: 12px 16px;
+		border: 1px dashed var(--border);
+		border-radius: var(--radius);
+		display: grid;
+		gap: 6px;
+	}
+</style>
