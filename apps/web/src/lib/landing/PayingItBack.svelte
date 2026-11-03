@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { counselorAsks } from '#lib/requests/public-help.ts';
+
 	const basics = [
 		{ title: 'Monthly', text: 'Equal installments on a payday you choose.' },
 		{ title: 'Automatic', text: 'Collected for you, so nobody has to ask for the money.' },
@@ -35,7 +37,7 @@
 
 	const mortgageHelp = [
 		'Bridge missed payments with a zero-interest Home Fund loan',
-		'Connect you to a HUD-approved housing counselor to ask your bank for forbearance (a pause your bank agrees to) or a loan modification (new, easier terms)',
+		`Connect you to a HUD-approved housing counselor to ask your bank for ${counselorAsks}`,
 		'If selling is the only way out, sell before foreclosure so the family keeps its equity'
 	];
 </script>

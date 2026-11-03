@@ -1,4 +1,5 @@
 import type { CertifiedCounsel } from '#lib/transparency/data.ts';
+import { agencyLine, counselorAsks } from '#lib/requests/public-help.ts';
 
 /** 1 → "1st", 2 → "2nd", 11 → "11th", 22 → "22nd". */
 export function ordinal(n: number): string {
@@ -27,8 +28,7 @@ export function bankReliefNote(counsel: CertifiedCounsel | null): string {
 		);
 	}
 	return (
-		`${counsel.agencyName} is the agency Kinfold partners with, certified under ${counsel.certifiedUnder}: ` +
-		"go to them to ask your bank for forbearance (a pause the bank agrees to) or a loan modification (easier terms). " +
+		`${agencyLine(counsel)}: go to them to ask your bank for ${counselorAsks}.` +
 		"Kinfold never becomes a counselor and never asks one on your behalf — the bank decides. A servicer generally " +
 		"cannot start foreclosure until a borrower is more than 120 days behind, so acting early matters."
 	);

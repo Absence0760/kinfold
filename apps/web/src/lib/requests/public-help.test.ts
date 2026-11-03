@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { publicHelpCounselLine, publicHelpHeading } from './public-help.ts';
+import { agencyLine, counselorAsks, publicHelpCounselLine, publicHelpHeading } from './public-help.ts';
 import type { CertifiedCounsel } from '#lib/transparency/data.ts';
 
 describe('publicHelpHeading', () => {
@@ -35,6 +35,23 @@ describe('publicHelpCounselLine', () => {
 		expect(line).toContain('you go to them, never through Kinfold');
 		expect(line).toContain('never asks one on your behalf');
 	});
+
+describe('agencyLine', () => {
+	it('names the agency with the credential the row carries', () => {
+		const counsel: CertifiedCounsel = {
+			version: 1,
+			agencyName: 'Pilot City Housing Counseling',
+			contactUrl: 'https://pilotcity.example/housing-counseling',
+			hudApprovedOn: '2026-01-01',
+			certifiedUnder: '24 CFR part 214',
+			effectiveFrom: '2026-01-01',
+		};
+		const line = agencyLine(counsel);
+		expect(line).toContain('the agency the Fund partners with');
+		expect(line).toContain('certified under 24 CFR part 214');
+		expect(line).toContain('HUD-approved on Jan 1, 2026');
+	});
+});
 
 	it('stays about help, not pricing', () => {
 		const empty = publicHelpCounselLine(null);

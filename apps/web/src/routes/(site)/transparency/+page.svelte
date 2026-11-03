@@ -2,6 +2,7 @@
 	import { formatCents } from '#lib/dashboard/format.ts';
 import { reachShareBps, shareWord } from '#lib/transparency/data.ts';
 import { formatDay } from '#lib/dashboard/format.ts';
+import { counselorAsks } from '#lib/requests/public-help.ts';
 
 	// A page's `$props()` is the page context: the load result sits under `data` (see the other route pages).
 	let { data } = $props();
@@ -132,7 +133,7 @@ import { formatDay } from '#lib/dashboard/format.ts';
 	<p class="note">
 		Keeping a mortgage the bank already holds is the bank's to decide, so Kinfold never becomes a counselor and
 		never asks one on a member's behalf: it names the one agency it partners with, and the member goes to theirs
-		asking for forbearance (a pause the bank agrees to) or a modification (easier terms). Older versions stay
+		asking for {counselorAsks}. Older versions stay
 		listed in the table so a fairness auditor can ask which agency was named beside a request.
 	</p>
 {/if}

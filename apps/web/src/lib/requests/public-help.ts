@@ -13,6 +13,13 @@ import { formatDay } from '#lib/dashboard/format.ts';
  * cannot support.
  */
 
+/**
+ * The two asks a counselor makes of a bank, worded once so the landing ladder,
+ * the mortgage-gap panel and the loan console cannot define them differently.
+ * The landing page carries this prerendered, so no row can change it.
+ */
+export const counselorAsks = 'forbearance (a pause the bank agrees to) or a loan modification (easier terms)';
+
 /** The heading the panel shows, shared so tests can pin what the page offers. */
 export const publicHelpHeading = 'Public help alongside this gap';
 
@@ -21,18 +28,21 @@ export const publicHelpHeading = 'Public help alongside this gap';
  * certified yet" and "the published agency could not be read": in either state the
  * page points at the public list rather than naming anyone.
  */
+export const agencyLine = (counsel: CertifiedCounsel): string =>
+	`${counsel.agencyName} is the agency the Fund partners with, certified under ${counsel.certifiedUnder} ` +
+	`and HUD-approved on ${formatDay(counsel.hudApprovedOn)}`;
+
 export function publicHelpCounselLine(counsel: CertifiedCounsel | null): string {
 	// Shared first: what a housing counselor is, true in both states.
 	const what =
 		'Nonprofit agencies certified by the government that help households ask a bank for ' +
-		'forbearance (a pause the bank agrees to) or a loan modification (easier terms).';
+		`${counselorAsks}.`;
 	if (counsel === null) {
 		// No agency is claimed: the member finds one that certified itself.
 		return `${what} Find the one nearest you on hud.gov — Kinfold never becomes a counselor itself; you go to theirs.`;
 	}
 	return (
-		`${what} ${counsel.agencyName} is the agency the Fund partners with, certified under ${counsel.certifiedUnder} ` +
-		`and HUD-approved on ${formatDay(counsel.hudApprovedOn)}: you go to them, never through Kinfold, and the bank ` +
+		`${what} ${agencyLine(counsel)}: you go to them, never through Kinfold, and the bank ` +
 		'decides — Kinfold never becomes a counselor and never asks one on your behalf.'
 	);
 }
