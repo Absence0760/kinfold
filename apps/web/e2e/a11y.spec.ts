@@ -62,8 +62,11 @@ async function overflowReports(page: Page) {
 async function screenReaderProblems(page: Page) {
 	const problems = await page.evaluate(() => {
 		const found = [];
-		if (!document.documentElement.getAttribute('lang')) {
+		const lang = (document.documentElement.getAttribute('lang') || '').trim();
+		if (!lang) {
 			found.push('html: no lang attribute');
+		} else if (!/^[a-z]{2,3}(-[a-z0-9]{2,3})*$/i.test(lang) || lang.toLowerCase() === 'und' || lang.toLowerCase() === 'zxx') {
+			found.push(`html lang "${lang}": not a usable language tag - a reader's tools cannot switch languages`);
 		}
 		if (!document.querySelector('head meta[name="viewport"]')) {
 			found.push('head: no viewport meta, so large text cannot reflow');
@@ -81,6 +84,17 @@ async function screenReaderProblems(page: Page) {
 		for (const img of document.querySelectorAll('img')) {
 			if (img.getAttribute('alt') === null) {
 				found.push('img: no alt, a reader hears nothing: ' + (img.src || img.id || ''));
+			}
+		}
+		// An inline icon SVG is a picture the alt rule cannot see: unless it is
+		// hidden from readers (aria-hidden, role=presentation), it must name
+		// itself - an aria-label or a <title> child - or it announces nothing.
+		for (const svg of document.querySelectorAll('svg')) {
+			const hidden = svg.getAttribute('aria-hidden') === 'true' || svg.getAttribute('role') === 'presentation';
+			const name = (svg.getAttribute('aria-label') || '').trim();
+			const title = svg.querySelector(':scope > title');
+			if (!hidden && !name && !(title && (title.textContent || '').trim())) {
+				found.push('svg: no accessible name and not hidden from readers: ' + (svg.getAttribute('class') || ''));
 			}
 		}
 		// Every control must announce itself: a button or a link whose only
