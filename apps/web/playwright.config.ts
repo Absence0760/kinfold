@@ -4,8 +4,10 @@ import { defineConfig, devices } from '@playwright/test';
 // They run against the production build served by `vite preview`, so they see
 // exactly the HTML that ships, not the dev server's on-demand modules.
 //
-// The member area (/signin, /app) needs the local Supabase stack and is not
-// covered here yet; see docs/STACK.md "End-to-end tests".
+// The stack-dependent member-area flow (/signin's form and session check, /app/*) needs
+// the local Supabase stack and is not covered here; see docs/STACK.md "End-to-end tests".
+// /signin's no-stack ENTRY (the unconfigured notice from the SPA fallback) is covered,
+// because that path needs no stack.
 // This file runs in Node, but the workspace has no @types/node (it would make
 // Node globals typecheck in browser code under src/), so declare the one we use.
 declare const process: { env: Record<string, string | undefined> };

@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The signin page's no-stack entry is e2e-covered; the stack-dependent flow is not
+
+- **What the test can honestly pin**: /signin is never prerendered, so `e2e/signin.spec.ts` pins the adapter's `200.html` fallback actually puts the page on the wire (title, heading, hydrate marker) — and that with no key configured the page shows its notice and NO form, instead of a dead form or a crash. That path needs no stack, so it belongs in the default suite.
+- **Either wording accepted**: the preview runtime sets `dev` true, so the e2e build shows the dev-worded notice while a production runtime shows the public one; the regex accepts both rather than hard-coding the runtime's devness.
+- **Reversal:** if even the no-stack entry should wait for a stack window, delete `apps/web/e2e/signin.spec.ts` and revert the coverage notes in `apps/web/playwright.config.ts` and docs/STACK.md; the stack-dependent flow stays out either way.
+
 ## 2026-11-02 — The transparency page reads its load result under `data`, like every other route page
 
 - **Why it was broken**: in Kit v3 a page component's `$props()` is the page context (`{ data, form, params, error }`) — the load result sits under `data`, which is how every other route page already read it. `/transparency` alone destructured the seven load keys straight off the context, so the build-time prerender died (`Cannot read properties of undefined`) and the page would have shipped blank in the SPA fallback too.
