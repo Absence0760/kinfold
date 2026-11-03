@@ -143,6 +143,81 @@ async function boardArithmeticProblems(page: Page) {
 	});
 }
 
+// The calculator is the public page's central promise. Two of its halves were
+// unwatched: a sighted reader reads the printed <strong> label while a screen
+// reader hears the slider's aria-valuetext, and the result figures were only
+// pinned at one input. Now the audit reads the printed DOM at whatever stop the
+// reader left the sliders and demands the printed label matches what the
+// control announces, and every printed figure equals the app's own module.
+async function calcMismatchProblems(page: Page) {
+	const printed = await page.evaluate(() => {
+		const read = (sel: string) => {
+			const el = document.querySelector(sel);
+			return el ? (el.textContent || '').replace(/\s+/g, ' ').trim() : '';
+		};
+		const strong = [];
+		for (const s of document.querySelectorAll('#calculator .inputs label span strong')) strong.push(s.textContent || '');
+		const aria = [];
+		for (const i2 of document.querySelectorAll('#calculator .inputs label input')) aria.push(i2.getAttribute('aria-valuetext') || '');
+		const values = [];
+		for (const v of document.querySelectorAll('#calculator .compare .value')) values.push(v.textContent || '');
+		const subs = [];
+		for (const s of document.querySelectorAll('#calculator .compare .sub')) subs.push(s.textContent || '');
+		return {
+			strong: strong,
+			aria: aria,
+			big: read('#calculator .big'),
+			values: values,
+			subs: subs,
+			note: read('#calculator .note')
+		};
+	});
+	const found = [];
+	const words = ['loan needed', 'interest rate', 'term', 'family share'];
+	for (let i = 0; i < printed.aria.length; i += 1) {
+		if (printed.aria[i] !== printed.strong[i]) {
+			found.push('slider ' + words[i] + ' prints ' + printed.strong[i] + ' to a sighted reader but announces ' + printed.aria[i] + ' to a screen reader');
+		}
+	}
+	const num = (s: string) => Number(s.replace(/[^0-9.]/g, ''));
+	const input: SavingsInput = { loanAmount: num(printed.aria[0]), annualRatePct: num(printed.aria[1]), years: num(printed.aria[2]), zeroInterestAmount: num(printed.aria[3]) };
+	const r = compareSavings(input);
+	if (printed.big !== formatUsd(r.interestSaved)) {
+		found.push('the headline figure prints ' + printed.big + ' but the module says ' + formatUsd(r.interestSaved) + ' for these inputs');
+	}
+	if (printed.values.length !== 2 || printed.values[0] !== formatUsd(r.bankOnly.monthly) + '/mo') {
+		found.push('the bank-only payment prints ' + (printed.values[0] || 'nothing') + ' but the module says ' + formatUsd(r.bankOnly.monthly) + '/mo');
+	}
+	if (printed.values.length !== 2 || printed.values[1] !== formatUsd(r.withKinfold.monthly) + '/mo') {
+		found.push('the Kinfold payment prints ' + (printed.values.length > 1 ? printed.values[1] : 'nothing') + ' but the module says ' + formatUsd(r.withKinfold.monthly) + '/mo');
+	}
+	if (printed.subs.length !== 2 || printed.subs[0] !== formatUsd(r.bankOnly.interest) + ' interest') {
+		found.push('the bank-only interest line prints ' + (printed.subs[0] || 'nothing') + ' but the module says ' + formatUsd(r.bankOnly.interest));
+	}
+	if (printed.subs.length !== 2 || printed.subs[1] !== formatUsd(r.withKinfold.interest) + ' interest') {
+		found.push('the Kinfold interest line prints ' + (printed.subs[1] || 'nothing') + ' but the module says ' + formatUsd(r.withKinfold.interest));
+	}
+	const perMonth = r.bankOnly.monthly - r.withKinfold.monthly;
+	const expectedNote = perMonth > 0.5 ? formatUsd(perMonth) + ' less every month.' : 'Add a family or friends share to see the difference.';
+	if (printed.note.indexOf(expectedNote) === -1) {
+		found.push('the note does not state ' + expectedNote + ' for these inputs');
+	}
+	return found;
+}
+
+test('the calculator prints what its sliders announce and its own maths say, at any stop', async ({ page }) => {
+	await gotoHydrated(page, '/#calculator');
+	const names = [/Home loan needed/, /Bank interest rate/, /Term/, /From family or friends/];
+	expect(await calcMismatchProblems(page)).toEqual([]);
+
+	for (const stop of ['Home', 'End', 'Home']) {
+		for (const name of names) {
+			await page.getByRole('slider', { name: name }).press(stop);
+		}
+		expect(await calcMismatchProblems(page)).toEqual([]);
+	}
+});
+
 test.describe('request board', () => {
 	test('the board\'s figures add up at the default fund', async ({ page }) => {
 		await gotoHydrated(page, '/#board');
