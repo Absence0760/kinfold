@@ -91,6 +91,18 @@ export async function loadOpenBooks(db: Db): Promise<OpenBook[]> {
 	});
 }
 
+/** A published share rule: how often a member's pool requests were paid
+ * raises their own share of the next repair. */
+export interface ShareRule {
+	version: number;
+	/** The day the version started being used, as stored. */
+	effectiveFrom: string;
+	/** Percentage points of the still-needed amount moved per paid request. */
+	shareStepBps: number;
+	/** Percentage points at most. */
+	shareCapBps: number;
+}
+
 export interface NeedsFormula {
 	version: number;
 	/** The day the version started being used, as stored. */
@@ -159,6 +171,25 @@ export async function loadNeedsFormulas(db: Db): Promise<NeedsFormula[]> {
 		needBps: Number(row['need_bps']),
 		readinessBps: Number(row['readiness_bps']),
 		reliabilityBps: Number(row['reliability_bps'])
+	}));
+}
+
+/**
+ * The published share rules, newest first: `share_rules` is readable by everyone,
+ * so the fairness auditor can ask which rule priced whom when - and a member's
+ * card names the version that set their share.
+ */
+export async function loadShareRules(db: Db): Promise<ShareRule[]> {
+	// share_rules is newer than the committed generated types (`fromNew` seam).
+	const result = await fromNew(db, 'share_rules')
+		.select('version, step_bps, cap_bps, effective_from')
+		.order('version', { ascending: false });
+	const rows = must<Record<string, unknown>[]>(result, 'the published share rule');
+	return rows.map((row) => ({
+		version: Number(row['version']),
+		effectiveFrom: String(row['effective_from']),
+		shareStepBps: Number(row['step_bps']),
+		shareCapBps: Number(row['cap_bps'])
 	}));
 }
 

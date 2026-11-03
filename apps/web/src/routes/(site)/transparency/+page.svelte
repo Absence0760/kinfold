@@ -16,7 +16,7 @@
 	allocated, and how many requests were paid. Small numbers stay hidden — a month shows its counts
 	only once at least eleven requests were paid — because transparency should not unmask individuals.
 	Quarters below are the published months summed; a quarter with fewer than three published months
-	says how many months it covers. The grant report at the bottom lists the money funders have reported in.
+	says how many months it covers. The share rule says what part of a repair a member carries themselves; the grant report lists the money funders have reported in.
 </p>
 
 {#if data.problem}
@@ -86,6 +86,28 @@
 		The weights are public and the score behind any place in the queue can be re-derived from them; the inputs
 		that feed them stay private to the member. Older versions stay listed so a member can ask which formula
 		priced their place.
+	</p>
+{/if}
+
+<h2 id="share">The share rule: what a member carries themselves</h2>
+{#if data.shareProblem}
+	<p class="empty">{data.shareProblem}</p>
+{:else if data.shareRules.length === 0}
+	<p class="empty">No share rule has been published yet.</p>
+{:else}
+	<ul>
+		{#each data.shareRules as r}
+			<li>
+				Version {r.version}, used from {r.effectiveFrom}: {shareWord(r.shareStepBps)} of what a request still
+				needs moves to the member's own share per pool request they had paid in three years, up to
+				{shareWord(r.shareCapBps)}.
+			</li>
+		{/each}
+	</ul>
+	<p class="note">
+		How often a member's pool requests were paid sets how much of the next repair they carry themselves: the
+		fund's grant to them shrinks by that share and they pay the rest. A smaller grant is never a refusal and
+		never a wait. Older versions stay listed so a member can ask which rule priced their share.
 	</p>
 {/if}
 

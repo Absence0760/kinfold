@@ -4,6 +4,7 @@ import {
 	loadGrantReport,
 	loadNeedsFormulas,
 	loadOpenBooks,
+	loadShareRules,
 	quarterlySummaries,
 	shareWord,
 	type GrantRow,
@@ -118,6 +119,31 @@ describe('loadNeedsFormulas', () => {
 	it('a refused read fails loudly rather than hiding the formula', async () => {
 		const { db } = fakeDb({ needs_formulas: { data: null, error: { message: 'permission denied for table needs_formulas' } } });
 		await expect(loadNeedsFormulas(db)).rejects.toThrow(/permission denied/);
+	});
+});
+
+describe('loadShareRules', () => {
+	it('the published share rules read newest version first', async () => {
+		const { db, asked } = fakeDb({
+			share_rules: {
+				data: [
+					{ version: 2, step_bps: 1500, cap_bps: 4000, effective_from: '2027-01-01' },
+					{ version: 1, step_bps: 1000, cap_bps: 3000, effective_from: '2026-01-01' }
+				],
+				error: null
+			}
+		});
+		const rules = await loadShareRules(db);
+		expect(asked).toEqual(['share_rules']);
+		expect(rules.map((r) => r.version)).toEqual([2, 1]);
+		expect(rules.map((r) => shareWord(r.shareStepBps))).toEqual(['15%', '10%']);
+		expect(rules.map((r) => shareWord(r.shareCapBps))).toEqual(['40%', '30%']);
+		expect(rules[0].effectiveFrom).toBe('2027-01-01');
+	});
+
+	it('a refused read fails loudly rather than hiding the rule', async () => {
+		const { db } = fakeDb({ share_rules: { data: null, error: { message: 'permission denied for table share_rules' } } });
+		await expect(loadShareRules(db)).rejects.toThrow(/permission denied/);
 	});
 });
 

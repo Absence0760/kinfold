@@ -13,13 +13,13 @@ test('transparency page renders its title and heading', async ({ page }) => {
 
 test('every section is present and the unconfigured notice is visible', async ({ page }) => {
 	await gotoHydrated(page, '/transparency');
-	for (const id of ['quarters', 'formula', 'grants']) {
+	for (const id of ['quarters', 'formula', 'share', 'grants']) {
 		await expect(page.locator(`#${id}`)).toBeVisible();
 	}
-	// With no stack configured, `load()` returns the problem line for books,
-	// formulas and grants — one `p.problem` and two `p.empty` with the same
-	// wording, and the quarters section's own empty line. No crash, no blank.
+
 	const notices = page.locator('p.problem, p.empty');
-	await expect(notices).toHaveCount(4);
+	await expect(notices).toHaveCount(5);
+	// The four sections (books, weights, share rule, grants) each show their line: one
+	// `p.problem` for the books plus three `p.empty`s with the same wording.
 	await expect(notices.nth(0)).toContainText('need the database to be configured');
 });

@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from '#lib/supabase/client.ts';
-import { loadGrantReport, loadNeedsFormulas, loadOpenBooks, quarterlySummaries } from '#lib/transparency/data.ts';
+import { loadGrantReport, loadNeedsFormulas, loadOpenBooks, loadShareRules, quarterlySummaries } from '#lib/transparency/data.ts';
 import { classifyLoadError } from '#lib/auth/errors.ts';
 
 const MESSAGE: Record<string, string> = {
@@ -9,18 +9,18 @@ const MESSAGE: Record<string, string> = {
 };
 
 /**
- * The published open books and the published needs weights. Both tables are
+ * The published open books, the published needs weights and the published share rules. Both tables are
  * public (anon readable), so this needs no session; each read explains its own
  * failure kind rather than showing blank money or blank weights as zero.
  */
 export async function load() {
 	if (!isConfigured()) {
 		const problem = 'The published books need the database to be configured.';
-		return { books: [], quarters: [], problem, formulas: [], formulaProblem: problem, grants: [], grantProblem: problem };
+		return { books: [], quarters: [], problem, formulas: [], formulaProblem: problem, shareRules: [], shareProblem: problem, grants: [], grantProblem: problem };
 	}
 	// The weights are a separate read: if the table refuses, the published
 	// months still show, and the section explains itself.
-	const [booksResult, formulasResult, grantsResult] = await Promise.all([
+	const [booksResult, formulasResult, shareResult, grantsResult] = await Promise.all([
 		loadOpenBooks(supabase()).then(
 			(books) => ({ books, quarters: quarterlySummaries(books), problem: null }),
 			(e) => ({ books: [], quarters: [], problem: MESSAGE[classifyLoadError(e)] })
@@ -29,10 +29,14 @@ export async function load() {
 			(formulas) => ({ formulas, formulaProblem: null }),
 			(e) => ({ formulas: [], formulaProblem: MESSAGE[classifyLoadError(e)] })
 		),
+		loadShareRules(supabase()).then(
+			(shareRules) => ({ shareRules, shareProblem: null }),
+			(e) => ({ shareRules: [], shareProblem: MESSAGE[classifyLoadError(e)] })
+		),
 		loadGrantReport(supabase()).then(
 			(grants) => ({ grants, grantProblem: null }),
 			(e) => ({ grants: [], grantProblem: MESSAGE[classifyLoadError(e)] })
 		)
 	]);
-	return { ...booksResult, ...formulasResult, ...grantsResult };
+	return { ...booksResult, ...formulasResult, ...shareResult, ...grantsResult };
 }
