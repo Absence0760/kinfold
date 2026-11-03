@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The pairing guard covers the phone app's modules too
+
+- **The decision**: the lib module with a test beside it is the repo's structure guard against coverage rot, and the mobile leg extended it from the web tree to `apps/mobile/lib` in the same gate, using Dart's own file names (`lib/<path>/m.dart` pairs with `test/<path>/m_test.dart`). One gate covering both app surfaces is what keeps the phone tree from eroding the same way the web tree cannot.
+- **What the rule found on its first run**: a real pairing gap — membership.dart's words were tested only through the profile module. Fixed at the source: the pairing test moved to the module's own test file, and the duplicated expectations folded out of the profile test rather than left doubled.
+- **Teeth**: renaming the sibling file made the rule name the missing pairing by path; restored, 25 flutter tests green.
+- **Reversal:** a shared helper module (a file whose behaviour is pinned through its callers, which is what the third-caller rule eventually produces) joins a named carve-out, since its tests belong to the callers, not beside it.
+
 ## 2026-11-03 — The phone shell lands as a Dart package the machine can test headless
 
 - **The decision**: 1a's shell entered as `apps/mobile` — provider seam, sign-in words, standing words, profile read — and its tests run through `flutter test` headless: the seam's transport is injectable, so the unit tests pin the exact calls (paths, methods, bodies) without ever reaching a network, and the code default is the dev stack's own API port (local-first). A fresh clone answers the phone app's layers before any phone does.
