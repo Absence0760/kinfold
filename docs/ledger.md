@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The Tab walk must close its cycle, and stop identity is a probe id not a pixel
+
+- **The decision**: two focus-order rules. WCAG 2.1.2 (no keyboard trap): the audit presses Tab for every reachable stop plus the browser's own hop, and focus must land back on the FIRST stop; anything else is focus stuck in a trap or a count that disagrees with the walk. WCAG 2.4.3: no element carries a positive `tabindex`, which rewires the walk away from reading order.
+- **Stop identity is a probe attribute, not coords or names**: the skip link's own `:focus` style lifts it from its hideaway slot, so the same element reads one rect when focused first and another when the cycle returns - pixel comparison accused a page that behaved correctly. The shared count now marks every reachable stop with `data-e2e-stop` and the cycle compares those ids; names alone would conflate two same-class elements.
+- **`<summary>` is a stop**: `closest('details')` matches the summary too, so the closed-details filter first excluded it and undercounted the walk by one on every surface. Found by the count-vs-walk disagreement, not guessed - and it had to be fixed for the cycle rule, which cannot tolerate an off-by-one count in either direction (fell-out already caught overcounting).
+- **Teeth on the final file**: clipping the cycle walk by one press made all eight tests report the trap by name; adding `tabindex="1"` to the site's skip link made the order rule name it. Both reverted; green.
+- **Reversal:** if a page ever legitimately ships a deliberate focus restorer (a component that moves focus back on blur), the cycle rule moves to a per-component opt-out; when the member consoles join the audit, the probe-id marking and the reading-order assertion join with them.
+
 ## 2026-11-03 — Contrast is measured in the dark scheme, where the promise could hide
 
 - **The decision**: a `test.describe('in dark mode')` block (Playwright's `colorScheme: “dark”` context) runs the contrast rule on all public surfaces hydrated and on the prerendered no-JS copy - twelve more audits per run.
