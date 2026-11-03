@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The phone toolchain is installed on the build machine, not excused
+
+- **The decision**: the roadmap parked 1a for a missing toolchain, so the toolchain got installed rather than the leg left waiting: the Flutter SDK (channel stable, 3.47.9, with Dart 3.13.7) is cloned at `~/sdk/flutter`, symlinked into `~/.local/bin` so a fresh shell answers `which flutter dart`, and `flutter --version` answers. The roadmap’s own unblock condition was the test — build when `flutter --version` answers — so satisfying it is the leg’s prerequisite being met, not the leg being built.
+- **What the install proved, head to tail**: `flutter test` runs headless with `flutter_test` (no device, no browser), the Linux desktop target compiles, and the Android toolchain (SDK, Java) is not installed. So the app’s Dart layers are testable here today, while a phone build stays an open item in the followups: the honest line is which halves the machine answers, not that the machine answers none of them.
+- **Durable rather than incidental**: the SDK sits outside the repo (a 222M clone is not a tracked tree) and joins PATH through the `~/.local/bin` symlink, a directory the default PATH already carries, so the check every gate asks (`which flutter dart` finds nothing) flips honestly and a restarted shell still finds it.
+- **Reversal:** if the SDK ever has to be pinned for the repo to build against (a version-pinned CI job), the SDK becomes a declared install step in the toolchain docs rather than a home directory that only this machine happens to carry.
+
 ## 2026-11-03 — The nav announces the page's sections in the page's own order
 
 - **The decision**: two orders describe the same list - the nav announces the sections in one, the page presents them in another - and they have to agree, because a reader walking the menu top to bottom should land in reading order; an inversion sends them jumping back up the page mid-walk. The audit reads the document order of the sections and of the nav links and names the disagreeing pair with both page positions.

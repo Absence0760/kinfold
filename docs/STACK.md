@@ -69,7 +69,7 @@ Every module under `apps/web/src/lib` has a matching `*.test.ts` — the one exc
 
 ## Clients
 
-- **Member app: Flutter, planned** as `apps/mobile` (the estate `mobile-fullstack` pattern, as in project-stocks). Evidence capture needs the phone camera with device attestation, which a web page can't give.
+- **Member app: Flutter, toolchain installed** at `~/sdk/flutter` (channel stable, Flutter 3.47.9, Dart 3.13.7), symlinked into `~/.local/bin` so a fresh shell answers `which flutter dart`. `flutter test` runs headless with `flutter_test`, and the Linux desktop target compiles; the Android toolchain (SDK and Java) is not installed, so a phone build is an open item. Planned as `apps/mobile` (the estate `mobile-fullstack` pattern, as in project-stocks). Evidence capture needs the phone camera with device attestation, which a web page can't give.
 - **Reviewer console: planned** as authenticated routes in a later web app, not in the public marketing site.
 
 ## Domain rules
