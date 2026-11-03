@@ -97,6 +97,19 @@ for (const route of publicRoutes) {
 					found.push(`skip link: #${target} has no element on the page`);
 				}
 			}
+			// A keyboard reader's first tab must be the skip link: if anything else
+			// takes focus first, the reader walks the whole menu before they can jump.
+			const focusable = document.querySelectorAll(
+				'a[href], button, input:not([type="hidden"]), textarea, select, [tabindex]'
+			);
+			for (const el of focusable) {
+				if (el.classList.contains('skip-link')) {
+					if (el !== focusable[0]) {
+						found.push('skip link: something else takes focus before it: ' + focusable[0].tagName + '.' + focusable[0].className);
+					}
+					break;
+				}
+			}
 			return found;
 		});
 		expect(problems).toEqual([]);
