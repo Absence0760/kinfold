@@ -620,6 +620,50 @@ async function scaffoldWordsProblems(page: Page) {
 // like two different products on neighbouring pages. The audit reads the page's
 // printed words: every word starting like the brand root has to carry the brand
 // exactly as the site names it, and the body has to name it at least once.
+// The nav announces the page's sections in an order; the page presents them in
+// an order; the two orders have to agree, or a reader walking the menu top to
+// bottom jumps back up the page mid-walk. The audit reads the document order of
+// the sections and of the nav links, and names the first pair the two orders
+// disagree on (the nav puts X before Y, the page presents Y first).
+async function navSectionOrderProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found: string[] = [];
+		const pageOrder = [...document.body.querySelectorAll('section[id]')].map((s) => s.id);
+		if (pageOrder.length === 0) {
+			return found;
+		}
+		// The order promise belongs to the page that carries the sections: from
+		// another page, nav links are cross-document jumps to the landing page.
+		// Two halves of the nav (the desktop row and the phone menu) announce the
+		// same ids; the order promise is about the sequence, so each id is taken
+		// once, at its first announcement.
+		const navOrder: string[] = [];
+		for (const el of document.body.querySelectorAll('nav a[href^="/#"]')) {
+			const id = (el.getAttribute('href') || '').slice(2);
+			if (id !== '' && !navOrder.includes(id)) {
+				navOrder.push(id);
+			}
+		}
+		for (const id of navOrder) {
+			if (!pageOrder.includes(id)) {
+				found.push('nav link "' + id + '" has no section on the page: the menu announces a section that is not there');
+			}
+		}
+		for (let i = 0; i < navOrder.length; i += 1) {
+			for (let j = i + 1; j < navOrder.length; j += 1) {
+				const a = navOrder[i];
+				const b = navOrder[j];
+				if (!pageOrder.includes(a) || !pageOrder.includes(b)) continue;
+				if (pageOrder.indexOf(a) > pageOrder.indexOf(b)) {
+					found.push('the nav puts "' + a + '" before "' + b + '" but the page presents "' + b + '" (at page position ' + (pageOrder.indexOf(b) + 1) + ') before "' + a + '" (at ' + (pageOrder.indexOf(a) + 1) + '): a reader walking the menu in order jumps back up the page');
+				}
+			}
+		}
+		return found;
+	});
+}
+
+
 async function brandProblems(page: Page) {
 	return await page.evaluate(() => {
 		const found = [];
@@ -876,6 +920,7 @@ for (const route of publicRoutes) {
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
 		expect(await brandProblems(page)).toEqual([]);
+		expect(await navSectionOrderProblems(page)).toEqual([]);
 		expect(await duplicatedWordsProblems(page)).toEqual([]);
 		expect(await navSectionsReachableProblems(page)).toEqual([]);
 	});
@@ -891,6 +936,7 @@ for (const route of prerenderedPublicRoutes) {
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
 		expect(await brandProblems(page)).toEqual([]);
+		expect(await navSectionOrderProblems(page)).toEqual([]);
 		expect(await duplicatedWordsProblems(page)).toEqual([]);
 		expect(await navSectionsReachableProblems(page)).toEqual([]);
 	});
