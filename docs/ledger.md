@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The member's cover console offers only the two doors a member truly owns
+
+- **The dues/premium schema had no member surface**: filed rates, classes and plan choices landed in SQL (pgTAP-pinned) but nothing let a member see or change what they own, so premiums read as an invisible deduction. A new route `/app/cover` reads their own vehicles, the filed rates that apply, and the annual premium figure, and offers exactly two writes: `set_my_plan` (which filed set applies) and `set_vehicle_class` (the rating-law class on their own vehicle).
+- **Nothing else is writable from the member side**: filed rates are the partner insurer's and are written service-only; the console never restates or accepts them, and it never calls dues money a premium (the member's side keeps the dues word) — the paid-in-full premium figure is a read, not a lever.
+- **Class before premium**: an unclassed vehicle takes no premium money (pgTAP-pinned), so the console shows the class as the missing step rather than inventing a default class — a default would silently price a vehicle against the member's own knowledge of it.
+- **Reversal:** if the class and the plan should come only from onboarding, delete `/app/cover` (route ts/svelte, `lib/cover/*`) and keep the doors; nothing in the schema or the ledger depends on the console existing, and no new SQL was added for it.
+
 ## 2026-11-02 — The console reads WHAT the checks found, never HOW they match (`review_fraud_signals`)
 
 - **Fraud standing was invisible to the people who act on it**: `private.fraud_signals` decides scoring (`in_review` on a high-severity finding) but nothing let a reviewer read it — the console promised fraud signals with no door behind the promise. New door: kind + severity, high first, resolved findings gone.
