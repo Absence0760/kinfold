@@ -117,6 +117,9 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 			: Promise.resolve({ data: null, error: null })
 	]);
 
+	const agreementRow = must(agreement, 'the written agreement');
+	const titleRow = must(title, 'the request');
+	const supporterRow = must(supporter, 'the lender');
 	return {
 		loan,
 		installments: must(inst, 'the schedule'),
@@ -124,10 +127,10 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 		forgiveness: must(forg, 'forgiveness'),
 		missed: must(missed, 'missed installments'),
 		restructures: must(restructures, 'restructures'),
-		agreementText: must(agreement, 'the written agreement')?.agreement_text ?? null,
-		agreementFinalizedAt: must(agreement, 'the written agreement')?.agreement_finalized_at ?? null,
-		requestTitle: must(title, 'the request')?.title ?? null,
-		lenderRelationship: must(supporter, 'the lender')?.relationship ?? null
+		agreementText: agreementRow?.agreement_text ?? null,
+		agreementFinalizedAt: agreementRow?.agreement_finalized_at ?? null,
+		requestTitle: titleRow?.title ?? null,
+		lenderRelationship: supporterRow?.relationship ?? null
 	};
 }
 
