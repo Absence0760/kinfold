@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Car-cover requests point at the public help beside them (`CoverHelpPanel`)
+
+- **Kinfold stays a holder of member shares, never a writer of others' policies**: the web request page for a car gap now names the programmes that sit beside that gap — state low-cost auto insurance where it exists, and FEMA/SBA/USDA disaster-repair help — so a member whose own insurer won't take the loss has somewhere real to go (design.md "Pointing members to public help"), rather than an unhelped "no, ask your people" wall.
+- **Names only, never money**: every line says the programme's own terms move that money outside the pool, so no read of this page can be taken as Kinfold administering a federal or state programme — 2e's loans still wait on the partners.
+- **Reversal:** if the operator wants the pointer kept off the member console (say, once the state programmes are verified against current notices per the followup list), delete the panel and its import; nothing in the schema or a test depends on the copy.
+
 ## 2026-11-02 — A signed loan's agreement gets written down (`finalize_loan_agreement`)
 
 - **Paperwork is a product, not an afterthought** (design.md:149): because Kinfold documents every loan properly, an unpaid family loan can qualify as a bad-debt tax deduction for the lender, which an informal handshake loan usually can't. So once both sides have signed, the loan-servicing event writes the agreement in plain words on the loan — amount, schedule as set, pause allowance, lien/IRS rate, default plan — and the job sweeps exactly the signed loans that have none yet.

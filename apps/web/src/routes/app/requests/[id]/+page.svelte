@@ -36,6 +36,7 @@
 	import RecoveriesPanel from './RecoveriesPanel.svelte';
 	import InspectionsPanel from './InspectionsPanel.svelte';
 	import PublicHelpPanel from './PublicHelpPanel.svelte';
+	import CoverHelpPanel from './CoverHelpPanel.svelte';
 	import EvidencePanel from './EvidencePanel.svelte';
 	import InvitePanel from '#lib/invites/InvitePanel.svelte';
 
@@ -523,6 +524,10 @@
 
 	{#if r.kind === 'mortgage_gap'}
 		<PublicHelpPanel />
+	{/if}
+
+	{#if r.kind === 'car_damage' || r.kind === 'car_deductible'}
+		<CoverHelpPanel />
 	{/if}
 
 	{#if r.status === 'refused' || detail.appeals.length}
