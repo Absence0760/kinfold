@@ -116,6 +116,9 @@ jobs:
       - name: Root-scripts guard
         run: pnpm test:scripts
 
+      - name: Repo invariants
+        run: pnpm test:invariants
+
   backend:
     name: backend
     if: needs.changes.outputs.code == 'true'
