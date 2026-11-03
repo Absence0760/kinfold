@@ -103,8 +103,49 @@ for (const f of files) {
 	}
 }
 
+// --- internal links point at pages the site serves ---
+// A typoed path link reads as a page that exists: it answers the error page,
+// which looks like an accident to a reader and nothing fails. A site-absolute
+// href is either a route (+page.svelte serves it, with [param] segments matched
+// generically, the way SvelteKit itself serves them) or an asset under
+// apps/web/static. Values carrying expressions (href="/#{id}") are left to the
+// build, whose prerender step already fails on missing ids - this half is the
+// paths, which the build lets through.
+const routePaths = [];
+for (const f of files) {
+	if (!f.startsWith('apps/web/src/routes/') || !f.endsWith('/+page.svelte')) continue;
+	const segs = f.replace('apps/web/src/routes/', '').replace(/\/\+page\.svelte$/, '').split('/').filter((s) => !/^\(.*\)$/.test(s));
+	routePaths.push('/' + segs.join('/'));
+}
+const servesPath = (path) => {
+	if (path === '/') return routePaths.includes('/');
+	const want = path.slice(1).split('/');
+	for (const rp of routePaths) {
+		const have = rp === '/' ? [] : rp.slice(1).split('/');
+		if (have.length !== want.length) continue;
+		let ok = true;
+		for (let i = 0; i < have.length; i += 1) {
+			if (have[i].startsWith('[')) continue; // param segment
+			if (have[i] !== want[i]) { ok = false; break; }
+		}
+		if (ok) return true;
+	}
+	return files.includes('apps/web/static' + path);
+};
+for (const f of files) {
+	if (!f.startsWith('apps/web/src/') || !f.endsWith('.svelte')) continue;
+	const body = readFileSync(join(root, f), 'utf8');
+	for (const m of body.matchAll(/(?:href|src)="(\/[^"{ ]+)"/g)) {
+		const path = m[1].split(/[?#]/)[0];
+		if (path === '' || !path.startsWith('/') || path.startsWith('//')) continue;
+		if (!servesPath(path)) {
+			problems.push(`${f}: ${m[0].split("=")[0]}="${path}" names no page (no +page.svelte serves it) and no static file: the link answers the error page, or the image never loads`);
+		}
+	}
+}
+
 if (problems.length) {
 	console.error(`Repo invariants: ${problems.length} problem(s)\n  ${problems.join('\n  ')}`);
 	process.exit(1);
 }
-console.log(`Repo invariants: ${migrations.length} migrations in order, ${tests.length} pgTAP plans agree, lib modules paired, test chain complete, generated dirs untracked`);
+console.log(`Repo invariants: ${migrations.length} migrations in order, ${tests.length} pgTAP plans agree, lib modules paired, test chain complete, generated dirs untracked, internal links resolve`);
