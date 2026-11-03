@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Prose in a tracked doc may not print the same word twice back to back
+
+- **The decision**: a doubled word in prose (`the the`, not `no no`) is the copy slip a careful reader catches on a page, and the e2e copy rule reads the built web pages, not the 81 markdown files that ship beside them, so the docs gate carries the same promise for prose. Code fences, inline code spans and markdown link targets are out of the scan: repeating an identifier or a path token is code, not writing.
+- **Why a word-breaking separator instead of spaces when blanking**: blanking an inline span with spaces glues the prose on either side together, and a sentence like 'the `<span>` the' then reads as a doubled word - four real citations in the ledger and backend docs were accused that way on the first pass. A word-breaking separator keeps the promise pointed at prose, and the newline count is still preserved so the accusation carries a true line number even below a code fence.
+- **Teeth**: a typoed `the the` planted in the roadmap's accessibility bullet was named at its true line (81, checked against the file), while the same doubled word planted inside a code fence and inside an inline span stayed out - the carve-out is deliberate, not an accident of the scan. Restored byte-exact.
+- **What it found**: nothing today across the 81 tracked docs; the rule guards the long prose the ledger and roadmap grow every feature, where a wraparound edit doubling an article is the common slip.
+- **Reversal:** deliberate rhetorical doubling in a doc (anaphora typed on one line, `no no - we wait`) joins a named carve-out list so the rule stays a copy-quality guard rather than a ban on rhetoric.
+
 ## 2026-11-03 — Every nav section stays reachable at every width the design shows
 
 - **The decision**: the nav keeps two copies of its section links - a plain row the desktop shows, and a details menu the narrow layout shows instead, swapped by a media query at 860px. Whoever the reader is, jumping to a section is the one promise the nav makes at every width, and a media query is exactly how that promise breaks: a drift that turns both halves off leaves a reader at that width with no section link, which the keyboard walk alone never accuses (it visits only what the page already painted). The audit resolves every section id the nav announces to a link that is painted, or sits in a menu whose host and summary are both painted and openable; the disclosure opens without script, so the check stays honest on the prerendered no-JS copy.
