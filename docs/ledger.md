@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A public page may not print scaffold words (TODO, lorem, placeholders)
+
+- **The decision**: a half-written section publishes itself to every reader - the words that mark scaffolding (TODO left in copy, lorem ipsum from a template, a placeholder, coming soon, a bare FIXME) are exactly the ones a careful human reader catches and nothing on the page does. The audit collects the page's printed words (not markup) and reports every scaffold shape it finds, once per occurrence, with the words around it quoted so the copy line is findable. Joined to the public-surface loop: four pages hydrated and the two prerendered no-JS copies.
+- **Why printed words and not markup**: scaffold copy is a reader-facing failure, so it is judged where it is read; a TODO inside an attribute that never renders is a code-comment problem for the code gates, not a page gate.
+- **Teeth**: a TODO paragraph injected in the closing section named itself with its surrounding words (the page prints scaffold words TODO near Kinfold isn't open yet. TODO: write the closing para) on both the hydrated and no-JS passes. The built artifact was grepped to confirm the mutated page, not a stale build, was what the audit read. Restored byte-exact.
+- **What it found**: nothing today - no scaffold shape appears on any public page; the rule guards the next page added from a template or left half-written, the drift the roadmap's own phases will produce while a step is under construction.
+- **Reversal:** once a section is legitimately under construction in public (a phase landing page that admits a step is not built yet), its marker words move to a named class the audit skips - the rule stays a copy-quality guard, not a blanket ban on the words.
+
 ## 2026-11-03 — The heading outline may not skip a level; the audit names the pair that does
 
 - **The decision**: heading navigation is how screen readers and browser extensions move through a page, and they follow the outline: levels may step sideways to a sibling or back up any number of levels, but never drop more than one at a time. A section title that jumps straight into a sub-sub-heading hides the level between, so a reader follows the outline past a section that should contain them. The audit walks every heading in document order (hydrated and the prerendered no-JS copies) and accuses the pair that skips, quoting both headings and naming both levels, and separately accuses a heading that prints no words (an outline stop that reads silence). WCAG 1.3.1, heading semantics.
