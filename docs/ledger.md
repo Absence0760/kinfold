@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The two sign-in copies swept: one drift, fixed at the source
+
+- **The decision**: the phone app's pinned copy got a deliberate one-at-a-time sweep — every sign-in sentence the web publishes (the four failures' texts, both network texts, both server texts, both unconfigured texts, both unknown texts, the commands) checked byte-for-byte against the Dart copy, in both directions. It found exactly one drift: the web wraps an unexpected failure message in typographic quotes, the Dart copy used straight ones. Fixed at the source (the Dart copy moves to the product's marks) and the parity test's expectation moves with it — the repo's rule that you never adjust a test to hide what the code got wrong.
+- **What the sweep proves beyond the fix**: every other sign-in sentence is byte-identical across the two languages; the parity tests' existence was worth the sweep because it was the first time all of them were read against the web as a set, and the copy is now a known-equal place to edit from.
+- **Reversal:** if the shared-copy seam lands (the duplication rule's future), the sweep runs on the seam's single source instead of across two languages.
+
 ## 2026-11-03 — The phone app gains a lint gate, run where the SDK is
 
 - **The decision**: `check:mobile` (`flutter analyze`) joins the root scripts and the CI mobile job, run right after the job bootstraps the SDK — the same carve-out shape as check:edge: CI's runners don't ship the tool, so the job that installs it runs it, and the package.json divider says so. The Flutter tests compile the code but never fail on lint slips (an unused binding, dead code, a deprecated call); this gate is what keeps the mobile tree from drifting quietly as it grows.
