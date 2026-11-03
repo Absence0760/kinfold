@@ -8,6 +8,7 @@
 		quickAmounts,
 		type BoardItem
 	} from '#lib/board/board.ts';
+	import { supabase } from '#lib/supabase/client.ts';
 	import { loadRaised, pledgeGift } from '#lib/board/data.ts';
 
 	let {
@@ -83,10 +84,10 @@
 		step = 'sending';
 		error = null;
 		try {
-			await pledgeGift(item.id, cents);
+			await pledgeGift(supabase(), item.id, cents);
 			pledgedCents = cents;
 			step = 'done';
-			onpledged(await loadRaised(item.id));
+			onpledged(await loadRaised(supabase(), item.id));
 			await tick();
 			doneNote?.focus();
 		} catch (err) {

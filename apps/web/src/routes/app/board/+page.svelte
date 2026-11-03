@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { supabase } from '#lib/supabase/client.ts';
 	import {
 		amountText,
 		countText,
@@ -60,7 +61,7 @@
 	// Try again replaces the error block (and the button that had focus) with the
 	// loading state, then the board: park focus on the page heading once it settles.
 	async function retry() {
-		const p = loadBoard(data.viewerId);
+		const p = loadBoard(supabase(), data.viewerId);
 		watch(p);
 		await p.catch(() => undefined);
 		await tick();

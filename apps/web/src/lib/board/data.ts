@@ -1,6 +1,6 @@
 import { fundForKind } from '#lib/requests/form.ts';
+import type { Db } from '#lib/supabase/client.ts';
 import { minScoreFor } from '#lib/requests/score-band.ts';
-import { supabase } from '#lib/supabase/client.ts';
 import { toItems, type BoardItem } from './board.ts';
 import { explainInviteError } from '#lib/invites/errors.ts';
 import { BoardLoadError } from './errors.ts';
@@ -22,8 +22,7 @@ import { BoardLoadError } from './errors.ts';
  * One progress call per open request: fine at today's board size; a view
  * column would be the durable fix once the board grows.
  */
-export async function loadBoard(viewerId: string): Promise<BoardItem[]> {
-	const db = supabase();
+export async function loadBoard(db: Db, viewerId: string): Promise<BoardItem[]> {
 	const [board, own, settings] = await Promise.all([
 		db.from('board_requests').select('*'),
 		db.from('requests').select('id').eq('member_id', viewerId),
@@ -42,8 +41,8 @@ export async function loadBoard(viewerId: string): Promise<BoardItem[]> {
 }
 
 /** Pledge a gift (never a loan: strangers on the board can't lend). */
-export async function pledgeGift(requestId: string, cents: number): Promise<void> {
-	const { error } = await supabase().rpc('pledge', {
+export async function pledgeGift(db: Db, requestId: string, cents: number): Promise<void> {
+	const { error } = await db.rpc('pledge', {
 		p_request: requestId,
 		p_amount_cents: cents,
 		p_source: 'gift'
@@ -52,7 +51,7 @@ export async function pledgeGift(requestId: string, cents: number): Promise<void
 }
 
 /** Re-read one open request's progress after a pledge. */
-export async function loadRaised(requestId: string): Promise<number | null> {
-	const { data, error } = await supabase().rpc('request_raised_cents', { p_request: requestId });
+export async function loadRaised(db: Db, requestId: string): Promise<number | null> {
+	const { data, error } = await db.rpc('request_raised_cents', { p_request: requestId });
 	return error || data == null ? null : Number(data);
 }

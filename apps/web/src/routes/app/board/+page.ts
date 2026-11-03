@@ -1,3 +1,4 @@
+import { supabase } from '#lib/supabase/client.ts';
 import { loadBoard } from '#lib/board/data.ts';
 
 // The board promise isn't awaited: the page shows a loading state while it
@@ -9,6 +10,6 @@ export async function load({ parent }) {
 	return {
 		active,
 		viewerId,
-		board: active ? loadBoard(viewerId) : Promise.resolve([])
+		board: active ? loadBoard(supabase(), viewerId) : Promise.resolve([])
 	};
 }
