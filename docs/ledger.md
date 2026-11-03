@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Every pgTAP plan count was audited against its assertions; one suite was over-planned
+
+- **What was wrong**: `evidence_lifecycle_test.sql` declared `plan(46)` but makes 43 assertions. pgTAP counts each top-level assertion call as one test, and a suite that finishes short of its plan is a FAILURE - so `pnpm test:backend:db` (which `ci.yml` runs on every push to `main`) would have been red from the day the evidence-lifecycle migration landed.
+- **The fix is the number, not the tests**: `plan(46)` -> `plan(43)`. Nothing was dropped - the file's own header lists five property groups and all of them still have their assertions (recoveries 1-10, funding and pool 11-18, redaction 19-31, the deletion queue 32-36, summaries 37-43). The three extra tests were never written.
+- **Why audit all 58 instead of patching one**: the pgTAP runner needs Docker plus the Supabase CLI, which this machine lacks, so the plan count is the only checkable proxy for "the suite is complete". Audited every `supabase/tests/*_test.sql`: the other 57 already agreed with their plans, and they do now too.
+- **Reversal:** if a pgTAP version ever tolerates over-planning, restore 46 - but the assertions never change, so 43 is the honest number either way.
+
 ## 2026-11-03 — The markdown sweep now runs over ALL 81 tracked `.md` files, scaffold included
 
 - **What the sweep checks** (filed as the standing hygiene rule, not a one-off pass): final newline, no doubled blank line, no trailing whitespace or tabs, table rows with one escaped-pipe-aware cell count per block, no heading-level skips (fence-aware: a `# Web` line inside a report template doesn't count), and every relative link resolving to a tracked path.
