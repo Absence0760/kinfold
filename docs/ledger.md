@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The heading outline may not skip a level; the audit names the pair that does
+
+- **The decision**: heading navigation is how screen readers and browser extensions move through a page, and they follow the outline: levels may step sideways to a sibling or back up any number of levels, but never drop more than one at a time. A section title that jumps straight into a sub-sub-heading hides the level between, so a reader follows the outline past a section that should contain them. The audit walks every heading in document order (hydrated and the prerendered no-JS copies) and accuses the pair that skips, quoting both headings and naming both levels, and separately accuses a heading that prints no words (an outline stop that reads silence). WCAG 1.3.1, heading semantics.
+- **Why the pair instead of the count**: naming both headings with their levels puts the finger on the exact markup line that drifted, and shows whether the writer meant to add a level or demoted by accident - a count of skips would make the fix a hunt through the page.
+- **Teeth**: demoting the transparent page's weights heading to level 4 named the drop (the quarterly report, level 2, to how members are chosen, level 4) on both the hydrated page and its no-JS copy, and a nameless heading in the principles list named the empty stop. Restored byte-exact, green at 200 tests.
+- **What it found**: nothing today - every outline on every public surface steps one level at a time; the rule guards the next section added to the landing copy, where hand-written heading levels live.
+- **Reversal:** if a section ever legitimately nests a heading two levels down (a panel whose level-2 parent is drawn as a card without a heading), that parent joins a named carve-out list rather than loosening the one-level check, so the outline stays machine-readable where it is meant to be.
+
 ## 2026-11-03 — Printed dollar figures on every public page must be grouped in threes
 
 - **The decision**: money on a public page is for reading, not for the reader to re-group at the till. A copy typo (1,00 for 1,000) makes a reader read ten hundred; a figure formatted with a different separator shape reads as a different number than the same figure the site prints everywhere else (every app figure goes through formatUsd, which groups in threes, so the page's own shape is the standard). The audit splits each public page's printed words at every dollar sign, takes the following figure, and demands grouping in threes, no leading zeros, and cents only as exactly two digits.
