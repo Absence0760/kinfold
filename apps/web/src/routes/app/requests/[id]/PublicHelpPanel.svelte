@@ -1,5 +1,17 @@
+<script lang="ts">
+	import type { CertifiedCounsel } from '#lib/transparency/data.ts';
+	import { publicHelpCounselLine, publicHelpHeading } from '#lib/requests/public-help.ts';
+
+	// The published agency (housing_counsel) read beside a mortgage gap's help:
+	// when a certified agency stands, the panel names it rather than pointing at
+	// counselors in general. A failed read is this affordance's to explain - the
+	// request and its figures never depend on it.
+	let { counsel, problem }: { counsel: CertifiedCounsel | null; problem: string | null } = $props();
+</script>
+
 <div class="panel" data-testid="public-help">
-	<h3 class="inline">Public help alongside this gap</h3>
+	<h3 class="inline">{publicHelpHeading}</h3>
+	{#if problem}<p class="problem" role="alert">{problem}</p>{/if}
 	<p class="fine">
 		A mortgage gap is money the bank can help without anyone re-paying it, so Kinfold points you at
 		the public help that sits beside it rather than taking their money:
@@ -7,10 +19,10 @@
 	<ul class="list">
 		<li class="fine">
 			<strong>HUD-approved housing counselors.</strong>
-			Nonprofit agencies certified by the government that help households ask a bank for
-			<em>forbearance</em> (a pause the bank agrees to) or a <em>loan modification</em>
-			(easier terms). Find the one nearest you on hud.gov — Kinfold never becomes a counselor
-            itself; you go to theirs.
+			{publicHelpCounselLine(counsel)}
+			{#if counsel}
+				<a href={counsel.contactUrl}>{counsel.agencyName}</a>.
+			{/if}
 		</li>
 		<li class="fine">
 			<strong>State and federal repair help</strong> when keeping the home needs work: FEMA,
@@ -35,6 +47,7 @@
 	.panel li {
 		gap: 0;
 	}
+
 	.panel strong {
 		white-space: nowrap;
 	}

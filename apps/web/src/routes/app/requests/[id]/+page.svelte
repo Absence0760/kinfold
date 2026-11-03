@@ -4,6 +4,7 @@
 	import { invalidate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
+	import type { CertifiedCounsel } from '#lib/transparency/data.ts';
 	import { fundingLabel, payeeWord, requestKindLabel, requestStatusText } from '#lib/dashboard/labels.ts';
 	import {
 		confirmSummary,
@@ -51,6 +52,29 @@
 	let detail = $state<RequestDetail | null | undefined>(undefined);
 	let ctx = $state<FormContext | null>(null);
 	let loadError = $state<string | null>(null);
+
+	// The Fund's certified counselor (housing_counsel), public data read beside a
+	// mortgage gap's help: it arrives with its own problem line, so a read failure
+	// explains itself in the panel while the request and its figures stay intact.
+	let counsel = $state<CertifiedCounsel | null>(null);
+	let counselProblem = $state<string | null>(null);
+	$effect(() => {
+		const p = data.counsel;
+		p.then(
+			(v) => {
+				if (data.counsel === p) {
+					counsel = v.counsel;
+					counselProblem = v.counselProblem;
+				}
+			},
+			// The load already maps its own failure kinds; this covers the promise
+			// itself going wrong, which the panel then says so about.
+			(e) => {
+				if (data.counsel === p) counselProblem = e instanceof Error ? e.message : 'Unknown error';
+			}
+		);
+	});
+
 	let retrying = $state(false);
 
 	// Keep what's on screen while an action re-reads, so nothing flashes.
@@ -529,7 +553,7 @@
 
 	{#if r.kind === 'mortgage_gap'}
 		<FairLenderPanel lines={fairLenderLines(r.kind)} />
-		<PublicHelpPanel />
+		<PublicHelpPanel {counsel} problem={counselProblem} />
 	{/if}
 
 	{#if r.kind === 'down_payment'}
