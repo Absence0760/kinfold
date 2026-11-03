@@ -27,7 +27,6 @@ page, request-board demo, savings calculator) plus an early Supabase schema
 design in `docs/design.md` against it; a finding against a flow that is only
 designed, not built, is filed as a design finding, not a bug.
 
-
 1. **Spawn one agent per selected persona, in parallel** — all Agent tool calls
    in a single message. Use `subagent_type: "persona-<slug>"` and a prompt that
    says: *"Run your persona audit. Reconcile reviews/<persona>.md with HEAD per
