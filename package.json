@@ -25,8 +25,8 @@
     "check": "pnpm run check:web",
     "check:web": "pnpm -C apps/web check",
     "check:edge": "pnpm -C apps/backend check:edge",
-    "//-- test --": "Vitest unit tests beside the modules they cover, the root-scripts guard, and pgTAP (schema, invariants, RLS). test:backend:db needs dev:db:up first. test:web:e2e (Playwright, apps/web/e2e) builds the site and serves it on 7790, needs setup:e2e once, and is not part of `test`.",
-    "test": "pnpm run test:web && pnpm run test:scripts && pnpm run test:invariants && pnpm run test:docs && pnpm run test:edge && pnpm run test:backend:db",
+    "//-- test --": "Vitest unit tests beside the modules they cover, the root-scripts guard, and pgTAP (schema, invariants, RLS). test:backend:db needs dev:db:up first. test:web:e2e (Playwright, apps/web/e2e) builds the site and serves it on 7790, needs setup:e2e once, and is not part of `test`. test:mobile (Flutter, apps/mobile) needs the Flutter SDK installed (`flutter --version` answers; docs/STACK.md names the location).",
+    "test": "pnpm run test:web && pnpm run test:scripts && pnpm run test:invariants && pnpm run test:docs && pnpm run test:edge && pnpm run test:backend:db && pnpm run test:mobile",
     "test:web": "pnpm -C apps/web test",
     "test:web:e2e": "pnpm -C apps/web test:e2e",
     "test:scripts": "node scripts/check_root_scripts.mjs",
@@ -35,6 +35,7 @@
     "test:edge": "pnpm -C apps/backend test:edge",
     "test:backend:db": "pnpm -C apps/backend test:db",
     "//-- gen --": "Regenerate apps/backend/supabase/database.types.ts from the live local schema (needs dev:db:up). Commit the result.",
-    "gen:types": "pnpm -C apps/backend gen:types"
+    "gen:types": "pnpm -C apps/backend gen:types",
+    "test:mobile": "cd apps/mobile && flutter test"
   }
 }

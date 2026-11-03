@@ -1,0 +1,8 @@
+name: kinfold_mobile
+version: 0.1.0
+description: The member phone app — sign-in through the provider seam, the member profile first screen, and the words a member sees on failure.
+environment:
+  sdk: ">=3.13.0 <4.0.0"
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

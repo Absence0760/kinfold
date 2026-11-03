@@ -101,3 +101,6 @@ backend.config
 !/reviews/README.md
 # Playwright Chromium build cached beside the web app (CI `e2e` job)
 apps/web/.e2e-chromium-cache/
+# Flutter (apps/mobile) generated trees: pub metadata and build output.
+.dart_tool/
+apps/mobile/pubspec.lock
