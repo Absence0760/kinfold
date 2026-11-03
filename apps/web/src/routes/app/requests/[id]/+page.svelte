@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { supabase } from '#lib/supabase/client.ts';
 	import { tick } from 'svelte';
 	import { invalidate } from '$app/navigation';
 	import { page } from '$app/state';
@@ -170,13 +171,13 @@
 		// the guard lives here.
 		if (busy || blockers.length > 0 || !r) return;
 		const id = r.id;
-		act('submit', () => submitRequest(id), 'Submitted. Your evidence is being read and scored; the result will show here.');
+		act('submit', () => submitRequest(supabase(), id), 'Submitted. Your evidence is being read and scored; the result will show here.');
 	}
 
 	function switchToPeople() {
 		if (busy || !r) return;
 		const values = asPeopleOnly(r);
-		act('switch', () => updateDraft(r.id, values), 'Switched to family and friends. The pool’s limits no longer apply to this draft.');
+		act('switch', () => updateDraft(supabase(), r.id, values), 'Switched to family and friends. The pool’s limits no longer apply to this draft.');
 	}
 
 	$effect(() => {
@@ -447,7 +448,7 @@
 							type="button"
 							class="btn btn-primary"
 							aria-disabled={busy !== null ? 'true' : undefined}
-							onclick={() => act('withdraw', () => withdrawRequest(r.id), 'Withdrawn. Any pledges were released.')}
+							onclick={() => act('withdraw', () => withdrawRequest(supabase(), r.id), 'Withdrawn. Any pledges were released.')}
 						>
 							{busy === 'withdraw' ? 'Withdrawing…' : 'Yes, withdraw it'}
 						</button>
@@ -582,7 +583,7 @@
 							class="btn btn-primary"
 							aria-disabled={busy !== null ? 'true' : undefined}
 							onclick={() =>
-								act('summary', () => confirmSummary(r.id), 'Summary confirmed. It can now show on the members-only board.')}
+								act('summary', () => confirmSummary(supabase(), r.id), 'Summary confirmed. It can now show on the members-only board.')}
 						>
 							{busy === 'summary' ? 'Confirming…' : 'This is fine to show members'}
 						</button>

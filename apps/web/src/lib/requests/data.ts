@@ -1,5 +1,6 @@
 import { latestScores, type RequestScore } from '#lib/dashboard/requests.ts';
-import { fromNew, rpcNew, supabase } from '#lib/supabase/client.ts';
+import { fromNew, rpcNew } from '#lib/supabase/client.ts';
+import type { Db } from '#lib/supabase/client.ts';
 import type { Database } from '../../../../backend/supabase/database.types.ts';
 import type { AssetRow, FundSettings } from './eligibility.ts';
 import type { RecoveryRow } from './recoveries.ts';
@@ -63,8 +64,7 @@ export interface FormContext {
  * fund rules, the payees they may name (verified ones and their own
  * proposals), their own cars, and when their pool cover began.
  */
-export async function loadFormContext(uid: string): Promise<FormContext> {
-	const db = supabase();
+export async function loadFormContext(db: Db, uid: string): Promise<FormContext> {
 	const [settings, payees, assets, coverage] = await Promise.all([
 		db.from('fund_settings').select('fund, kinds, max_request_cents, waiting_days, min_score'),
 		db.from('payees').select(PAYEE_COLUMNS).order('legal_name'),
@@ -106,9 +106,9 @@ export interface RequestDetail {
  * may list their own folder of `evidence-original` ("members read their
  * originals"). A folder that can't be listed marks nothing.
  */
-async function findUnfinished(rows: readonly { id: string; original_path: string }[]): Promise<Set<string>> {
+async function findUnfinished(db: Db, rows: readonly { id: string; original_path: string }[]): Promise<Set<string>> {
 	if (rows.length === 0) return new Set();
-	const bucket = supabase().storage.from('evidence-original');
+	const bucket = db.storage.from('evidence-original');
 	const listed = new Map<string, Set<string>>();
 	await Promise.all(
 		originalFolders(rows.map((r) => r.original_path)).map(async (folder) => {
@@ -120,8 +120,7 @@ async function findUnfinished(rows: readonly { id: string; original_path: string
 }
 
 /** One of the member's own requests with everything the detail page shows, or null. */
-export async function loadRequest(id: string): Promise<RequestDetail | null> {
-	const db = supabase();
+export async function loadRequest(db: Db, id: string): Promise<RequestDetail | null> {
 	const req = await db.from('requests').select('*').eq('id', id).maybeSingle();
 	if (req.error) {
 		// A malformed id is "not found", not a server error.
@@ -157,7 +156,7 @@ export async function loadRequest(id: string): Promise<RequestDetail | null> {
 	// Only evidence that can still change can be removed and re-added, so only
 	// there is an unfinished upload worth finding.
 	const rows = evidence.data ?? [];
-	const unfinished = r.status === 'draft' || r.status === 'needs_evidence' ? await findUnfinished(rows) : new Set<string>();
+	const unfinished = r.status === 'draft' || r.status === 'needs_evidence' ? await findUnfinished(db, rows) : new Set<string>();
 
 	return {
 		request: r,
@@ -177,8 +176,8 @@ export async function loadRequest(id: string): Promise<RequestDetail | null> {
 }
 
 /** Start a draft (the "members create drafts" policy). Returns its id. */
-export async function createDraft(uid: string, values: DraftValues): Promise<string> {
-	const { data, error } = await supabase()
+export async function createDraft(db: Db, uid: string, values: DraftValues): Promise<string> {
+	const { data, error } = await db
 		.from('requests')
 		.insert({ member_id: uid, ...values })
 		.select('id')
@@ -188,18 +187,19 @@ export async function createDraft(uid: string, values: DraftValues): Promise<str
 }
 
 /** Change a draft (the "members edit drafts" policy). Fails if it isn't a draft any more. */
-export async function updateDraft(id: string, values: DraftValues): Promise<void> {
-	const { data, error } = await supabase().from('requests').update(values).eq('id', id).select('id');
+export async function updateDraft(db: Db, id: string, values: DraftValues): Promise<void> {
+	const { data, error } = await db.from('requests').update(values).eq('id', id).select('id');
 	if (error) fail(error);
 	if (!data || data.length === 0) fail({ message: NOT_EDITABLE });
 }
 
 /** Propose a payee (the "members propose payees" policy). Kinfold verifies it later. */
 export async function proposePayee(
+	db: Db,
 	uid: string,
 	values: { kind: PayeeKind; legal_name: string; region: string }
 ): Promise<PayeeRow> {
-	const { data, error } = await supabase()
+	const { data, error } = await db
 		.from('payees')
 		.insert({ ...values, proposed_by: uid })
 		.select(PAYEE_COLUMNS)
@@ -221,8 +221,7 @@ export async function proposePayee(
  * refused. Gallery uploads are marked `captured_in_app = false`; in-app
  * capture with content credentials comes with the mobile app.
  */
-export async function addEvidence(uid: string, requestId: string, kind: EvidenceKind, file: File): Promise<void> {
-	const db = supabase();
+export async function addEvidence(db: Db, uid: string, requestId: string, kind: EvidenceKind, file: File): Promise<void> {
 	const contentType = evidenceType(file) ?? file.type;
 	const sha256 = await sha256Hex(new Uint8Array(await file.arrayBuffer()));
 	const path = evidencePath(uid, requestId, crypto.randomUUID(), file.name);
@@ -242,15 +241,15 @@ export async function addEvidence(uid: string, requestId: string, kind: Evidence
 }
 
 /** Remove a piece of evidence before scoring (the "members remove evidence" policy). */
-export async function removeEvidence(id: string): Promise<void> {
-	const { data, error } = await supabase().from('evidence').delete().eq('id', id).select('id');
+export async function removeEvidence(db: Db, id: string): Promise<void> {
+	const { data, error } = await db.from('evidence').delete().eq('id', id).select('id');
 	if (error) fail(error);
 	if (!data || data.length === 0) fail({ message: EVIDENCE_LOCKED });
 }
 
 /** A five-minute link to the member's own original or redacted copy. */
-export async function evidenceLink(bucket: 'evidence-original' | 'evidence-redacted', path: string): Promise<string> {
-	const { data, error } = await supabase().storage.from(bucket).createSignedUrl(path, 300);
+export async function evidenceLink(db: Db, bucket: 'evidence-original' | 'evidence-redacted', path: string): Promise<string> {
+	const { data, error } = await db.storage.from(bucket).createSignedUrl(path, 300);
 	if (error || !data) {
 		throw new Error(
 			/not found|Object not found/i.test(error?.message ?? '')
@@ -261,14 +260,14 @@ export async function evidenceLink(bucket: 'evidence-original' | 'evidence-redac
 	return data.signedUrl;
 }
 
-async function rpc(fn: () => PromiseLike<{ error: DbError | null }>): Promise<void> {
+async function rpc(db: Db, fn: () => PromiseLike<{ error: DbError | null }>): Promise<void> {
 	const { error } = await fn();
 	if (error) fail(error);
 }
 
-export const submitRequest = (id: string) => rpc(() => supabase().rpc('submit_request', { p_request: id }));
-export const withdrawRequest = (id: string) => rpc(() => supabase().rpc('withdraw_request', { p_request: id }));
-export const confirmSummary = (id: string) => rpc(() => supabase().rpc('confirm_public_summary', { p_request: id }));
-export const confirmRedaction = (id: string) => rpc(() => supabase().rpc('confirm_redaction', { p_evidence: id }));
-export const fileAppeal = (id: string, reason: string) =>
-	rpc(() => supabase().rpc('file_appeal', { p_request: id, p_reason: reason }));
+export const submitRequest = (db: Db, id: string) => rpc(db, () => db.rpc('submit_request', { p_request: id }));
+export const withdrawRequest = (db: Db, id: string) => rpc(db, () => db.rpc('withdraw_request', { p_request: id }));
+export const confirmSummary = (db: Db, id: string) => rpc(db, () => db.rpc('confirm_public_summary', { p_request: id }));
+export const confirmRedaction = (db: Db, id: string) => rpc(db, () => db.rpc('confirm_redaction', { p_evidence: id }));
+export const fileAppeal = (db: Db, id: string, reason: string) =>
+	rpc(db, () => db.rpc('file_appeal', { p_request: id, p_reason: reason }));

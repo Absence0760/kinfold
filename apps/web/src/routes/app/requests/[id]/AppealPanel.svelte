@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { supabase } from '#lib/supabase/client.ts';
 	import { formatDay } from '#lib/dashboard/format.ts';
 	import { fileAppeal, type AppealRow } from '#lib/requests/data.ts';
 	import { APPEAL_MAX, appealReasonProblem, charCount } from '#lib/requests/form.ts';
@@ -39,7 +40,7 @@
 		}
 		sending = true;
 		try {
-			await fileAppeal(requestId, reason.trim());
+			await fileAppeal(supabase(), requestId, reason.trim());
 			reason = '';
 			await onfiled('Your appeal was sent to the member panel. Their decision will show on this page.');
 		} catch (err) {

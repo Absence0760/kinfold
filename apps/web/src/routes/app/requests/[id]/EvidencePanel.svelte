@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { supabase } from '#lib/supabase/client.ts';
 	import { tick } from 'svelte';
 	import { formatDay } from '#lib/dashboard/format.ts';
 	import type { RequestKind } from '#lib/dashboard/labels.ts';
@@ -81,7 +82,7 @@
 		try {
 			const path = which === 'original' ? e.original_path : e.redacted_path;
 			if (!path) throw new Error('There’s no redacted copy yet.');
-			const url = await evidenceLink(which === 'original' ? 'evidence-original' : 'evidence-redacted', path);
+			const url = await evidenceLink(supabase(), which === 'original' ? 'evidence-original' : 'evidence-redacted', path);
 			links = { ...links, [e.id]: { url, which } };
 			await focusId(`${base}-${e.id}-link`);
 		} catch (err) {
@@ -97,7 +98,7 @@
 		busy = `${e.id}-confirm`;
 		const name = nameOf(e);
 		try {
-			await confirmRedaction(e.id);
+			await confirmRedaction(supabase(), e.id);
 			await onreload();
 			announce = `Redaction confirmed for ${name}.`;
 			// The confirm button is gone now; the row's heading stays.
@@ -115,7 +116,7 @@
 		busy = `${e.id}-remove`;
 		const name = nameOf(e);
 		try {
-			await removeEvidence(e.id);
+			await removeEvidence(supabase(), e.id);
 			removing = null;
 			await onreload();
 			announce = `Removed ${name}.`;
@@ -171,7 +172,7 @@
 				queue[i].status = 'uploading';
 				announce = queueSummary(queue);
 				try {
-					await addEvidence(uid, requestId, kindNow, files[i]);
+					await addEvidence(supabase(), uid, requestId, kindNow, files[i]);
 					queue[i].status = 'done';
 					uploaded++;
 				} catch (err) {

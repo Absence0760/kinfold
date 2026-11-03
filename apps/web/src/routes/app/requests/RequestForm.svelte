@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { supabase } from '#lib/supabase/client.ts';
 	import { tick } from 'svelte';
 	import { amountCents, amountEcho } from '#lib/requests/amount.ts';
 	import { fundingLabel, payeeWord, poolName, poolRule, type FundingMode, type RequestKind } from '#lib/dashboard/labels.ts';
@@ -132,10 +133,10 @@
 		saving = true;
 		try {
 			if (requestId) {
-				await updateDraft(requestId, r.values);
+				await updateDraft(supabase(), requestId, r.values);
 				onsaved(requestId);
 			} else {
-				onsaved(await createDraft(uid, r.values));
+				onsaved(await createDraft(supabase(), uid, r.values));
 			}
 		} catch (err) {
 			saveError = err instanceof Error ? err.message : 'The draft wasn’t saved. Try again.';
@@ -191,7 +192,7 @@
 		payeeProblems = {};
 		payeeSaving = true;
 		try {
-			const p = await proposePayee(uid, r.values);
+			const p = await proposePayee(supabase(), uid, r.values);
 			payees = [...payees, p];
 			form.payeeId = p.id;
 			adding = false;
