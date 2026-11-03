@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A public page brands the site as Kinfold, spelled one way, and names it at least once
+
+- **The decision**: two promises over a page's printed words. Every word that starts like the brand root (kinf-) has to carry the brand exactly, and the body has to name the brand at least once - a page that never says who published it leaves a reader landing there guessing. Letters carry the promise, case does not: the brand lockup paints KINFOLD through CSS text-transform and the DOM's innerText reflects the painting, so a case-sensitive compare accused the correct source copy - a real finding on the first run, from the error page's lockup - and the fix folded case rather than exempting the page. The copy drift the rule exists for is a letter-shape slip (Kinfield), not a case choice.
+- **Why present-and-spelled rather than spelled-only**: an identity promise has two failure shapes: a misspelt word and an absent word. The absence shape caught a page whose brand words had all been edited out, where a spelling-only scan would read nothing to accuse.
+- **Teeth**: a Closing heading typed Kinfield was named with context on both viewports, and the error page stripped of every brand word named the absence on both - six tests across the public-route loop. The built artifact was grepped to confirm the mutations were on the wire. Restored byte-exact.
+- **What it found**: the case question only - the first case-sensitive run accused the error page's text-transformed lockup, which was fixed by the compare, not by the page. Today every public page spells the brand exactly and names it at least once.
+- **Reversal:** a page that legitimately brands itself through an image (a wordmark logo with alt text) joins a named carve-out for the absence shape, since alt text is not printed words; the spelling shape stays over whatever words the page prints.
+
 ## 2026-11-03 — Prose in a tracked doc may not print the same word twice back to back
 
 - **The decision**: a doubled word in prose (`the the`, not `no no`) is the copy slip a careful reader catches on a page, and the e2e copy rule reads the built web pages, not the 81 markdown files that ship beside them, so the docs gate carries the same promise for prose. Code fences, inline code spans and markdown link targets are out of the scan: repeating an identifier or a path token is code, not writing.
