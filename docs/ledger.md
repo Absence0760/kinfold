@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Every nav section stays reachable at every width the design shows
+
+- **The decision**: the nav keeps two copies of its section links - a plain row the desktop shows, and a details menu the narrow layout shows instead, swapped by a media query at 860px. Whoever the reader is, jumping to a section is the one promise the nav makes at every width, and a media query is exactly how that promise breaks: a drift that turns both halves off leaves a reader at that width with no section link, which the keyboard walk alone never accuses (it visits only what the page already painted). The audit resolves every section id the nav announces to a link that is painted, or sits in a menu whose host and summary are both painted and openable; the disclosure opens without script, so the check stays honest on the prerendered no-JS copy.
+- **Why the id map instead of counting visible links**: the two halves announce the same ids, so a width-specific check would accuse the half the design legitimately hides; resolving per id asks whether ANY announced route paints a hit, which is the promise a reader experiences.
+- **Teeth, both halves named:** hiding the desktop row named all seven sections as unpainted on the desktop passes (24 accusations, phone stayed green); hiding the phone menu instead named them phone-only - the pair proves the rule resolves the width swap rather than checking one fixed shape. Restored byte-exact.
+- **What it found**: nothing today - at both widths one half always paints (the media queries are complementary); the rule guards the next nav tweak, where a forgotten breakpoint pair would silently lose sections.
+- **Reversal:** if the nav ever legitimately swaps halves at MORE than one width (a third presentation), each half joins a named carve-out list so the reachability map stays width-agnostic rather than the check being loosened to one width.
+
 ## 2026-11-03 — A disclosure control (summary) must announce a name to readers
 
 - **The decision**: the nav's menu opens from a summary whose only content is a hamburger icon - the reader's whole experience of that control is its name, so a summary with no words and no aria-label is a Tab stop a screen reader hears as silence with no idea what opening it does. The audit now reads every summary inside screenReaderProblems (its text or its aria-label must carry words), alongside the button and link loops. The disclosure control is the third control type that ships, and until now it was the unchecked one: the name rules only read button and a elements, while the keyboard walk already treats summary as a stop.
