@@ -71,6 +71,27 @@ for (const route of publicRoutes) {
 					found.push('input: a reader gets no name for this field');
 				}
 			}
+			// A duplicate id is invalid HTML, and it breaks the one control a reader
+			// relies on to jump in: a fragment link resolves to whichever element the
+			// browser picks, not the one intended.
+			const idCount = new Map();
+			for (const el of document.querySelectorAll('[id]')) {
+				idCount.set(el.id, (idCount.get(el.id) || 0) + 1);
+			}
+			for (const id of idCount.keys()) {
+				const count = idCount.get(id) || 0;
+				if (count > 1) {
+					found.push(`id "${id}" sits on ${count} elements`);
+				}
+			}
+			// A skip link must land somewhere: an in-page fragment with no target
+			// leaves the reader tabbing through the whole page instead.
+			for (const a of document.querySelectorAll('a[href^="#"]')) {
+				const target = (a.getAttribute('href') || '').slice(1);
+				if (target !== '' && !document.getElementById(target)) {
+					found.push(`skip link: #${target} has no element on the page`);
+				}
+			}
 			return found;
 		});
 		expect(problems).toEqual([]);
