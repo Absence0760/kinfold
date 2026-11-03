@@ -1,12 +1,17 @@
 // `payments-webhook`: called by the payment partner when it confirms what
 // happened to money the cooperative put in motion. Every write goes through a
-// guarded service function — `capture_contributions`, `mark_refunded`,
+// guarded service function — `record_charge_confirmation`, `mark_refunded`,
 // `report_payout`, `post_journal` — never a direct table write, so this
 // function's word is bounded by those guards' own rules (they're idempotent
 // for replayed webhooks; this function keeps to one journal per event).
 //
 // Events, as the partner's test mode sends them:
 //   * charges_confirmed: the partner confirmed a funded request's charges.
+//     `record_charge_confirmation` owns the capture AND the journal in one
+//     transaction: the pledges flip to captured and their money moves from
+//     the partner's side into the fund's `available` account, the account
+//     the pool allocates from - money is never captured without its ledger
+//     entry, and the figure journaled is the schema's own pledged sum.
 //   * money_returned: one contribution's money came back to the partner (its
 //     request ended unpaid). One refund journal per contribution: journals are
 //     keyed by the partner's reference, so each refund is its own journal.
@@ -76,7 +81,9 @@ export interface ChargeEvent {
     | "fund_loan_paid";
   requestId: string;
   fund: "protection" | "home_fund" | "people";
-  /** Only for charges_confirmed: nothing else is needed, capture reads the row. */
+  /** Only for charges_confirmed: the reference the capture journal replays against. */
+  partnerRef?: string;
+  /** Only for money_returned: the refunds the partner sent back. */
   returns?: ReturnLine[];
   payout?: PayoutReport;
   /** Only for loan_repaid: the installment the borrower returned. */
@@ -116,7 +123,19 @@ export async function handleChargeEvent(
 ): Promise<void> {
   switch (event.event) {
     case "charges_confirmed": {
-      await db.rpc("capture_contributions", { p_request: event.requestId });
+      if (event.partnerRef === undefined) {
+        throw new Error(
+          "a charge confirmation needs the partner\'s reference for its journal",
+        );
+      }
+      // One door owns both halves: `record_charge_confirmation` captures the
+      // pledges and journals their money in the same transaction, so money is
+      // never captured without its ledger entry. The figure is the schema\'s
+      // own pledged sum, never the partner\'s word.
+      await db.rpc("record_charge_confirmation", {
+        p_request: event.requestId,
+        p_partner_ref: event.partnerRef,
+      });
       return;
     }
     case "money_returned": {

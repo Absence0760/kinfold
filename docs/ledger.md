@@ -9,6 +9,12 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **All four disclosures are one acknowledgement in the wrapper**: the schema takes four booleans (the law's four required disclosures); the console asks the borrower to check all four and passes one flag, so the UI can't drift out of sync with what the door needs.
 - **Reversal:** if the self-test should not be offered in-app, delete `apps/web/src/routes/app/loans/fund/[id]/FairLendingPanel.svelte`, its import and render in that page, and `offerFundLoanSelfTest`/`fundSelfTestProblem` in `#lib/loans/fund.ts`; the monitoring form is unaffected since it never crosses to clients.
 
+## 2026-11-02 — A partner's charge confirmation captures the pledges AND journals their money in one door
+
+- **Gifts now have a journalled path** (followups item 19 named the gap): money the payment partner confirms for a funded request is money the cooperative put in motion, so it arrives `partner_cash` → `available` — the account the pool allocates from and payouts pay out of. The repair fund is gift-funded, so this is how its money actually arrives; before this, `available` only ever moved out.
+- **One door owns both halves**, not the webhook: capture and journal in one transaction, so money is never captured without its ledger entry, and no replay can post the journal alone. The figure journaled is the schema's own pledged sum, never the partner's word; a replay with nothing pledged is refused with that wording rather than journalling zero.
+- **Reversal:** if the charge journal should live in the webhook instead (the `dues_captured` shape), delete `20261102570000_charge_journal.sql` and `charge_journal_test.sql`, move the journal into `payments-webhook`'s `charges_confirmed` case with a `capture_contributions(p_request, p_partner_ref)` returning the captured cents, and update `payments_webhook_test.ts`; the `available` account and the seeded codes stay either way.
+
 ## 2026-11-02 — The grant report is a public aggregate door, and the transparency page renders it without re-adding
 
 - **Public by design**: design.md says the transparency dashboard IS the grant report — funders and agencies get the same aggregates the public sees — so `grant_report()` is granted to anon, authenticated and service alike. There is no member data in it; grant money is fund-level, so the small-numbers masking the open books need doesn't apply.

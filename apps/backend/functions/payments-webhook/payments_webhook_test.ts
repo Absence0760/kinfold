@@ -41,14 +41,33 @@ function refundRecorder(log: string[], journals: string[], due: number) {
   };
 }
 
-Deno.test("charges confirmed capture the pledges in one call", async () => {
+Deno.test("charges confirmed capture and journal in one door", async () => {
   const log: string[] = [];
   const db = recorder(log);
   await handleChargeEvent(
-    { event: "charges_confirmed", requestId: "r1", fund: "people" },
+    {
+      event: "charges_confirmed",
+      requestId: "r1",
+      fund: "people",
+      partnerRef: "pi_1",
+    },
     db,
   );
-  assertEquals(log, ["capture_contributions"]);
+  assertEquals(log, ["record_charge_confirmation"]);
+});
+
+Deno.test("a charge confirmation without the partner's reference is refused", async () => {
+  const log: string[] = [];
+  const db = recorder(log);
+  await assertRejects(
+    () => handleChargeEvent(
+      { event: "charges_confirmed", requestId: "r1", fund: "people" },
+      db,
+    ),
+    Error,
+    "a charge confirmation needs the partner's reference",
+  );
+  assertEquals(log, []);
 });
 
 Deno.test("a refund journals the refund amount back into the fund", async () => {
