@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The member area's no-stack ENTRY is e2e-covered: /app must redirect to /signin
+
+- **The redirect was already the rule** (`app/+layout.ts` sends an unconfigured visitor to `signinUrl(url)`); what `e2e/member-entry.spec.ts` pins is the browser-visible consequence, for every member route that exists (`/app`, `/app/board`, `/app/cover`, `/app/loans`, `/app/review`), each keeping its own return path in `?next=`: the preview build's member area is never a half-empty shell or a crash through the SPA fallback.
+- **Waiting on the notice, not on goto's response**: the redirect is client-side (Kit's router runs the layout's load after hydration), so `page.goto` resolves while the URL is still `/app`; asserting the /signin notice (which only exists after the navigation) makes the test deterministic, and `retries: 0` means it can't be flaked away.
+- **Same no-stack rule as the /signin entry**, so both stay in the default suite: neither path touches the stack, only the sign-in flow behind it does.
+- **Reversal:** if `/app` should instead render an empty member area with a notice when unconfigured, delete `e2e/member-entry.spec.ts` and change `app/+layout.ts` to stop redirecting; the sign-in entry (`e2e/signin.spec.ts`) stays either way.
+
 ## 2026-11-02 — The cover console shows the filed annual deductible and what this year has used
 
 - **The rule was already enforced in the schema; the member just couldn't see it**: `loadCover` now also reads `annual_deductible_cents` on the filed rates and the member's own `claims` rows (RLS answers with claims on their requests only), and the console names the smallest filed annual next to each rate ("a year at most") plus one sentence on what this insurance year has already used. A member who can't see the annual can't understand why their share rose — the refusal wording would otherwise be the only clue.
