@@ -66,6 +66,32 @@ for (const file of files) {
 	 }
 	 flush(lines.length);
 
+	 // The roadmap's own conventions: step ids are unique and never go back,
+	 // so a mislabelled or duplicated step row - which would hide a whole leg
+	 // from the reader who walks the stage table - fails the gate.
+	 if (file === 'docs/roadmap.md') {
+	  const stepRows = [];
+	  for (let i = 0; i < lines.length; i += 1) {
+	   const cells = lines[i].split('|');
+	   const step = cells.length > 1 ? cells[1].trim() : '';
+	   if (/^\d[a-z]$/.test(step)) stepRows.push({ at: i, id: step });
+	  }
+	  const seen = new Map();
+	  let previous = '';
+	  const rank = (id) => Number(id[0]) * 100 + id.charCodeAt(1);
+	  for (const row of stepRows) {
+	   if (seen.has(row.id)) {
+	    problems.push(`${file}:${row.at + 1}: step ${row.id} repeats the row at line ${seen.get(row.id)}`);
+	   }
+	   seen.set(row.id, row.at + 1);
+	   if (previous !== '' && rank(row.id) < rank(previous)) {
+	    problems.push(`${file}:${row.at + 1}: step ${row.id} is filed before ${previous}`);
+	   }
+	   previous = row.id;
+	  }
+	  if (stepRows.length === 0) problems.push(`${file}: the roadmap has no step rows`);
+	 }
+
 	 // The decision ledger's own conventions, since a ledger entry without a
 	 // Reversal bullet is a decision no one can undo, and an entry filed out of
 	 // date order hides a decision from the reader who scans the top.
