@@ -6,7 +6,10 @@ import {
 	draftToInput,
 	isIsoDate,
 	latestIncidentDate,
+	fundForKind,
+	isCarKind,
 	payeeKindsFor,
+	REQUEST_KINDS,
 	validateDraft,
 	validatePayee,
 	type DraftInput
@@ -162,5 +165,28 @@ describe('appealReasonProblem', () => {
 		expect(appealReasonProblem('Ten chars!')).toBe(null);
 		expect(appealReasonProblem('x'.repeat(2000))).toBe(null);
 		expect(appealReasonProblem('x'.repeat(2001))).toMatch(/2,000/);
+	});
+});
+
+describe('fundForKind', () => {
+	// The mapping is what decides which fund's rules price a request: the
+	// fund's own minimum score, band, inspection floor and waiting period. The
+	// schema side is pinned by pgTAP `fund_for_kind_test`.
+	it('the two car kinds draw on the protection fund', () => {
+		expect(fundForKind('car_damage')).toBe('protection');
+		expect(fundForKind('car_deductible')).toBe('protection');
+	});
+
+	it('every other kind draws on the repair fund', () => {
+		expect(fundForKind('home_repair')).toBe('home_fund');
+		expect(fundForKind('down_payment')).toBe('home_fund');
+		expect(fundForKind('mortgage_gap')).toBe('home_fund');
+		expect(fundForKind('loan_payoff')).toBe('home_fund');
+	});
+
+	it('the fund and the car test never disagree', () => {
+		for (const { kind } of REQUEST_KINDS) {
+			expect(isCarKind(kind)).toBe(fundForKind(kind) === 'protection');
+		}
 	});
 });
