@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { decideClaim, loadFraudSignals, loadStandingClaims } from './queries.ts';
+import { decideClaim, loadAuditTail, loadFraudSignals, loadStandingClaims } from './queries.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -37,6 +37,41 @@ describe('loadStandingClaims', () => {
 	it('a refused read fails loudly rather than showing no claims', async () => {
 		const { db } = fakeDb({ claims: { data: null, error: { message: 'permission denied for table claims' } } });
 		await expect(loadStandingClaims(db)).rejects.toThrow(/permission denied/);
+	});
+});
+
+describe('loadAuditTail', () => {
+	it('the tail reads newest first, with no detail and no actor', async () => {
+		const { db, asked } = fakeDb({
+			review_audit_tail: {
+				data: [
+					{ action: 'claim.recorded', target: 'claims', target_id: 'c1', at: '2026-11-02T10:00:00Z', detail: { partner_ref: 'p-9' } },
+					{ action: 'audit_log.read', target: 'audit_log', target_id: null, at: '2026-11-01T09:00:00Z' }
+				],
+				error: null
+			}
+		});
+		const rows = await loadAuditTail(db, 5);
+		expect(asked).toEqual(['review_audit_tail']);
+		expect(rows).toEqual([
+			{ action: 'claim.recorded', target: 'claims', target_id: 'c1', at: '2026-11-02T10:00:00Z' },
+			{ action: 'audit_log.read', target: 'audit_log', target_id: null, at: '2026-11-01T09:00:00Z' }
+		]);
+		expect(JSON.stringify(rows)).not.toContain('p-9');
+	});
+
+	it('a member refusal reaches the console loudly', async () => {
+		const { db } = fakeDb({
+			review_audit_tail: { data: null, error: { message: 'permission denied for function review_audit_tail', code: '42501' } }
+		});
+		await expect(loadAuditTail(db)).rejects.toThrow(/review_audit_tail/);
+	});
+
+	it('a quiet trail reads as nothing, not an error', async () => {
+		const { db, asked } = fakeDb({ review_audit_tail: { data: [], error: null } });
+		const rows = await loadAuditTail(db, 40);
+		expect(asked).toEqual(['review_audit_tail']);
+		expect(rows).toEqual([]);
 	});
 });
 

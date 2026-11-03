@@ -45,6 +45,19 @@ export const NEEDS_DECISIONS: readonly NeedsDecisionOption[] = [
 	}
 ];
 
+/** A trail action in console words; unknown actions read as their own name. */
+export function auditWord(action: string): string {
+	const words: Record<string, string> = {
+		'claim.recorded': 'A claim was recorded',
+		'claim.denied': 'A claim was denied',
+		'fraud_signal.recorded': 'A fraud signal was recorded',
+		'covered_assets.class': 'A vehicle class was stated',
+		'cover_choices.set': 'A cover plan was chosen',
+		'audit_log.read': 'The trail was read',
+	};
+	return words[action] ?? action.replaceAll('[._]', ' ');
+}
+
 export function needsDecisionLabel(decision: NeedsDecision): string {
 	return NEEDS_DECISIONS.find((o) => o.value === decision)?.label ?? decision;
 }

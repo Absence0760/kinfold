@@ -3,9 +3,12 @@
 	import { supabase } from '#lib/supabase/client.ts';
 	import { define } from '#lib/board/terms.ts';
 	import { explainDbError } from '#lib/review/errors.ts';
-	import { loadAppeals, loadQueue, loadStandingClaims } from '#lib/review/queries.ts';
+	import { loadAppeals, loadAuditTail, loadQueue, loadStandingClaims } from '#lib/review/queries.ts';
+	import { auditWord } from '#lib/review/labels.ts';
+	import { formatDay } from '#lib/dashboard/format.ts';
 	import type { AppealItem, QueueItem } from '#lib/review/queue.ts';
 	import type { StandingClaim } from '#lib/review/queries.ts';
+	import type { AuditRow } from '#lib/review/queries.ts';
 	import QueueCard from './QueueCard.svelte';
 	import ClaimCard from './ClaimCard.svelte';
 	import AppealCard from './AppealCard.svelte';
@@ -22,6 +25,7 @@
 	let queue = $state<Loaded<QueueItem>>({ state: 'loading' });
 	let appeals = $state<Loaded<AppealItem>>({ state: 'loading' });
 	let claims = $state<Loaded<StandingClaim>>({ state: 'loading' });
+	let trail = $state<Loaded<AuditRow>>({ state: 'loading' });
 	let confirmation = $state('');
 	let confirmationEl = $state<HTMLParagraphElement | null>(null);
 
@@ -41,6 +45,14 @@
 		}
 	}
 
+	async function refreshTrail() {
+		try {
+			trail = { state: 'ready', items: await loadAuditTail(supabase()) };
+		} catch (err) {
+			trail = { state: 'error', message: explainDbError(err as { message?: string }) };
+		}
+	}
+
 	async function refreshClaims() {
 		try {
 			claims = { state: 'ready', items: await loadStandingClaims(supabase()) };
@@ -53,6 +65,7 @@
 		if (data.access.reviewer) refreshQueue();
 		if (data.access.panel) refreshAppeals();
 		if (data.access.reviewer) refreshClaims();
+		if (data.access.reviewer) refreshTrail();
 	});
 
 	async function decided(message: string, refresh: () => Promise<void>) {
@@ -97,7 +110,8 @@
 		[
 			data.access.reviewer && queue.state === 'loading' ? 'Loading the queue…' : '',
 			data.access.panel && appeals.state === 'loading' ? 'Loading appeals…' : '',
-			data.access.reviewer && claims.state === 'loading' ? 'Loading claims…' : ''
+			data.access.reviewer && claims.state === 'loading' ? 'Loading claims…' : '',
+			data.access.reviewer && trail.state === 'loading' ? 'Reading the trail…' : ''
 		]
 			.filter(Boolean)
 			.join(' ')
@@ -232,6 +246,25 @@
 			<ul class="cards" role="list">
 				{#each claims.items as item (item.id)}
 					<li><ClaimCard claim={item} ondecided={(m) => decided(m, refreshClaims)} /></li>
+				{/each}
+			</ul>
+		{/if}
+	</section>
+
+	<section class="block" aria-labelledby="trail-heading">
+		<h2 id="trail-heading">Recent on the trail</h2>
+		{#if trail.state === 'loading'}
+			<p class="muted">Reading the trail…</p>
+		{:else if trail.state === 'error'}
+			<p class="muted">Couldn't load the trail. {trail.message}</p>
+		{:else if trail.items.length === 0}
+			<p class="muted">The trail is quiet — no recorded actions to show.</p>
+		{:else}
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
+				{#each trail.items as entry}
+					<li><strong>{auditWord(entry.action)}</strong><span class="muted">· {formatDay(entry.at)}</span></li>
 				{/each}
 			</ul>
 		{/if}

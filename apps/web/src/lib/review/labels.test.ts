@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Constants } from '../../../../backend/supabase/database.types';
 import {
+	auditWord,
 	REVIEW_DECISIONS,
 	decidedLabel,
 	decisionLabel,
@@ -55,6 +56,17 @@ describe('labels cover every enum value', () => {
 			expect(text, v).toBeTruthy();
 			expect(text, v).not.toBe(v);
 		}
+	});
+});
+
+describe('auditWord', () => {
+	it('a known trail action reads in console words', () => {
+		expect(auditWord('claim.denied')).toBe('A claim was denied');
+		expect(auditWord('cover_choices.set')).toBe('A cover plan was chosen');
+	});
+
+	it('an action the words list does not know yet reads as its own name', () => {
+		expect(auditWord('loan_paused.set')).toBe('loan paused set');
 	});
 });
 

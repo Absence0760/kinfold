@@ -91,6 +91,24 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 	);
 }
 
+export interface AuditRow {
+	action: string;
+	target: string;
+	target_id: string | null;
+	at: string;
+}
+
+/**
+ * The tail of the audit trail for the console: recent actions, newest first.
+ * The door answers action/target/id/time only — the raw `detail` jsonb and the
+ * acting member never cross, and members get a refusal the console never calls.
+ */
+export async function loadAuditTail(db: Db, limit = 40): Promise<AuditRow[]> {
+	const { data, error } = await rpcNew(db, 'review_audit_tail', { p_limit: limit });
+	fail(error);
+	return (data ?? []) as AuditRow[];
+}
+
 /**
  * What the fraud checks found against each request. The door answers with kind
  * and severity only — the match detail never crosses — and refuses a member
