@@ -182,6 +182,30 @@ for (const route of publicRoutes) {
 // WCAG's contrast promise, the last half of the accessibility bullet: text a
 // reader can see but cannot tell from its background is unreadable for low
 // vision, so every run of text is measured against the colors the page paints.
+// The last assistive preference the site promises: people who ask their browser
+// for reduced motion get a page that never animates and never smooth-scrolls.
+async function motionProblems(page: Page) {
+	// The evaluate callback is plain JS: Playwright serializes it into the page.
+	const problems = await page.evaluate(() => {
+		const found = [];
+		for (const el of document.body.querySelectorAll('*')) {
+			const style = getComputedStyle(el);
+			if (style.visibility === 'hidden' || style.display === 'none') continue;
+			if (style.animationName !== 'none' && style.animationDuration !== '0s') {
+				found.push(`${el.tagName}.${(el.getAttribute('class') || '')} still animates: ${style.animationName} ${style.animationDuration}`);
+			}
+		}
+		// Smooth scrolling is motion a reduced-motion reader asked to drop; the
+		// skip-link jump relies on it being instant.
+		const root = getComputedStyle(document.documentElement);
+		if (root.scrollBehavior === 'smooth') {
+			found.push('html: scroll-behavior is smooth, so a jump glides instead of landing');
+		}
+		return found;
+	});
+	return problems;
+}
+
 async function contrastProblems(page: Page) {
 	const problems = await page.evaluate(() => {
 		const found = [];
@@ -289,6 +313,25 @@ test.describe('with JavaScript blocked', () => {
 			await page.goto(route);
 			await page.waitForLoadState('networkidle');
 			expect(await contrastProblems(page)).toEqual([]);
+		});
+	}
+});
+
+// A reduced-motion context is a browser setting, so it belongs to the whole
+// pass: the same rule list reads the page the reader's preference produced.
+test.describe('with reduced motion', () => {
+	test.use({ reducedMotion: 'reduce' });
+	for (const route of publicRoutes) {
+		test(`${route} never animates with reduced motion`, async ({ page }) => {
+			await gotoHydrated(page, route);
+			expect(await motionProblems(page)).toEqual([]);
+		});
+	}
+	for (const route of prerenderedPublicRoutes) {
+		test(`${route} never animates with reduced motion before any script runs`, async ({ page }) => {
+			await page.goto(route);
+			await page.waitForLoadState('networkidle');
+			expect(await motionProblems(page)).toEqual([]);
 		});
 	}
 });
