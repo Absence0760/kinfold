@@ -17,7 +17,7 @@
 --   * deleting an evidence row queues its original file (redacted too when
 --     set); the queue is read and closed only by the service.
 begin;
-select plan(46);
+select plan(43);
 
 -- --- fixtures ------------------------------------------------------------------
 
