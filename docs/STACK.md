@@ -77,4 +77,3 @@ These come from `design.md` and apply to every line of code:
 - **Loans repay monthly by default, never with interest or late fees.** Hardship pauses push the schedule back without changing the total. What happens on default is agreed at signing (forgive / repay on sale (secured only) / mediate).
 - **The giving record is private.** What a member has put in vs received is private to the member and never ranks or refuses requests.
 - **Fund decisions are explainable.** The Community Home Fund scoring formula is versioned in code and its inputs logged, so any decision can be explained to the applicant and audited for bias.
-
