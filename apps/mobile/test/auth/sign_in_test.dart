@@ -53,7 +53,7 @@ void main() {
   test('an answer the app doesn’t recognise still tells the member to wait', () {
     final failure = classifySignInFailure(AuthFault(code: 'whatever', message: '', status: 404, retryable: false));
     expect(failure, SignInFailure.unknown);
-    expect(signInNotice(failure, message: 'Unexpected input').text, 'Sign-in didn’t work: "Unexpected input". Try again in a minute.');
+    expect(signInNotice(failure, message: 'Unexpected input').text, 'Sign-in didn’t work: “Unexpected input”. Try again in a minute.');
     expect(signInNotice(failure).text, 'Sign-in didn’t work. Try again in a minute.');
   });
 

@@ -81,7 +81,7 @@ Notice signInNotice(SignInFailure failure, {bool dev = false, String message = '
     case SignInFailure.unknown:
       return message.isEmpty
           ? (command: null, text: 'Sign-in didn’t work. Try again in a minute.')
-          : (command: null, text: 'Sign-in didn’t work: "$message". Try again in a minute.');
+          : (command: null, text: 'Sign-in didn’t work: “$message”. Try again in a minute.');
   }
 }
 
