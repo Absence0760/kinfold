@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The sample board's printed money is audited for adding up, at any fund size
+
+- **The decision**: the landing board is the honesty promise in miniature - every card states "$X of $Y - A from friends - B from the fund". No rule watched the printed DOM's arithmetic, so the audit now reads the card text and demands friends + fund = raised, raised never exceeds the amount asked, the bar widths agree with the amounts, and the cards' fund figures plus the note's remainder tie to the slider (audited at the default fund and after dragging it Home and two steps, so a wrong split at any pool size is caught).
+- **The tolerance records the design's own rounding**: `allocatePool` splits the pool proportionally, so grants are fractional (159.66...), while `formatUsd` prints whole dollars. The bars are drawn from the exact allocation and the text is rounded, so a printed "$160" may sit under $1 from the drawn width - the bar check allows (2/amount)*100 percentage points and the fund-tie check allows $6 across cards. Tightening either number to zero accuses the rounding itself, a false alarm; loosening either past a dollar-per-card hides a material lie. The probe run (printed style widths against the amounts) is what fixed the tolerance: the first draft at 0.01pp failed two honest cards, and the style dump showed the gap came from rounding, not a bug.
+- **Teeth**: three saboteurs in `RequestBoard.svelte` - bars +5pp, one card printing $200 more than it raised, and the fund note lying by $900 - were all named by exact text, on both the add-up-at-default and after-dragging tests; restored byte-exact, green.
+- **What it found**: nothing - the sample's printed figures and bars agree within the rounding today; the rule guards the next edit to the sample data, which is the realistic drift (someone bumps an amount and forgets the funded field).
+- **Reversal:** when the members-only real board (`/app/board`, stack-gated) joins the e2e set, this audit generalises to its cards; the public sample keeps its own copy because its numbers are illustration, not ledger.
+
 ## 2026-11-03 — A subtree hidden from assistive tech may not contain controls
 
 - **The decision**: every aria-hidden host on the page is searched for anchors, form controls and tabbable elements; any found is named. The failure is a split-brain page: a screen reader skips the subtree entirely, but Tab still stops inside it, so the reader gets a live stop that announces nothing. Judged on the DOM only (no JS), same as the other announcement rules.
