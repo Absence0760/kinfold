@@ -2,6 +2,15 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The calculator's printed figures are audited at every slider stop, against its own module
+
+- **The decision**: two halves of the public page's central promise were unwatched. (1) A sighted reader reads the printed label next to each slider, a screen reader hears the slider's `aria-valuetext` - nothing demanded the two agree. (2) The result figures were pinned only at one input, so a wrong split at another stop sailed past. The audit now reads the printed DOM at whatever stop the reader left the sliders and demands each printed label equals what the control announces, and every figure - headline interest saved, both monthly payments, both interest totals, the note's per-month line or its prompt - equals what `compareSavings` says for the inputs read back off the DOM. Tested at the defaults and after driving every slider Home, End, Home again.
+- **Why the expectation comes from the module**: the test imports `compareSavings` and `formatUsd` from the app's own pure modules (the established convention), so the audit checks the page against the maths it is supposed to be doing, not against literals someone typed into the test - a test with its own copy of the numbers cannot tell a wrong page from a wrong test.
+- **Reading back from the DOM instead of pinning inputs**: the family slider's max is the loan amount, so the extremes depend on each other; driving the sliders and reading their announced values off the page keeps the test honest about whatever state the reader left, including the clamped share.
+- **Teeth**: a printed label one dollar off its announced value (`prints $400,001 to a sighted reader but announces $400,000 to a screen reader`) and a headline figure lying by $137 (`headline figure prints $38,400 but the module says $38,263`) were both named by exact text; restored byte-exact, green.
+- **What it found**: nothing - the page's labels and figures agree with its module today; the rule guards the next edit to the calculator markup or slider.
+- **Reversal:** if the calculator later gains a fourth comparison (say insured cover), the audit generalises by reading `.compare` groups rather than naming two; the label-vs-announcement check is shape-independent and stays.
+
 ## 2026-11-03 — Every public page's own words have to name the design-preview status
 
 - **The finding**: the honesty promise had a hole. Landing and transparency name the site's status in their markup (nav badge, footer note), but the sign-in page and the error page render standalone markup and never did - so a reader following a mistyped link landed on a page that read as a live site that happens to be missing. Each page now carries a role=note line in the body, where a screen reader and a reader-mode browser read it.
