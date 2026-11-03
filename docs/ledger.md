@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — No tracked file may sit under a generated tree; the audits read the live build
+
+- **The decision**: the repo-invariants gate grew a fifth rule - nothing tracked under the generated trees (the SvelteKit output (the build dir and .svelte-kit), Playwright traces and the Chromium cache, node_modules, dist). The e2e audits hydrate the production build; a committed build directory is a snapshot that ages silently - the next audit pass would accuse stale HTML rather than a live page, and a push would ship a design artifact as if it were a decision.
+- **Why the rule is directory-shaped, not file-named**: generated output is defined by where it lives, not by what it is called; a file-name matcher would miss the next artifact name the tooling emits and force the list to grow on every release.
+- **Teeth**: `git add -f` of a probe file under the built-site directory made the rule name it by full path - untracked it, green, and `git ls-files apps/web/build` shows nothing today.
+- **What it found**: nothing - the tree was clean; the rule guards the day someone commits a preview build while debugging, which is the realistic drift for a repo whose audits read built HTML.
+- **Reversal:** if a build ever has to ship as a fixture (say a golden snapshot for a migration comparison), it moves out of the generated path into a tracked fixtures directory outside the generated paths - never by loosening the generated-dir list.
+
 ## 2026-11-03 — The repo gate now demands the root test chain runs every gate it defines
 
 - **The decision**: `check_repo_invariants.mjs` gained a fourth rule - every `test:*` script in the root package.json has to appear in the test recipe by whole name (`run <gate>`), and every name the recipe runs has to be defined. A gate that no one runs is how a whole-repo check comes to exist but never to fire: the repo grows a script, CI may run it, but `pnpm test` - the thing a developer actually types - keeps running the old list.
