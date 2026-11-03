@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Every public page's own words have to name the design-preview status
+
+- **The finding**: the honesty promise had a hole. Landing and transparency name the site's status in their markup (nav badge, footer note), but the sign-in page and the error page render standalone markup and never did - so a reader following a mistyped link landed on a page that read as a live site that happens to be missing. Each page now carries a role=note line in the body, where a screen reader and a reader-mode browser read it.
+- **Why body words and not head metadata**: the audit reads `document.body.innerText`. A reader with JavaScript off, in reader mode, or with a screen reader never hears a meta description; a page that passes because of metadata alone would still be a page that reads as live. The rule names the offender by its heading so the failure points at the page.
+- **Teeth on both sides**: removing the sign-in paragraph named the page under `Sign in`; stripping the badge, the hero status line and the footer note named the pages under the landing h1 and under `Open books` - on hydrated and prerendered passes. Restored byte-exact (`git diff --stat apps/web/src/` showed only the two intended additions).
+- **What it found**: a real gap, fixed at source - the same shape the audit was written for, found on the first run.
+- **Reversal:** when Kinfold opens (Phase 1 live), this rule flips to its opposite - no page may claim operation before its phase is live - and the marker becomes a version badge rather than being deleted.
+
 ## 2026-11-03 — The sample board's printed money is audited for adding up, at any fund size
 
 - **The decision**: the landing board is the honesty promise in miniature - every card states "$X of $Y - A from friends - B from the fund". No rule watched the printed DOM's arithmetic, so the audit now reads the card text and demands friends + fund = raised, raised never exceeds the amount asked, the bar widths agree with the amounts, and the cards' fund figures plus the note's remainder tie to the slider (audited at the default fund and after dragging it Home and two steps, so a wrong split at any pool size is caught).
