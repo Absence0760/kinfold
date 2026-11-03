@@ -10,6 +10,14 @@ const files = execFileSync('git', ['ls-files', '--', '*.md'], { encoding: 'utf8'
 		.split('\n')
 		.filter((f) => f !== '');
 
+// Full tree for the ledger-citation rule: a decision's file pointer must still
+// name something the repo ships.
+const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
+		.split('\n')
+		.filter((f) => f !== '');
+const trackedPaths = new Set(tracked);
+const repoRoots = new Set(tracked.map((p) => p.split('/').shift()));
+
 const normalize = (path) => {
 	 const parts = [];
 	 for (const part of path.split('/')) {
@@ -116,6 +124,35 @@ for (const file of files) {
 	   previous = date[1];
 	   if (!body.includes('**Reversal')) {
 	    problems.push(`${file}:${start + 1}: ${date[1]} has no Reversal bullet`);
+	   }
+	  }
+	 }
+
+	 // The ledger cites the files its decisions live in. When one of those
+	 // files is renamed or deleted the pointer silently rots and the reader
+	 // of the decision cannot find the code, so every inline-code span that
+	 // looks like a repo path must name something still tracked.
+	 if (file === 'docs/ledger.md') {
+	  const ledgerText = text.replace(/^ {0,3}(```|~~~)[\s\S]*?^\1[ \t]*$/gm, '');
+	  for (const m of ledgerText.matchAll(/`([^`\n]+)`/g)) {
+	   const token = m[1];
+	   if (token.indexOf('/') === -1) continue;
+	   // A citation with `*` or <angle> is a pattern, and a bare name with no
+	   // extension and no trailing slash may be a planned directory (the
+	   // roadmap's future apps/mobile) or a build artifact - the rule judges
+	   // only citations that claim a concrete file or an explicit directory.
+	   if (/[*<>]/.test(token)) continue;
+	   const isDirCite = token.endsWith('/');
+	   const isFileCite = /\.(ts|js|mjs|sql|md|json|svelte|css|html)$/i.test(token);
+	   if (!isDirCite && !isFileCite) continue;
+	   // The ledger writes `src/lib/...` the way the app is spoken of; the web
+	   // app is the only project with a `src` tree, so resolve it there.
+	   const path = token.startsWith('src/') ? `apps/web/${token}` : token;
+	   if (!repoRoots.has(path.split('/')[0])) continue;
+	   const dirPrefix = path.endsWith('/') ? path : `${path}/`;
+	   const known = trackedPaths.has(path) || tracked.some((q) => q.startsWith(dirPrefix));
+	   if (!known) {
+	    problems.push(`${file}: the ledger cites ${token}, which is no longer a tracked path`);
 	   }
 	  }
 	 }
