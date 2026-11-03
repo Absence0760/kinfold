@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Fair-lending demographics live in a private table no client can read, reached by two doors
+
+- **Two routes, one law**: 12 CFR 1002.5 bars asking race, ethnicity or sex, so the only ways in are the law's own exceptions — the government monitoring form (1002.13) for loans secured by the home, collected by the credit union (service only), and the voluntary self-test with its four disclosures (1002.5(b)(1)), offered by the borrower themselves. Nothing else asks, so the schema has no third door.
+- **Self-test data is never federally reported**: the loan-level report a federal award pays for (2 CFR 200.337) reads "Do Not Know" for any loan that only has self-test rows. Voluntary answers feed the fairness audit; only monitoring-form answers count as collected.
+- **No client can read the rows at all, not even the borrower**: `revoke all … from public, anon, authenticated` with only the service role granted. The borrower's consent is recorded in the audit log (`fair_lending.self_test`) like every PII touch; the answers themselves never enter the trail. Age is deliberately absent — the law may ask it but never weight it against an applicant, so nothing here can feed the needs formula.
+- **Reversal:** if the demographics should go back to the credit union's own records rather than Kinfold's, delete `private.fair_lending` and its four doors in `20261102540000_fair_lending.sql` and `fair_lending_test.sql`; the Fund loan report then carries "Do Not Know" everywhere, which is what the CDFI form accepts.
+
 ## 2026-11-02 — The Fund loan console gives the borrower sign, pause, resume and restructure forms
 
 - **Why no terms or schedule forms**: the Fund signs at once and its schedule is either set at creation or computed from income — `create_fund_loan` owns it, so the borrower has nothing to negotiate the way family loans do. The console offers exactly the doors whose rules the borrower can act on.
