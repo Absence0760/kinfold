@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The share rule is listed on the public transparency page, next to the needs weights
+
+- **A published rule should be readable without reading a table**: the fairness audit asks "which rule priced whom when", the member's card names the version that priced their share, and the only public place that answered was `share_rules` itself - so `/transparency` now lists every version with its step and cap (newest first, percentages spelled by the existing `shareWord`), mirroring how the needs weights are already published.
+- **The read is soft like the weights':** if the table refuses, the published months still show and the section explains itself (`shareProblem`), so a refused rule never blanks the books.
+- **Only the rule crosses**: the page publishes step and cap, never who was paid how often - the counts stay on the member's own card (`my_share`) and behind the self-only read the schema enforces.
+- **Reversal:** if the rule should stay table-only for the auditor, delete `loadShareRules`, the `share` section in `transparency/+page.svelte` and the read in `transparency/+page.ts`; the member's card (`my_share`) and the pool's need line stay either way.
+
 ## 2026-11-02 — The member's own share answers on their reliability card: same numbers, no new facts
 
 - **Why the console read exists**: the share rule shrinks the fund's grant to a frequent claimant, and the member had no way to see WHY - the home's reliability record showed counts, not the share. `my_share()` (no arguments, `auth.uid()` inside, authenticated-only) answers the same three numbers the pool reads (`pool_requests_paid_3y`, `member_share_bps`, `share_rule_version`), so the card and the door can never disagree.
