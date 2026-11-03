@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A disclosure control (summary) must announce a name to readers
+
+- **The decision**: the nav's menu opens from a summary whose only content is a hamburger icon - the reader's whole experience of that control is its name, so a summary with no words and no aria-label is a Tab stop a screen reader hears as silence with no idea what opening it does. The audit now reads every summary inside screenReaderProblems (its text or its aria-label must carry words), alongside the button and link loops. The disclosure control is the third control type that ships, and until now it was the unchecked one: the name rules only read button and a elements, while the keyboard walk already treats summary as a stop.
+- **Why it lives in the screen-reader rule, not the keyboard walk**: the keyboard rules already reach the summary (focus, ring, trap); what was missing was the name - the promise a reader makes about a control they can hear but not see.
+- **Teeth**: stripping the nav summary's aria-label named the control on every public route across both viewports (12 tests failed: summary disclosure control with no name a reader can hear). The built artifact was grepped to confirm the mutation was the page the audit read. Restored byte-exact.
+- **Note for the class suffix**: the accusation printed the compiler's generated class (svelte-nkp01n, regenerated per build) rather than a stable name - the element type plus the control shape is enough to find the markup line, and inventing a stable name for the audit alone would push styling decisions into markup. Left as-is.
+- **Reversal:** if a disclosure ever legitimately names itself only through its details' open-state announcement (a future API the reader tools agree on), the summary joins a named carve-out list rather than the name check being dropped.
+
 ## 2026-11-03 — Printed copy may not repeat a word back to back
 
 - **The decision**: a slip that prints a word twice (the tagline typed not a a profit margin) is heard the same way by everyone - screen readers say it aloud twice and a careful human reads it twice - so it belongs with the audits that read printed words, not the ones that read markup. The audit walks the page's own text nodes (class names, attributes and script are never read) and names each adjacent repeat with the words around it, so the copy line is findable. Repeats split across element boundaries (markup on both halves) are left out: this reads the copy as it sits in the file.
