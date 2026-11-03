@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A subtree hidden from assistive tech may not contain controls
+
+- **The decision**: every aria-hidden host on the page is searched for anchors, form controls and tabbable elements; any found is named. The failure is a split-brain page: a screen reader skips the subtree entirely, but Tab still stops inside it, so the reader gets a live stop that announces nothing. Judged on the DOM only (no JS), same as the other announcement rules.
+- **Why count instead of a whitelist**: the site's own aria-hidden uses are decorative readouts (the slider value spans, the principles numbers), so no exception list is needed - the rule judges the structural promise, and a future wrapper that swallows a link is a real bug rather than a style choice.
+- **Teeth**: marking the desktop nav wrapper aria-hidden made the rule name the six links it swallowed (`aria-hidden subtree contains 6 interactive element(s)... - a reader hears nothing at stops Tab still reaches`), hydrated and on the prerendered no-JS copy; restored byte-exact, green.
+- **What it found**: nothing today - all aria-hidden hosts wrap no interactive element; the rule guards the next decorative wrapper, which is the common miss when copying a component.
+- **Reversal:** a deliberately duplicated control that is keyboard-reachable only through its visible twin (the mobile menu's second copy) would exempt that duplicate by name, not by loosening the count.
+
 ## 2026-11-03 — Touch targets: every visible control needs a 24x24 box (WCAG 2.5.8)
 
 - **The decision**: the audit now measures the box of every visible `a`/`button` and demands 24x24 CSS px - a finger has to be able to hit the control, and the phone context is where readers actually tap. Carve-outs come from the standard itself: elements with no box at all stay out of the sequence (the same hidden/closed-details convention the walk rules use), and links inside a paragraph are prose links the standard exempts (they move with the text, not independently).
