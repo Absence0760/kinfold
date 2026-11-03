@@ -2,6 +2,15 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Printed copy may not repeat a word back to back
+
+- **The decision**: a slip that prints a word twice (the tagline typed not a a profit margin) is heard the same way by everyone - screen readers say it aloud twice and a careful human reads it twice - so it belongs with the audits that read printed words, not the ones that read markup. The audit walks the page's own text nodes (class names, attributes and script are never read) and names each adjacent repeat with the words around it, so the copy line is findable. Repeats split across element boundaries (markup on both halves) are left out: this reads the copy as it sits in the file.
+- **Why text nodes and not innerText**: innerText glues elements together, so two neighbouring blocks ending and starting with the same word would be accused though every block is clean; per-text-node reading is the conservative shape, and the copy slip that ships is the one that sits inside a node.
+- **Why one letter counts too**: the built copy had no repeated word of any length, so the single-letter bound costs nothing today, and 'a a' is exactly the slip an eyes-tired typist leaves in an article.
+- **Teeth**: the tagline typed not a a profit margin named the repeat with its quote and context (a a near people around you, not a a profit margin.) on the landing page's hydrated and no-JS passes, desktop and phone. The built artifact was grepped to confirm the mutated page, not a stale build, was read. Restored byte-exact.
+- **What it found**: nothing today - every public page's printed words repeat no word back to back; the rule guards hand-written copy, the place the roadmap's next sections will add words.
+- **Reversal:** if a page ever legitimately echoes a word for effect (a slogan typed 'No no - we wait'), that element joins a named carve-out list so the rule stays a copy-quality guard rather than a ban on deliberate repetition.
+
 ## 2026-11-03 — A literal site-absolute href or src must name a served page or a static file
 
 - **The decision**: a typoed path link reads as a page that exists - the request answers the error page, which looks like an accident to the reader and nothing fails anywhere. The invariants gate now resolves every literal site-absolute href and src in the markup: either a +page.svelte serves the path ([param] segments matched generically, the way SvelteKit serves them) or a file sits under apps/web/static. Broken navigation and broken images are reader-visible failures, so they belong with the repo's structural invariants, not the visual audits.
