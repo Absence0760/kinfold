@@ -9,6 +9,7 @@
 		type OwnedRequest,
 		type SupportView
 	} from '#lib/invites/data.ts';
+	import { supabase } from '#lib/supabase/client.ts';
 	import { define } from '#lib/board/terms.ts';
 	import { explainInviteError } from '#lib/invites/errors.ts';
 	import InvitePanel from '#lib/invites/InvitePanel.svelte';
@@ -28,7 +29,7 @@
 	async function refreshOwn() {
 		own = { state: 'loading' };
 		try {
-			own = { state: 'ready', items: await loadOwnPeopleRequests(data.viewerId) };
+			own = { state: 'ready', items: await loadOwnPeopleRequests(supabase(), data.viewerId) };
 		} catch (err) {
 			own = { state: 'error', message: why(err) };
 		}
@@ -37,8 +38,8 @@
 	async function refreshSupporting() {
 		supporting = { state: 'loading' };
 		try {
-			const rows = await loadSupporting(data.viewerId);
-			const views = await Promise.all(rows.map((r) => loadSupportView(r.id, data.viewerId)));
+			const rows = await loadSupporting(supabase(), data.viewerId);
+			const views = await Promise.all(rows.map((r) => loadSupportView(supabase(), r.id, data.viewerId)));
 			supporting = { state: 'ready', items: views.filter((v): v is SupportView => v != null) };
 		} catch (err) {
 			supporting = { state: 'error', message: why(err) };

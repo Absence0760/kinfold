@@ -1,4 +1,5 @@
-import { fromNew, rpcNew, supabase } from '#lib/supabase/client.ts';
+import { fromNew, rpcNew } from '#lib/supabase/client.ts';
+import type { Db } from '#lib/supabase/client.ts';
 import type { FundingMode, LoanStatus, RequestKind, RequestStatus } from '#lib/dashboard/labels.ts';
 import {
 	summarizeSupport,
@@ -39,8 +40,8 @@ const INVITABLE: RequestStatus[] = ['draft', 'scoring', 'needs_evidence', 'in_re
 export const canInvite = (status: RequestStatus): boolean => INVITABLE.includes(status);
 
 /** The viewer's own requests that family and friends can fund. */
-export async function loadOwnPeopleRequests(viewerId: string): Promise<OwnedRequest[]> {
-	const { data, error } = await supabase()
+export async function loadOwnPeopleRequests(db: Db, viewerId: string): Promise<OwnedRequest[]> {
+	const { data, error } = await db
 		.from('requests')
 		.select('id, kind, funding, title, amount_cents, status')
 		.eq('member_id', viewerId)
@@ -64,8 +65,7 @@ export interface OwnerPanelData {
  * the owner all three; it doesn't give them supporters' names (members read
  * only themselves), so supporters are shown by relationship.
  */
-export async function loadOwnerPanel(requestId: string): Promise<OwnerPanelData> {
-	const db = supabase();
+export async function loadOwnerPanel(db: Db, requestId: string): Promise<OwnerPanelData> {
 	const [invites, supporters, contributions] = await Promise.all([
 		db
 			.from('request_invites')
@@ -98,8 +98,8 @@ export async function loadOwnerPanel(requestId: string): Promise<OwnerPanelData>
 }
 
 /** Make a new single-use invite link. The token is returned once and never stored in plain. */
-export async function createInvite(requestId: string, relationship: string): Promise<string> {
-	const { data, error } = await supabase().rpc('create_invite', {
+export async function createInvite(db: Db, requestId: string, relationship: string): Promise<string> {
+	const { data, error } = await db.rpc('create_invite', {
 		p_request: requestId,
 		p_relationship: relationship
 	});
@@ -109,8 +109,8 @@ export async function createInvite(requestId: string, relationship: string): Pro
 
 // --- the invitee's side ---------------------------------------------------------
 
-export async function acceptInvite(token: string): Promise<string> {
-	const { data, error } = await supabase().rpc('accept_invite', { p_token: token });
+export async function acceptInvite(db: Db, token: string): Promise<string> {
+	const { data, error } = await db.rpc('accept_invite', { p_token: token });
 	if (error) fail(error);
 	return data;
 }
@@ -153,8 +153,7 @@ export interface SupportView {
  * (`request_raised_cents` answers supporters), and their own pledges and
  * loans. Null when the viewer can't see it.
  */
-export async function loadSupportView(requestId: string, viewerId: string): Promise<SupportView | null> {
-	const db = supabase();
+export async function loadSupportView(db: Db, requestId: string, viewerId: string): Promise<SupportView | null> {
 	// `support_requests` is newer than the committed types (the `fromNew` seam).
 	const req = await fromNew(db, 'support_requests')
 		.select('id, kind, funding, title, description, amount_cents, status, incident_on, payee_id')
@@ -224,8 +223,7 @@ export async function loadSupportView(requestId: string, viewerId: string): Prom
 }
 
 /** Requests the viewer accepted an invite to, newest first. */
-export async function loadSupporting(viewerId: string): Promise<(SupportedRequest & { relationship: string })[]> {
-	const db = supabase();
+export async function loadSupporting(db: Db, viewerId: string): Promise<(SupportedRequest & { relationship: string })[]> {
 	const rows = await db
 		.from('request_supporters')
 		.select('request_id, relationship, joined_at')
@@ -249,8 +247,8 @@ export async function loadSupporting(viewerId: string): Promise<(SupportedReques
 	});
 }
 
-export async function pledge(requestId: string, cents: number, source: 'gift' | 'loan'): Promise<void> {
-	const { error } = await supabase().rpc('pledge', {
+export async function pledge(db: Db, requestId: string, cents: number, source: 'gift' | 'loan'): Promise<void> {
+	const { error } = await db.rpc('pledge', {
 		p_request: requestId,
 		p_amount_cents: cents,
 		p_source: source
@@ -260,8 +258,8 @@ export async function pledge(requestId: string, cents: number, source: 'gift' | 
 // --- cancelling a link and previewing one --------------------------------------
 
 /** Cancel one of the owner's own waiting links (`revoke_invite`). */
-export async function revokeInvite(inviteId: string): Promise<void> {
-	const { error } = await rpcNew(supabase(), 'revoke_invite', { p_invite: inviteId });
+export async function revokeInvite(db: Db, inviteId: string): Promise<void> {
+	const { error } = await rpcNew(db, 'revoke_invite', { p_invite: inviteId });
 	if (error) fail(error);
 }
 
@@ -282,8 +280,8 @@ export interface InvitePreview {
 	expiresAt: string;
 }
 
-export async function previewInvite(token: string): Promise<InvitePreview | null> {
-	const { data, error } = await rpcNew(supabase(), 'invite_preview', { p_token: token });
+export async function previewInvite(db: Db, token: string): Promise<InvitePreview | null> {
+	const { data, error } = await rpcNew(db, 'invite_preview', { p_token: token });
 	if (error && error.code !== 'P0002') fail(error);
 	if (error || !data) return null;
 	const p = data as { request_id?: string; owner_name?: string; title?: string; kind?: string; funding?: string; amount_cents?: number; status?: string; relationship?: string; expires_at?: string };

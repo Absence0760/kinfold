@@ -3,6 +3,7 @@
 	import { parseDollars } from '#lib/board/board.ts';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import { loanStatusText, payeeWord, requestKindLabel } from '#lib/dashboard/labels.ts';
+	import { supabase } from '#lib/supabase/client.ts';
 	import { pledge, type SupportView } from './data.ts';
 	import { explainInviteError } from './errors.ts';
 	import {
@@ -82,7 +83,7 @@
 		step = 'sending';
 		error = null;
 		try {
-			await pledge(r.id, cents, source);
+			await pledge(supabase(), r.id, cents, source);
 			const message =
 				source === 'gift'
 					? `Thank you. You pledged a gift of ${formatCents(cents)}. Nothing is collected until the whole request is pledged.`

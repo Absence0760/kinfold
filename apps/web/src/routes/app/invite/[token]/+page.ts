@@ -1,4 +1,5 @@
 import { isInviteToken } from '#lib/invites/invites.ts';
+import { supabase } from '#lib/supabase/client.ts';
 import { previewInvite } from '#lib/invites/data.ts';
 
 // The token stays in the browser: nothing is read or accepted until the
@@ -13,7 +14,7 @@ export async function load({ params, parent }) {
 	let previewFailed = false;
 	if (wellFormed) {
 		try {
-			preview = await previewInvite(params.token);
+			preview = await previewInvite(supabase(), params.token);
 		} catch {
 			// A network or server hiccup isn't a dead link: accepting will say.
 			previewFailed = true;

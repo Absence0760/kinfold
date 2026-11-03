@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { formatCents } from '#lib/dashboard/format.ts';
 	import { payeeWord, type RequestKind, type RequestStatus } from '#lib/dashboard/labels.ts';
+	import { supabase } from '#lib/supabase/client.ts';
 	import { canInvite, createInvite, loadOwnerPanel, revokeInvite, type OwnerPanelData } from './data.ts';
 	import { explainInviteError } from './errors.ts';
 	import {
@@ -62,7 +63,7 @@
 
 	async function refresh() {
 		try {
-			panel = { state: 'ready', data: await loadOwnerPanel(requestId) };
+			panel = { state: 'ready', data: await loadOwnerPanel(supabase(), requestId) };
 		} catch (err) {
 			panel = { state: 'error', message: explainInviteError(err as { message?: string; code?: string }) };
 		}
@@ -91,7 +92,7 @@
 		createError = null;
 		copied = 'idle';
 		try {
-			const token = await createInvite(requestId, checked.value);
+			const token = await createInvite(supabase(), requestId, checked.value);
 			link = { url: inviteLink(window.location.origin, token), relationship: checked.value };
 			choice = '';
 			other = '';
@@ -113,7 +114,7 @@
 		cancelling = true;
 		revokeError = null;
 		try {
-			await revokeInvite(inviteId);
+			await revokeInvite(supabase(), inviteId);
 			await tick();
 			await refresh();
 		} catch (err) {

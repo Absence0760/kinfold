@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { supabase } from '#lib/supabase/client.ts';
 	import { acceptInvite, loadSupportView, type SupportView } from '#lib/invites/data.ts';
 	import { explainInviteError } from '#lib/invites/errors.ts';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
@@ -26,7 +27,7 @@
 		if (phase.step === 'accepting') return;
 		phase = { step: 'accepting' };
 		try {
-			const requestId = await acceptInvite(data.token);
+			const requestId = await acceptInvite(supabase(), data.token);
 			confirmation = 'You’ve accepted the invite. Here’s the request.';
 			await show(requestId);
 		} catch (err) {
@@ -39,7 +40,7 @@
 	async function show(requestId: string) {
 		phase = { step: 'loading', requestId };
 		try {
-			const view = await loadSupportView(requestId, data.viewerId);
+			const view = await loadSupportView(supabase(), requestId, data.viewerId);
 			phase = view
 				? { step: 'shown', view }
 				: { step: 'load-error', requestId, message: 'The request is no longer available to you.' };
