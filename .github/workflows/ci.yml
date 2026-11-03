@@ -137,6 +137,12 @@ jobs:
           git clone --depth=1 -b stable https://github.com/flutter/flutter.git "$HOME/sdk/flutter"
           echo "PATH=$HOME/sdk/flutter/bin:$PATH" >> "$GITHUB_PATH"
 
+      # The phone app's lint gate: the same carve-out shape as check:edge
+      # (CI's runners don't ship the tool, so the job that bootstraps it runs
+      # it), named in the package.json check divider and docs/STACK.md.
+      - name: Analyze the phone app
+        run: pnpm check:mobile
+
       - name: Flutter tests
         run: pnpm test:mobile
 

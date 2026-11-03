@@ -21,7 +21,7 @@
     "dev:run:web": "bash bin/dev-run-web.sh",
     "build:web": "pnpm -C apps/web build",
     "preview:web": "pnpm -C apps/web preview",
-    "//-- check --": "Typecheck every workspace. check:edge needs Deno on the machine; CI's runners don't ship it, so it stays out of the `check` chain and the edge tests run via test:edge on demand.",
+    "//-- check --": "Typecheck every workspace. check:edge needs Deno on the machine; CI's runners don't ship it, so it stays out of the `check` chain and the edge tests run via test:edge on demand. check:mobile needs the Flutter SDK; CI's runners don't ship it either, so it stays out of the `check` chain and the CI mobile job runs it after bootstrapping the SDK.",
     "check": "pnpm run check:web",
     "check:web": "pnpm -C apps/web check",
     "check:edge": "pnpm -C apps/backend check:edge",
@@ -36,6 +36,7 @@
     "test:backend:db": "pnpm -C apps/backend test:db",
     "//-- gen --": "Regenerate apps/backend/supabase/database.types.ts from the live local schema (needs dev:db:up). Commit the result.",
     "gen:types": "pnpm -C apps/backend gen:types",
-    "test:mobile": "cd apps/mobile && flutter test"
+    "test:mobile": "cd apps/mobile && flutter test",
+    "check:mobile": "cd apps/mobile && flutter analyze"
   }
 }
