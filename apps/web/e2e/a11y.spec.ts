@@ -191,6 +191,21 @@ async function motionProblems(page: Page) {
 			if (style.animationName !== 'none' && style.animationDuration !== '0s') {
 				found.push(`${el.tagName}.${(el.getAttribute('class') || '')} still animates: ${style.animationName} ${style.animationDuration}`);
 			}
+			// Transitions whose property can MOVE content are motion too. Not a
+			// blanket transitionDuration check: a color hover transition is not
+			// motion, so only these properties are accused. `all` counts as
+			// motion - a page that wants any transition anywhere is scoping
+			// sloppily, and the honest fix is naming the property at the source.
+			const propList = (style.transitionProperty || 'all').split(', ');
+			const durList = (style.transitionDuration || '0s').split(', ');
+			for (let k = 0; k < propList.length; k += 1) {
+				const dur = durList.length === 1 ? durList[0] : durList[k];
+				if (dur === undefined || dur === '0s') continue;
+				const p0 = propList[k];
+				if (p0 === 'all' || p0 === 'width' || p0 === 'height' || p0 === 'transform' || p0 === 'left' || p0 === 'right' || p0 === 'top' || p0 === 'bottom') {
+					found.push(`${el.tagName}.${(el.getAttribute('class') || '')} glides on ${p0} (${dur}): a transition that can move content is motion a reduced-motion reader asked to drop`);
+				}
+			}
 		}
 		// Smooth scrolling is motion a reduced-motion reader asked to drop; the
 		// skip-link jump relies on it being instant.
