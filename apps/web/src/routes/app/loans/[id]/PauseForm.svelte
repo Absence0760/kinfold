@@ -6,7 +6,7 @@
 	import { explainLoanError } from '#lib/loans/errors.ts';
 	import { pauseProblem, pushBack, type InstallmentRow, type LoanDetailRow } from '#lib/loans/loan.ts';
 	import { monthsWord } from '#lib/loans/words.ts';
-	import Panel from './Panel.svelte';
+	import Panel from '../Panel.svelte';
 
 	let {
 		loan,

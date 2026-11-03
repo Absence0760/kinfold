@@ -5,7 +5,7 @@
 	import { explainLoanError } from '#lib/loans/errors.ts';
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import { monthsWord } from '#lib/loans/words.ts';
-	import Panel from './Panel.svelte';
+	import Panel from '../Panel.svelte';
 
 	let { ask, owedCents, onchanged }: {
 		ask: { loan_id: string; months: number; first_due: string };

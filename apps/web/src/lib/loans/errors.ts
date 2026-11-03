@@ -67,6 +67,24 @@ export function explainLoanError(error: DbError | null | undefined): string {
 	if (/no restructure is waiting for this side to sign/i.test(message))
 		return 'There is no new schedule waiting for you to sign. Refresh to see where the loan stands.';
 
+	// Fund loan doors (roadmap 3a): same ladder, Fund wording. Fund-only
+	// messages first so the family allowance regex below doesn't swallow them.
+	if (/^fund loan not found$/i.test(message))
+		return 'This Fund loan isn’t yours to change, or it no longer exists. Only the borrower of a Fund loan can act on it.';
+	if (/^fund loan is already \w+/i.test(message))
+		return 'This Fund loan is past signing. Refresh to see where it stands.';
+	if (/only a collecting loan can be paused/i.test(message))
+		return 'This Fund loan isn’t collecting, so there’s nothing to pause.';
+	const fundAllowance = /allows (\d+) pause months a year \((\d+) used\); ask the lending Fund to restructure/i.exec(message);
+	if (fundAllowance)
+		return `This Fund loan allows ${fundAllowance[1]} pause month${fundAllowance[1] === '1' ? '' : 's'} a year and ${fundAllowance[2]} ${fundAllowance[2] === '1' ? 'is' : 'are'} used. For more time, ask the lending Fund for a new schedule.`;
+	if (/income schedules are computed from income; nothing to reschedule/i.test(message))
+		return 'Income payments are sized from income every month; there is no fixed schedule to change.';
+	if (/income due for this month is not owed/i.test(message))
+		return 'Nothing is owed this month, so there is nothing to record.';
+	if (/a restructure the partner has not answered yet/i.test(message))
+		return 'The lending Fund hasn’t applied your last restructure ask yet. One ask waits at a time.';
+
 	// pause_loan / resume_loan.
 	if (/only an active loan can be paused/i.test(message))
 		return 'Repayments haven’t started, or the loan is closed, so there’s nothing to pause.';

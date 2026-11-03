@@ -4,7 +4,7 @@
 	import { formatCents, formatDay } from '#lib/dashboard/format.ts';
 	import { resumeLoan } from '#lib/loans/data.ts';
 	import { explainLoanError } from '#lib/loans/errors.ts';
-	import Panel from './Panel.svelte';
+	import Panel from '../Panel.svelte';
 
 	let {
 		loanId,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { loadFundLoans } from './fund.ts';
+import { loadFundLoans, loadFundLoan, pauseFundLoan, resumeFundLoan, restructureFundLoan } from './fund.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -86,8 +86,58 @@ describe('loadFundLoans', () => {
 		expect(rows).toEqual([{ loan: monthly, outstandingCents: 250000, shareCents: 0, next: null, pausedUntil: null, restructureWaiting: false }]);
 	});
 
-	it('a refused read fails loudly rather than showing no loans', async () => {
+		it('a refused read fails loudly rather than showing no loans', async () => {
 		const { db } = fakeDb({ fund_loans: { data: null, error: { message: 'permission denied for table fund_loans' } } });
 		await expect(loadFundLoans(db, 'member-1')).rejects.toThrow(/permission denied/);
+	});
+});
+
+describe('loadFundLoan', () => {
+	it('the console reads one loan with its schedule and history', async () => {
+		const { db, asked } = fakeDb({
+			fund_loans: { data: [monthly], error: null },
+			fund_loan_installments: { data: [{ loan_id: 'm1', seq: 1, due_on: '2026-02-01', amount_cents: 5000, paid_cents: 0 }], error: null },
+			fund_loan_pauses: { data: [{ loan_id: 'm1', months: 1, started_on: '2026-01-05' }], error: null },
+			fund_loan_restructures: { data: [{ loan_id: 'm1', months: 24, first_due: '2026-03-01', applied_at: null }], error: null },
+			fund_loan_outstanding_cents: { data: 5000, error: null }
+		});
+		const detail = await loadFundLoan(db, 'm1');
+		expect(asked).toEqual([
+			'fund_loans',
+			'fund_loan_installments',
+			'fund_loan_pauses',
+			'fund_loan_restructures',
+			'fund_loan_outstanding_cents'
+		]);
+
+		if (detail === null) throw new Error('fixture has the loan');
+		expect(detail.loan).toEqual(monthly);
+		expect(detail.outstandingCents).toBe(5000);
+		expect(detail.restructure).toEqual({ loan_id: 'm1', months: 24, first_due: '2026-03-01', applied_at: null });
+	});
+
+	it('a loan the viewer is not the borrower of reads as null', async () => {
+		const { db } = fakeDb({ fund_loans: { data: [], error: null } });
+		const detail = await loadFundLoan(db, 'someone-else');
+		expect(detail).toBeNull();
+	});
+});
+
+describe('the Fund loan doors', () => {
+	it('pause, resume and restructure each hit their own schema door', async () => {
+		const { db, asked } = fakeDb({
+			pause_fund_loan: { data: null, error: null },
+			resume_fund_loan: { data: 'active', error: null },
+			restructure_fund_loan: { data: null, error: null }
+		});
+		await pauseFundLoan(db, 'm1', 2);
+		await resumeFundLoan(db, 'm1');
+		await restructureFundLoan(db, 'm1', 24, '2026-03-01');
+		expect(asked).toEqual(['pause_fund_loan', 'resume_fund_loan', 'restructure_fund_loan']);
+	});
+
+	it('a door refusal throws the schema\u2019s own message', async () => {
+		const { db } = fakeDb({ pause_fund_loan: { data: null, error: { message: 'this loan allows 3 pause months a year (3 used); ask the lending Fund to restructure' } } });
+		await expect(pauseFundLoan(db, 'm1', 4)).rejects.toThrow(/ask the lending Fund to restructure/);
 	});
 });

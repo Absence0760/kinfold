@@ -129,6 +129,7 @@
 				{#each items as f (f.loan.id)}
 					{@const st = fundLoanStatusText(f.loan.status)}
 					<li>
+						<a class="card" href="/app/loans/fund/{f.loan.id}">
 						<div class="card-head">
 							<h3>You borrowed {formatCents(f.loan.principal_cents)} from the lending Fund</h3>
 							<Badge tone={st.tone} label={st.label} />
@@ -150,6 +151,8 @@
 						{#if f.loan.lien_bps > 0}
 							<p class="meta">Its lien sits behind the bank’s and behind any public-assistance liens, and all the liens together stay at or below 105% of the home’s value.</p>
 						{/if}
+						<span class="more">Pause it or ask the Fund for a new schedule <span aria-hidden="true">→</span></span>
+						</a>
 					</li>
 				{/each}
 			</ul>

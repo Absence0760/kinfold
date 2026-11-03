@@ -7,7 +7,7 @@
 	import { explainLoanError } from '#lib/loans/errors.ts';
 	import type { InstallmentRow, LoanDetailRow, Side, Signatures } from '#lib/loans/loan.ts';
 	import { monthsWord, ordinal } from '#lib/loans/words.ts';
-	import Panel from './Panel.svelte';
+	import Panel from '../Panel.svelte';
 
 	let {
 		loan,

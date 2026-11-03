@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The Fund loan console gives the borrower sign, pause, resume and restructure forms
+
+- **Why no terms or schedule forms**: the Fund signs at once and its schedule is either set at creation or computed from income — `create_fund_loan` owns it, so the borrower has nothing to negotiate the way family loans do. The console offers exactly the doors whose rules the borrower can act on.
+- **The pause preview matches what the schema writes**: the moved dates come from the same `pushBack` the family console uses; the restructure preview uses `fundSplit`, the same even split with the last payment taking the remainder that `apply_fund_loan_restructure` will write — so what you see is what the partner's event will land, and the outstanding figure never changes.
+- **Refusals still come from the schema**: each form refuses client-side only to explain before sending; the save path relies on the doors, and the Fund-specific refusal words live in `explainLoanError`.
+- **Reversal:** if the Fund loan actions should go back to read-only cards, delete `apps/web/src/routes/app/loans/fund/` (the whole route), the `loadFundLoan` and door wrappers in `#lib/loans/fund.ts`, and the card link in `/app/loans`; the schema doors and `loadFundLoans` stay either way.
+
 ## 2026-11-02 — The member's dues card names the published formula that priced their figure
 
 - **Why show the formula at all**: `subscription_formulas` keeps old versions "so every subscription can say which formula priced it", but until now the member saw only their own figure. A dues number with no rule beside it is one of the things a member can most easily misread ("is my dues too high?"), and the fairness audit needs the same rule visible.

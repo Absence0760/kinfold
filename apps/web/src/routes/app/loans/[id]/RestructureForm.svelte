@@ -7,7 +7,7 @@
 	import { restructureLoan } from '#lib/loans/data.ts';
 	import { explainLoanError } from '#lib/loans/errors.ts';
 	import type { LoanDetailRow } from '#lib/loans/loan.ts';
-	import Panel from './Panel.svelte';
+	import Panel from '../Panel.svelte';
 
 	let { loan, owedCents, today, onchanged }: {
 		loan: LoanDetailRow;

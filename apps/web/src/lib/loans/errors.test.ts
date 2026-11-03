@@ -148,3 +148,24 @@ describe('explainLoanError covers the loan functions', () => {
 		expect(memberGrants.some((s) => s.includes('apply_default_plan'))).toBe(false);
 	});
 });
+
+describe('Fund loan doors read in the Fund\u2019s words', () => {
+	it('explains a Fund loan the borrower cannot change', () => {
+		expect(explainLoanError({ message: 'fund loan not found' })).not.toMatch(FALLBACK);
+		expect(explainLoanError({ message: 'fund loan is already repaid' })).not.toMatch(FALLBACK);
+		expect(explainLoanError({ message: 'this loan allows 3 pause months a year (3 used); ask the lending Fund to restructure' }))
+			.toMatch(/lending Fund/);
+	});
+
+	it('points at the Fund, not a lender member', () => {
+		expect(explainLoanError({ message: 'income schedules are computed from income; nothing to reschedule' }))
+			.not.toMatch(FALLBACK);
+		expect(explainLoanError({ message: 'a restructure the partner has not answered yet is already pending' }))
+			.not.toMatch(FALLBACK);
+		expect(explainLoanError({ message: 'income due for this month is not owed' })).not.toMatch(FALLBACK);
+	});
+
+	it('keeps the family-lender allowance message distinct', () => {
+		expect(explainLoanError({ message: 'this loan allows 3 pause months a year (1 used)' })).toMatch(/your lender/);
+	});
+});

@@ -7,7 +7,7 @@
 	import type { LoanDetailRow } from '#lib/loans/loan.ts';
 	import { dayAfter, describeSplit, MAX_MONTHS, planSchedule, scheduleProblem, scheduleTotal } from '#lib/loans/schedule.ts';
 	import { ordinal } from '#lib/loans/words.ts';
-	import Panel from './Panel.svelte';
+	import Panel from '../Panel.svelte';
 
 	let {
 		loan,

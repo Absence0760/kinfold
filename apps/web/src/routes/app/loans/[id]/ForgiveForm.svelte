@@ -11,7 +11,7 @@
 		GIFT_EXCLUSION_YEAR,
 		type LoanDetailRow
 	} from '#lib/loans/loan.ts';
-	import Panel from './Panel.svelte';
+	import Panel from '../Panel.svelte';
 
 	let {
 		loan,
