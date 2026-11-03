@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A settled screen-reader summary may only announce money the page prints
+
+- **The decision**: the live regions beside the sliders are invisible to sighted readers, so nothing demanded they agree with the visible figures. A stale announcement reads a number to a screen reader that is no longer on the page - the two halves of the audience hear different money beside the same control. The audit collects every figure the section prints (dropping the live region's own run of text) and fails any announced figure a sighted reader cannot see, before a drag and again after driving the loan slider to the end and the fund slider to zero.
+- **Why wait on the change and not a timer**: the debounce is 700ms, so a fixed sleep would race the announcement on slow machines and flake; waiting for the live text to differ from its pre-drag value is a real signal, and if the debounce never fires the wait itself fails honestly.
+- **Teeth**: a phantom $7,777 appended to the calculator summary and a phantom $6,666 in the board summary were each named by figure and section. Restored byte-exact, green.
+- **What it found**: nothing - both live regions today announce exactly a subset of the printed money; the rule guards the next edit to a summary template or a debounce that keeps the old text.
+- **Reversal:** if a summary ever has to mention a figure the page hides (an aggregate only screen readers get), that figure joins a named exception list in the audit rather than loosening the subset check.
+
 ## 2026-11-03 — No tracked file may sit under a generated tree; the audits read the live build
 
 - **The decision**: the repo-invariants gate grew a fifth rule - nothing tracked under the generated trees (the SvelteKit output (the build dir and .svelte-kit), Playwright traces and the Chromium cache, node_modules, dist). The e2e audits hydrate the production build; a committed build directory is a snapshot that ages silently - the next audit pass would accuse stale HTML rather than a live page, and a push would ship a design artifact as if it were a decision.
