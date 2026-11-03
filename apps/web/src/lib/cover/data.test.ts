@@ -30,6 +30,9 @@ const rates = [
 const claims = [
 	{ status: 'paid', paid_cents: 40000, recorded_at: '2026-06-01T00:00:00Z' },
 	{ status: 'denied', paid_cents: 0, recorded_at: '2026-06-02T00:00:00Z' },
+	// A recorded claim the feed has not confirmed as paid yet has recovered
+	// nothing, so it consumes none of the annual deductible.
+	{ status: 'recorded', paid_cents: 30000, recorded_at: '2026-06-03T00:00:00Z' },
 	{ status: 'paid', paid_cents: 25000, recorded_at: '2025-06-01T00:00:00Z' }
 ];
 
@@ -48,8 +51,9 @@ describe('loadCover', () => {
 		expect(detail.filed).toEqual(rates.filter((r) => r.vehicle_class === 'sedan'));
 		expect(detail.plan).toEqual('standard');
 		expect(detail.premiumCents).toEqual(18900);
-		// The insurance year is the calendar year: the paid claim from 2025 is out,
-		// the denial paid nothing so it uses none; only the 2026 paid claim counts.
+		// Same window and status the schema's floor computes: the paid claim from 2025
+		// is out, the denial paid nothing, and the recorded-but-unconfirmed claim
+		// recovered nothing yet; only the 2026 paid claim counts.
 		expect(detail.deductibleUsedCents).toEqual(40000);
 	});
 

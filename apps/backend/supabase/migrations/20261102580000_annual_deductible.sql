@@ -96,18 +96,20 @@ begin
     raise exception 'a claim cannot exceed the filed cap for the member''s plan, or the vehicle''s value'
       using errcode = '23514';
   end if;
-  -- The annual deductible floor: deductible dollars this member already got
-  -- this insurance year (calendar year; denied claims paid nothing and use
-  -- none), and what the filed annual has left. The member's share must cover
-  -- everything the filed annual has left unpaid.
+  -- The annual deductible floor: deductible dollars this member has already
+  -- PAID back this insurance year (calendar year; a denial pays nothing so it
+  -- uses none, and a claim the feed hasn't confirmed as paid yet has recovered
+  -- nothing), and what the filed annual has left. The member's share must
+  -- cover everything the filed annual has left unpaid.
   select (select annual_deductible_cents from public.cover_plans
           where vehicle_class = (select vehicle_class from public.covered_assets a
                                  where a.id = (select asset_id from public.requests r where r.id = p_request))
             and plan = public.member_plan(v_member)) into v_annual;
   if v_annual is not null then
-    v_used := coalesce((select sum(case c.status = 'denied' then 0::bigint else c.paid_cents end)
+    v_used := coalesce((select sum(c.paid_cents)
                         from public.claims c
-                        where extract(year from c.recorded_at) = extract(year from current_date)
+                        where c.status = 'paid'
+                          and extract(year from c.recorded_at) = extract(year from current_date)
                           and exists (select 1 from public.requests r
                                       where r.id = c.request_id and r.member_id = v_member)), 0::bigint);
     if p_member_share_cents < greatest(0, p_gross_cents - greatest(0, v_annual - v_used)) then

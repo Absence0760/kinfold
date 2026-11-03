@@ -77,14 +77,15 @@ export async function loadCover(db: Db, uid: string): Promise<CoverDetail> {
 	const filed = ((filedRes.data ?? []) as FiledRateRow[]).filter((r) => classes.has(r.vehicle_class));
 	const chosen = (planRes.data ?? null) as { plan: string } | null;
 	// The insurance year is the calendar year: the same window `record_claim`
-	// uses for the annual floor. A denied claim paid nothing and uses none.
+	// uses for the annual floor, and the same status — only a claim the feed
+	// confirmed as paid has recovered deductible dollars.
 	const year = new Date().getFullYear();
 	const deductibleUsedCents = ((claimsRes.data ?? []) as {
 		status: string;
 		paid_cents: number;
 		recorded_at: string;
 	}[])
-		.filter((c) => c.status !== 'denied' && new Date(c.recorded_at).getFullYear() === year)
+		.filter((c) => c.status === 'paid' && new Date(c.recorded_at).getFullYear() === year)
 		.reduce((sum, c) => sum + c.paid_cents, 0);
 	return {
 		assets,

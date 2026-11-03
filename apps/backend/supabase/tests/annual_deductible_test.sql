@@ -5,12 +5,14 @@
 --   * a claim records while the member's deductible dollars are left;
 --   * a denial uses none of the annual deductible, so the next claim still
 --     records with the FULL deductible available;
+--   * a claim the feed has not confirmed as paid recovers nothing yet, so
+--     it consumes none of the annual deductible;
 --   * once the annual deductible is spent, the member's share must rise to
---     the whole loss — a share under the floor is refused, not accepted;
+--     the whole loss - a share under the floor is refused, not accepted;
 --   * a request with no classed covered vehicle has no annual deductible;
 --   * paid is exactly gross minus share on every recorded claim.
 begin;
-select plan(15);
+select plan(19);
 
 -- --- fixtures ------------------------------------------------------------------
 
@@ -71,7 +73,7 @@ select pg_temp.as_service();
 select lives_ok($$select public.set_annual_deductible('sedan', 'basic', 50000::bigint, 'partner_insurer', '2026-01-01'::date)$$,
   'the service files the annual deductible beside the rate');
 
--- --- a claim records while the deductible dollars are left ---------------------------
+-- --- claims while the deductible dollars are left -----------------------------------
 
 select lives_ok($$select public.record_claim('00000000-0000-0000-0058-0000000000e1'::uuid,
        'ad_c1', 50000, 0)$$,
@@ -99,16 +101,31 @@ select lives_ok($$select public.record_claim('00000000-0000-0000-0058-0000000000
 select is((select paid_cents from public.claims where partner_ref = 'ad_c2'),
   50000::bigint, 'the second claim paid in full again: it is the paid claims, not the recorded ones, that spend the annual');
 
+-- --- an unconfirmed claim has recovered nothing yet ----------------------------------
+
+select lives_ok($$select public.record_claim('00000000-0000-0000-0058-0000000000e1'::uuid,
+       'ad_c3', 50000, 0)$$,
+  'a claim the feed has not confirmed as paid yet consumes none of the annual deductible');
+select is((select paid_cents from public.claims where partner_ref = 'ad_c3'),
+  50000::bigint, 'the third claim paid in full again, ad_c2 still only recorded');
+
+-- --- confirming a payment spends the annual deductible -------------------------------
+
+select lives_ok($$select public.mark_claim_paid((select id from public.claims where partner_ref = 'ad_c2'), 'ad_p2')$$,
+  'the feed confirms the second claim was paid in full');
+select is((select count(*) from private.audit_log where action = 'claim.paid'),
+  1::bigint, 'the confirmation is audit-logged');
+
 -- --- once the annual deductible runs out, the share must rise ------------------------
 
 select throws_ok($$select public.record_claim('00000000-0000-0000-0058-0000000000e1'::uuid,
-       'ad_c3', 50000, 10000)$$,
+       'ad_c4', 50000, 10000)$$,
   '23514', 'a member cannot take deductible cover beyond the annual deductible; the share rises with claims',
   'a share under the annual floor is refused, not accepted');
 select lives_ok($$select public.record_claim('00000000-0000-0000-0058-0000000000e1'::uuid,
-       'ad_c3', 50000, 50000)$$,
+       'ad_c4', 50000, 50000)$$,
   'once the deductible dollars are spent, the member''s share rises to the whole loss');
-select is((select paid_cents from public.claims where partner_ref = 'ad_c3'),
+select is((select paid_cents from public.claims where partner_ref = 'ad_c4'),
   0::bigint, 'the exhausted claim pays nothing: the member carries it');
 
 -- --- a home request carries no annual deductible --------------------------------------
@@ -123,7 +140,7 @@ select is((select count(*) from public.claims
            where paid_cents <> gross_cents - member_share_cents)::int, 0::int,
   'no claim stored a paid figure off gross minus share');
 select is((select count(*) from private.audit_log where action = 'claim.recorded'),
-  4::bigint, 'the four accepted claims wrote their caps onto the trail');
+  5::bigint, 'the five accepted claims wrote their caps onto the trail');
 reset role;
 
 rollback;
