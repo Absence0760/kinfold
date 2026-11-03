@@ -209,8 +209,8 @@ Storage has two private buckets. `evidence-original` holds files under the membe
 
 ## Edge functions
 
-Two are built (`apps/backend/functions/<name>/index.ts`, Deno, tested by `pnpm test:edge`); the rest are
-the plan for what to build, in `functions/` when each is built.
+Sixteen are built (`apps/backend/functions/<name>/index.ts`, Deno, tested by `pnpm test:edge`); one —
+`close-account` — is still the plan, and each row names the stand-in it runs against.
 
 | Function | Triggered by | Does | Local stand-in |
 | --- | --- | --- | --- |
@@ -225,6 +225,11 @@ the plan for what to build, in `functions/` when each is built.
 | `reconcile` ✅ | pg_cron, daily | Publishes the open books for the month that ended over a week ago, then compares ledger balances (`ledger_balance`, service-only) with the partners' statements and reports any difference | Fixture statements (function built in `functions/reconcile`, month/lag decisions pinned by `deno test`; statements still a fixture) |
 | `loan-servicing` ✅ | pg_cron, daily | Calls `resume_ended_pauses`, collects due installments through `record_loan_payment` (a guarded owner for the money write: only collecting loans, never more than owed), sends reminders, offers pauses on missed payments; reads `loan_default_due` and hands each listed loan to `apply_default_plan` | Fake collector (due-date decisions pinned by `deno test`) |
 | `expire-requests` ✅ | pg_cron, daily | Expires stale open and needs-evidence requests, which releases their pledges (stale = nothing touched for the fund's `waiting_days`; the guarded skip keeps money with the payee a person's) | Same (function built in `functions/expire-requests`, staleness pinned by `deno test`; `expire_request` pinned by pgTAP) |
+| `charge-dues` ✅ | pg_cron, monthly | Reads members with an active, non-$0 subscription that has no dues payment for the period and asks through `enqueue_dues` (idempotent per member per period); `$0` subscriptions are skipped here and refused in the schema | Fixture roster (function built in `functions/charge-dues`, schedule decisions pinned by `deno test`; the ask pinned by pgTAP `dues_charge_test`) |
+| `pay-premiums` ✅ | pg_cron, monthly | Calls `pay_cover_premium` per member: the schema sums the filed rates for the member's classed vehicles, refuses when dues money doesn't cover them, and journals the move from the fund's `dues` account into `premiums` | Fixture roster (function built in `functions/pay-premiums`, refusals pinned by `deno test`; money moves pinned by pgTAP `premium_dues_test`) |
+| `claims-feed` ✅ | Partner insurer's feed | Records a deductible claim and, separately, confirms it paid in full (LESS the member's share), journaling the confirmed money out of the partner side into `paid_out`; denials pay nothing | Fixture feed (function built in `functions/claims-feed`, event plumbing pinned by `deno test`; row rules pinned by pgTAP `insured_claims_test`, `claim_paid_test`) |
+| `inspection-visit` ✅ | Partner sends an inspector | Plumbs the visit's report to the schema, which records it append-only and keeps a large request short of funding until a visit reports it clear | Fixture visit statement (function built in `functions/inspection-visit`, pinned by `deno test`; the large-amount rule pinned by pgTAP `in_person_inspection_test`) |
+| `subrogation` ✅ | Partner insurer's recovery claim | Plumbs the recovery statement to the schema, which records it ALREADY verified and subtracts it from pledge caps and pool needs; the money never touches Kinfold's ledger | Fixture statement (function built in `functions/subrogation`, pinned by `deno test`; the record pinned by pgTAP `subrogation_test`) |
 | `close-account` | Member asks to delete their account | Calls `close_account()` as the member, then disables (never deletes) the auth user. Deleting from `auth.users` is blocked by design for anyone with a request, pledge, review or loan | Same, against local Auth |
 
 ## Privacy and retention
@@ -240,4 +245,4 @@ the plan for what to build, in `functions/` when each is built.
 
 ## Not built yet
 
-Edge functions, the Flutter member app, and the reviewer and panel console still partly unbuilt; restructuring and pause flows, Home Fund loan restructuring, and the panel console's needs-edge-case reviews. See [roadmap.md](roadmap.md).
+Only `close-account` is still an unbuilt edge function. The Flutter member app (roadmap 1a) stays unbuilt while no phone toolchain exists on the build machine. Restructuring, pauses and the panel console's needs-edge-case reviews are built (roadmap 1g and 3b); what remains is partner-gated: lender and insurer partners, grants and the pilot's lending licence (roadmap 2a, 2e, 2i, 3d–3h). See [roadmap.md](roadmap.md).

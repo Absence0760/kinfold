@@ -20,6 +20,11 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **The cap applied is written onto the audit trail** with each recorded claim, so the trail can be reconciled against the filed rates at review time.
 - **Reversal:** if the partner's feed should be trusted absolutely, delete the limit check and its pgTAP `claims_capped_test`; the claims table's own checks (share ≤ gross, paid = gross − share) keep the arithmetic either way.
 
+## 2026-11-02 — The docs state what is built, not what was planned (`docs/backend.md`)
+
+- **Stale claims are bugs in a docs-driven repo**: the edge-function table said "Two are built... the rest are the plan" while 16 of 17 `functions/` were built and deno-tested, and the "Not built yet" section still named pause, restructure and needs-edge-case work that landed. Rewrote the count, added the five missing built rows (each naming its pgTAP and `deno test` pins), and restated the unbuilt list to what is actually open: `close-account`, the phone app, and the partner-gated stages.
+- **Reversal:** if the table should track only the partner stand-ins, drop the per-row pins and keep the counts in [roadmap.md](roadmap.md); the functions themselves are unchanged.
+
 ## 2026-11-02 — The ops console reads the tail of the trail, not its detail (`review_audit_tail`)
 
 - **Decisions must be reviewable**: the roadmap promises the operations console shows the audit trail, and `private.audit_log` had no door at all. New door answers recent actions (action, target, target id, time), newest first, capped at 100 — reviewers and admins only, and the read itself is logged, so trail-reading is itself auditable.
