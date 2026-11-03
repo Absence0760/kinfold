@@ -10,6 +10,7 @@ Last updated 2026-11-02.
 - [ ] **Code-scanning fixes to send upstream** to the `templates` repo's `base` branch: drop `dependabot-lockfile.yml` for single-workspace projects (CodeQL always flags its PR-head checkout), the `/audit/deps` rewrite, and the `SECURITY.md` private-reporting link in place of the placeholder email. **When:** next templates session.
 - [ ] **One Scorecard vulnerability can't be fixed here:** `deepmerge` (GHSA-gcqx-w48m-w2h4, low) has no patched release and `@sveltejs/vite-plugin-svelte` still depends on it, at build time only. **Fix:** bump vite-plugin-svelte once it drops or patches deepmerge. **When:** on the next Dependabot bump of it.
 - [ ] **`origin/dev` branch** holds only the original project-insurance vision README (`c17fa00`). Its ideas are in `design.md`, but the original wording isn't on `main`. **Fix:** decide whether to keep it verbatim as `docs/vision.md` and delete the branch, or just delete the branch. **When:** operator's call.
+- [ ] **`apps/mobile` (roadmap 1a) is not started**: no Flutter or Dart toolchain exists on the build machine (`which flutter dart` finds nothing), so a phone-app shell can't be compiled or tested here. The web member area carries every Stage 0/1 affordance built so far. **Fix:** install the toolchain (or move 1a to a machine that has it), then build the shell with Flutter tests. **When:** before Stage 1's phone-first evidence capture.
 
 ## Backend gaps
 

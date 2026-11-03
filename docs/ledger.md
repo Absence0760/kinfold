@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The phone app (roadmap 1a) stays unbuilt while the toolchain is missing
+
+- **Decision:** `apps/mobile` is not scaffolded. The Flutter/Dart toolchain isn't on this machine, so anything written would be code nothing can compile, check or test — the repo rule ships tests with code, and an untestable shell would quietly claim more than it does. The web member area carries every affordance built so far, so nothing built elsewhere is blocked on it.
+- **Reversal:** the moment `flutter --version` answers, 1a becomes a normal leg (sign-up, Supabase Auth, profile, Flutter tests) and its claim belongs on roadmap row 1a, not here.
+
 ## 2026-11-02 — Car-cover requests point at the public help beside them (`CoverHelpPanel`)
 
 - **Kinfold stays a holder of member shares, never a writer of others' policies**: the web request page for a car gap now names the programmes that sit beside that gap — state low-cost auto insurance where it exists, and FEMA/SBA/USDA disaster-repair help — so a member whose own insurer won't take the loss has somewhere real to go (design.md "Pointing members to public help"), rather than an unhelped "no, ask your people" wall.
