@@ -10,8 +10,13 @@ import { gotoHydrated } from './helpers.ts';
 // transparency, sign-in); it grows to the consoles once a configured stack runs
 // them. Rules collect named problems, so a failure points at the element, not a
 // role count.
+//
+// The fourth "route" is not a route: any unknown path answers with the error
+// page through the static adapter's 200.html fallback, and a mistyped link
+// lands a reader there like any visitor - so the error page is an audited
+// public surface too.
 
-const publicRoutes = ['/', '/transparency', '/signin'];
+const publicRoutes = ['/', '/transparency', '/signin', '/no-such-page-anywhere'];
 
 for (const route of publicRoutes) {
 	// The evaluate callback is plain JS: Playwright serializes it into the page,
