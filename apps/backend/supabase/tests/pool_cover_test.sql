@@ -59,11 +59,15 @@ begin
   end loop;
 end $$;
 
+-- Fixtures carry a reason on every claim: a denied row must carry the person's
+-- words (the table check `denials_carry_their_reason` refuses a wordless denial).
 create function pg_temp.claim(p_request uuid, p_gross bigint, p_partner_ref text,
                               p_status public.claim_status default 'recorded')
 returns void language sql as $$
-  insert into public.claims (request_id, partner_ref, gross_cents, member_share_cents, paid_cents, status)
-  values (p_request, p_partner_ref, p_gross, 0, p_gross, p_status);
+  insert into public.claims (request_id, partner_ref, gross_cents, member_share_cents,
+                             paid_cents, status, reason)
+  values (p_request, p_partner_ref, p_gross, 0, p_gross, p_status,
+          'the pool cover fixture stands in for a filed claim');
 $$;
 
 -- Each run starts from an empty board so only this file's requests count.
