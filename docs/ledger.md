@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A skip link is only honest if it is the page's first keyboard stop
+
+- **The decision**: the accessibility audit grew an ordering rule - when a page offers a skip link, that link must be the first focusable element on the page; anything else that takes focus first is reported by name (tag and class).
+- **Why ordering rather than existence**: the earlier rule checked that a skip link exists and that its target is real, and that rule would still pass a page whose menu comes first - a keyboard reader would Tab through every nav link before reaching the jump, which is the very burden the link promises to remove. The promise "usable with a screen reader and large text from day one" is about the ORDER of stops, not the presence of controls.
+- **The site passed the first run**: the `(site)` layout renders the skip link inside `SiteNav` before the header links, so the rule found no slip. It is not vacuous: reading focus order is what the rule does, and pointing the comparison at any other position fails both public pages, naming the element that really takes focus first.
+- **Pages without a skip link stay unjudged**: the sign-in page and the error page carry no repeated navigation, so there is nothing to skip and no order to demand.
+- **Reversal:** if a page later grows a control that must precede the skip link (say a language switcher), the rule needs a small allow-list of element classes that may precede it - a two-line change in the audit, not a dropped rule.
+
 ## 2026-11-03 — The error page an unknown path answers is an audited public surface
 
 - **The decision**: `a11y.spec.ts` now audits a fourth surface - `/no-such-page-anywhere`, which the static adapter answers with the error page through its 200.html fallback - and `landing.spec.ts` pins what that page actually says: the heading "We can't find that page", the body "The link may be old or mistyped.", and no retry button (a 404's copy carries `retry: false`).
