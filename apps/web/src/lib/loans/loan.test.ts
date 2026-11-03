@@ -5,6 +5,8 @@ import {
 	formatBps,
 	installmentState,
 	loanActions,
+	hasPendingRestructure,
+	pendingRestructure,
 	pauseMonthsLeft,
 	pauseMonthsUsed,
 	pauseProblem,
@@ -143,11 +145,36 @@ describe('loanActions mirrors who each function lets in', () => {
 	});
 
 	it('lets the borrower pause and resume, and the lender forgive, while collecting', () => {
-		expect(loanActions({ ...base, status: 'active', side: 'borrower' })).toEqual(['pause']);
-		expect(loanActions({ ...base, status: 'paused', side: 'borrower' })).toEqual(['pause', 'resume']);
-		expect(loanActions({ ...base, status: 'paused', side: 'borrower', pauseMonthsLeft: 0 })).toEqual(['resume']);
-		expect(loanActions({ ...base, status: 'active' })).toEqual(['forgive']);
+		expect(loanActions({ ...base, status: 'active', side: 'borrower' })).toEqual(['pause', 'restructure']);
+		expect(loanActions({ ...base, status: 'paused', side: 'borrower' })).toEqual(['pause', 'resume', 'restructure']);
+		expect(loanActions({ ...base, status: 'paused', side: 'borrower', pauseMonthsLeft: 0 })).toEqual(['resume', 'restructure']);
+		expect(loanActions({ ...base, status: 'active' })).toEqual(['forgive', 'restructure']);
 		expect(loanActions({ ...base, status: 'active', outstandingCents: 0 })).toEqual([]);
+	});
+
+
+	it('keeps restructure one ask at a time and only while collecting', () => {
+		expect(loanActions({ ...base, status: 'active', askAlreadyPending: true })).toEqual(['forgive']);
+		expect(loanActions({ ...base, status: 'paused', askAlreadyPending: true })).toEqual(['forgive']);
+		expect(loanActions({ ...base, status: 'active', askWaitingForYou: true })).toEqual(['forgive', 'restructure', 'sign_restructure']);
+		expect(loanActions({ ...base, status: 'signed', askWaitingForYou: true })).toEqual([]);
+	});
+
+	it('waits for the side that did not stage the ask to sign it', () => {
+		const staged = {
+			loan_id: 'l1',
+			months: 12,
+			first_due: '2027-01-20',
+			stager_signed_at: '2026-11-01T00:00:00Z',
+			other_signed_at: null,
+			created_by: 'borrower-uid'
+		};
+		expect(pendingRestructure([staged], 'borrower-uid')).toBeNull();
+		expect(pendingRestructure([staged], 'lender-uid')).toEqual(staged);
+		const signed = { ...staged, other_signed_at: '2026-11-02T00:00:00Z' };
+		expect(pendingRestructure([signed], 'lender-uid')).toBeNull();
+		expect(hasPendingRestructure([staged])).toBe(true);
+		expect(hasPendingRestructure([signed])).toBe(false);
 	});
 
 	it('offers nothing once a loan is closed', () => {

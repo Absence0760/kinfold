@@ -119,6 +119,27 @@ export function forgiveProblem(cents: number | null, outstandingCents: number): 
 	return null;
 }
 
+/** An ask either side staged, waiting for the other side to sign it. */
+export interface RestructureRow {
+	loan_id: string;
+	months: number;
+	first_due: string;
+	stager_signed_at: string;
+	other_signed_at: string | null;
+	created_by: string;
+}
+
+/** An ask still waiting for the side that didn't stage it. */
+export function pendingRestructure(rows: readonly RestructureRow[], uid: string): RestructureRow | null {
+	const open = rows.filter((r) => r.other_signed_at === null);
+	return open.find((r) => r.created_by !== uid) ?? null;
+}
+
+/** Whether any ask is already waiting on this loan (one at a time). */
+export function hasPendingRestructure(rows: readonly RestructureRow[]): boolean {
+	return rows.some((r) => r.other_signed_at === null);
+}
+
 /** Forgiveness recorded against one tax year, in cents. */
 export function forgivenInYear(rows: readonly Pick<ForgivenessDetailRow, 'tax_year' | 'amount_cents'>[], year: number): number {
 	return rows.filter((r) => r.tax_year === year).reduce((a, r) => a + r.amount_cents, 0);
@@ -144,7 +165,15 @@ export const formatBps = (bps: number): string => `${(bps / 100).toFixed(2)}%`;
 
 // --- what each side can do ------------------------------------------------------
 
-export type LoanAction = 'set_terms' | 'set_schedule' | 'sign' | 'pause' | 'resume' | 'forgive';
+export type LoanAction =
+	'set_terms'
+	| 'set_schedule'
+	| 'sign'
+	| 'pause'
+	| 'resume'
+	| 'forgive'
+	| 'restructure'
+	| 'sign_restructure';
 
 /**
  * The actions open to this side of the loan right now. Mirrors who each
@@ -154,6 +183,9 @@ export type LoanAction = 'set_terms' | 'set_schedule' | 'sign' | 'pause' | 'resu
  *  - `pause_loan`: the borrower, while `active` or `paused`, within the allowance;
  *  - `resume_loan`: the borrower, while `paused`;
  *  - `forgive_loan`: the lender, while `active` or `paused`, with something left.
+ *  - `restructure_loan`: either side, while `active` or `paused`, with something
+ *    left and no ask already waiting;
+ *  - `sign_loan_restructure`: only the side an ask is waiting for.
  * `apply_default_plan` is service-only, so it is never a member action.
  */
 export function loanActions(input: {
@@ -163,6 +195,10 @@ export function loanActions(input: {
 	scheduleMatchesPrincipal: boolean;
 	pauseMonthsLeft: number;
 	outstandingCents: number;
+	/** An open ask (any side staged it, the other hasn't signed). */
+	askAlreadyPending?: boolean;
+	/** An ask staged by the *other* side is waiting for this side to sign. */
+	askWaitingForYou?: boolean;
 }): LoanAction[] {
 	const { status, side } = input;
 	const out: LoanAction[] = [];
@@ -174,5 +210,7 @@ export function loanActions(input: {
 	if (side === 'borrower' && collecting && input.pauseMonthsLeft > 0 && input.outstandingCents > 0) out.push('pause');
 	if (side === 'borrower' && status === 'paused') out.push('resume');
 	if (side === 'lender' && collecting && input.outstandingCents > 0) out.push('forgive');
+	if (collecting && input.outstandingCents > 0 && !input.askAlreadyPending) out.push('restructure');
+	if (collecting && input.askWaitingForYou === true) out.push('sign_restructure');
 	return out;
 }

@@ -11,6 +11,8 @@
 		installmentState,
 		installmentText,
 		loanActions,
+		hasPendingRestructure,
+		pendingRestructure,
 		pauseMonthsLeft,
 		pauseMonthsUsed,
 		sideOf,
@@ -25,6 +27,8 @@
 	import ScheduleForm from './ScheduleForm.svelte';
 	import SignPanel from './SignPanel.svelte';
 	import TermsForm from './TermsForm.svelte';
+	import RestructureForm from './RestructureForm.svelte';
+	import SignRestructurePanel from './SignRestructurePanel.svelte';
 
 	let { data } = $props();
 
@@ -123,7 +127,11 @@
 			youSigned: signed.you !== null,
 			scheduleMatchesPrincipal: scheduled === loan.principal_cents,
 			pauseMonthsLeft: left,
-			outstandingCents: summary.remainingCents
+			outstandingCents: summary.remainingCents,
+			// One open ask at a time: staging needs nothing else pending,
+			// and the panel shows up only where this side is the one waiting.
+			askAlreadyPending: hasPendingRestructure(detail.restructures),
+			askWaitingForYou: pendingRestructure(detail.restructures, data.uid) !== null
 		});
 		return {
 			...detail,
@@ -387,6 +395,13 @@
 						{today}
 						onchanged={changed}
 					/>
+				{/if}
+				{#if view.actions.includes('restructure')}
+					<RestructureForm loan={l} owedCents={s.remainingCents} {today} onchanged={changed} />
+				{/if}
+				{#if view.actions.includes('sign_restructure')}
+					{@const ask = pendingRestructure(view.restructures, data.uid)}
+					{#if ask}<SignRestructurePanel {ask} owedCents={s.remainingCents} onchanged={changed} />{/if}
 				{/if}
 				{#if view.actions.includes('forgive')}
 					<ForgiveForm

@@ -72,6 +72,8 @@ export interface LoanDetail {
 	loan: LoanDetailRow;
 	installments: InstallmentRow[];
 	pauses: PauseDetailRow[];
+	/** Restructures on this loan, oldest first (the pending one is last open). */
+	readonly restructures: RestructureRow[];
 	forgiveness: ForgivenessDetailRow[];
 	/** What the `loan_missed_installments` view lists for this loan. */
 	missed: MissedRow[];
@@ -88,11 +90,15 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 	const loan: LoanDetailRow | null = loanRes.data;
 	if (!loan) return null;
 
-	const [inst, pauses, forg, missed, title, supporter] = await Promise.all([
+	const [inst, pauses, forg, missed, restructures, title, supporter] = await Promise.all([
 		db.from('loan_installments').select('*').eq('loan_id', id).order('seq'),
 		db.from('loan_pauses').select('*').eq('loan_id', id).order('started_on'),
 		db.from('loan_forgiveness').select('*').eq('loan_id', id).order('created_at'),
 		db.from('loan_missed_installments').select('*').eq('loan_id', id),
+		fromNew(db, 'loan_restructures')
+			.select('loan_id, months, first_due, stager_signed_at, other_signed_at, created_by')
+			.eq('loan_id', id)
+			.order('created_at'),
 		loan.request_id ? db.from('requests').select('title').eq('id', loan.request_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
 		loan.request_id && loan.borrower_id === uid
 			? db
@@ -110,6 +116,7 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 		pauses: must(pauses, 'pauses'),
 		forgiveness: must(forg, 'forgiveness'),
 		missed: must(missed, 'missed installments'),
+		restructures: must(restructures, 'restructures'),
 		requestTitle: must(title, 'the request')?.title ?? null,
 		lenderRelationship: must(supporter, 'the lender')?.relationship ?? null
 	};
@@ -164,6 +171,12 @@ export async function loadPendingRestructures(db: Db, loanIds: string[]): Promis
 		.in('loan_id', loanIds);
 	if (error) throw new Error(`Couldn't load pending restructures: ${error.message}`);
 	return (data ?? []) as RestructureRow[];
+}
+
+/** Stage a new schedule; the other side has to sign it before money re-spreads. */
+export async function restructureLoan(db: Db, loan: string, months: number, firstDue: string) {
+	const { error } = await rpcNew(db, 'restructure_loan', { p_loan: loan, p_months: months, p_first_due: firstDue });
+	if (error) throw error;
 }
 
 /** The other side signs a staged restructure: both sides have agreed. */
