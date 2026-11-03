@@ -4,7 +4,7 @@
 // the REFUND amount (which can be less than a pledge), a failed payout moves
 // no money and journals nothing, and every journal has the two-sided lines
 // the ledger schema demands, on the fund's seeded account codes
-// (`partner_cash`, `available`, `paid_out` — never codes the schema doesn't have).
+// (`partner_cash`, `available`, `paid_out`, `dues` — never codes the schema doesn't have).
 import { assertEquals, assertRejects } from "jsr:@std/assert";
 import { handleChargeEvent } from "./index.ts";
 
@@ -324,7 +324,7 @@ Deno.test("a dues-capture event closes the row and journals the DB figure", asyn
   assertEquals(journals, [
     JSON.stringify([
       { code: "partner_cash", amount_cents: -4000 },
-      { code: "available", amount_cents: 4000 },
+      { code: "dues", amount_cents: 4000 },
     ]),
   ]);
 });

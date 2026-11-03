@@ -16,7 +16,8 @@
 //   * loan_repaid: a borrower returned money against a loan installment;
 //     `record_loan_payment` owns the rules (collecting loans, owed ceiling).
 //   * dues_captured: the partner confirmed a member's monthly dues charge;
-//     `capture_dues` owns the row, the journal moves the money into the fund.
+//     `capture_dues` owns the row, the journal moves the money to the dues
+//     account (it pays premiums, it never buys a pool grant).
 //   * fund_loan_disbursed: the lending Fund's partner handed a fund loan its
 //     money; `activate_fund_loan` owns the status, audit trails the statement.
 //   * fund_loan_paid: the borrower returned money to the Fund; `record_fund_loan_payment`
@@ -161,7 +162,8 @@ export async function handleChargeEvent(
       }
       // The DB's answer is the figure the schema stored on the row; the
       // journal mirrors that number, moving it from the partner's side
-      // (pending charges sit there) into the fund's own money.
+      // (pending charges sit there) into the fund's dues account — dues money
+      // pays premiums and never buys a pool grant.
       const amountCents = Number(
         await db.rpc("capture_dues", {
           p_payment: dues.paymentId,
@@ -170,10 +172,10 @@ export async function handleChargeEvent(
       );
       await db.rpc("post_journal", {
         p_fund: event.fund,
-        p_kind: "subscription",
+        p_kind: "dues",
         p_ref: dues.paymentId,
         p_partner_ref: dues.partnerRef,
-        p_lines: transferLines("partner_cash", "available", amountCents),
+        p_lines: transferLines("partner_cash", "dues", amountCents),
       });
       return;
     }

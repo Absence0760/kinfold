@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — Dues money gets its own account so it can never buy a pool grant
+
+- **Dues buy premiums, not grants**: design.md has dues paying premiums (paid in full to the insurer), gifts and grants funding capped repair grants, and dues leftovers going to reserves or back to members. But dues money journalled straight into `available`, the pool's own-money account, so a dues dollar could fund a pool grant — neither lawful nor designed. New fund-level `dues` account: dues money arrives there, premiums move `dues` → `premiums`, and `available` only ever holds money the fund itself holds.
+- **Reversal:** if dues money should pool with the fund's own money again, delete the `dues` account and the rewritten `pay_cover_premium` in 20261102530000_dues_account.sql; the ledger checks (balanced journals, no fund mixing) hold either way.
+
 ## 2026-11-02 — A feed claim over the filed caps is refused, never silently truncated
 
 - **A bad feed entry must not bend the books**: the partner's claims feed can carry an amount the filed terms would not pay (wrong plan, wrong class, or a claim above the vehicle's own value). `record_claim` now checks the limit — the filed deductible cap for the member's plan and the vehicle's rating-law class, and the vehicle's value — and raises rather than clamping, so a silent truncation can never invent a paid-in-full claim that isn't lawful.

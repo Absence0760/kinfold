@@ -17,8 +17,9 @@ interface FundBalance {
 
 /**
  * Which funds run this week: only funds with money in custody. The repair
- * fund is gift-funded; the protection fund's money comes from dues, so only
- * funds actually holding money get a weekly run.
+ * fund is gift-funded; the protection fund's pool money only arrives from
+ * gifts and grants (dues money now sits in its own dues account and pays
+ * premiums), so only funds actually holding money get a weekly run.
  */
 export function runnableFunds(balances: FundBalance[]): string[] {
   return balances

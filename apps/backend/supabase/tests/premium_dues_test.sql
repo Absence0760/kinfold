@@ -4,12 +4,13 @@
 --   * premiums read the filed rates for the member's classed covered vehicles —
 --     two members with different incomes pay the same premium per class
 --     (premiums are never earnings-priced);
---   * premiums move money out of the fund's dues money (`available`) into a
---     `premiums` account of its own, and only up to the dues money it holds;
+--   * premiums move money out of the fund's dues account (`dues`) into a
+--     `premiums` account of its own, only up to the dues money it holds, and
+--     dues money never arrives as pool money (`available`);
 --   * a replayed reference is a no-op answering with the journal it made;
 --   * an unclassed vehicle takes no premium, and a home never carries a class.
 begin;
-select plan(13);
+select plan(14);
 
 -- --- fixtures ------------------------------------------------------------------
 
@@ -76,16 +77,18 @@ select is(public.cover_premium_cents('00000000-0000-0000-0021-0000000000a3'::uui
 set local role service_role;
 select pg_temp.as_service();
 select lives_ok(
-  $$select private.post_journal('protection', 'subscription', null, 'pi_dues1',
-      '[{"code":"partner_cash","amount_cents":-50000},{"code":"available","amount_cents":50000}]')$$,
-  'dues money arrives in the fund');
+  $$select private.post_journal('protection', 'dues', null, 'pi_dues1',
+      '[{"code":"partner_cash","amount_cents":-50000},{"code":"dues","amount_cents":50000}]')$$,
+  'dues money arrives in the dues account, not the fund's pool money');
 select lives_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a1'::uuid, 'prem_1')$$,
   'the premiums are paid out of dues money');
 select is(public.ledger_balance('protection'::public.fund, 'premiums'), 28800::bigint,
   'premium money sits in its own account');
-select is(public.ledger_balance('protection'::public.fund, 'available'), 21200::bigint,
-  'premium money is not double-counted as pool money');
+select is(public.ledger_balance('protection'::public.fund, 'dues'), 21200::bigint,
+  'unspent dues money stays in the dues account');
+select is(public.ledger_balance('protection'::public.fund, 'available'), 0::bigint,
+  'dues money never arrives as pool money');
 select is((select count(*) from private.ledger_journals
            where partner_ref = 'prem_1' and kind = 'premium'), 1::int,
   'a replayed reference stores no second journal');
