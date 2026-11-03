@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The mortgage-gap panel names the agency through the same line the loan console speaks
+
+- **The decision**: the mortgage-gap `PublicHelpPanel` counselor copy is now the generated sentence from `publicHelpCounselLine` (`requests/public-help.ts`) — the same shape `bankReliefNote` builds for the loan console — so the two member surfaces cannot name different agencies, and the panel no longer re-decides which agency stands. The heading is shared the same way (`publicHelpHeading`).
+- **Why generate the copy from the published row**: the agency comes from `housing_counsel`'s standing version, so the request panel deciding its own agency in copy could disagree with what a member's loan console and `/transparency` say today — exactly the kind of claim a fair-housing auditor checks, and a drift no test on either page alone would catch.
+- **No agency in effect merges two states honestly**: `counsel === null` covers "no agency certified yet" and "the published agency could not be read" with one line — the definition plus the hud.gov pointer — because naming an unverified agency beside a request is a claim the schema cannot support, and the merge is visible to the member either way.
+- **The panel keeps the public-list door even when an agency stands**: design.md's ladder says the Fund partners with one agency, but a member may still consult the public list; naming the standing agency does not close that door. A failed read gets its own alert line inside the panel — the request and its figures never depend on this affordance.
+- **Reversal:** when the Fund supports several agencies per applicant, `publicHelpCounselLine` becomes a list rendering while the sentence shape stays; moving the copy back into the panel would put agency naming in two places and make agency changes a drift hunt.
+
 ## 2026-11-03 — The member home dashboard leg is judged landed web-only
 
 - **The decision**: roadmap 1h ("open requests with score reasons, loans and next installment, pauses, missed installments, reliability record, private giving record") is marked landed. Each named surface exists for a signed-in member at `/app` — requests and their score bands, loans from both sides with pauses and missed installments on the loan consoles, the reliability record (which now also answers the member's own share), and the private giving record. The leg describes the dashboard's content, not a second client, so the web surfaces satisfy it.
