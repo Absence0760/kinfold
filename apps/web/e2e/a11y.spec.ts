@@ -379,6 +379,26 @@ for (const route of publicRoutes) {
 	});
 }
 
+// The design ships a dark scheme too (tokens via prefers-color-scheme), so
+// contrast - the one rule that depends on what the page paints - has to hold
+// in both. The browser setting is Playwright's, not a class swap.
+test.describe('in dark mode', () => {
+	test.use({ colorScheme: 'dark' });
+	for (const route of publicRoutes) {
+		test(`${route} keeps its text readable in dark mode`, async ({ page }) => {
+			await gotoHydrated(page, route);
+			expect(await contrastProblems(page)).toEqual([]);
+		});
+	}
+	for (const route of prerenderedPublicRoutes) {
+		test(`${route} keeps its text readable in dark mode before any script runs`, async ({ page }) => {
+			await page.goto(route);
+			await page.waitForLoadState('networkidle');
+			expect(await contrastProblems(page)).toEqual([]);
+		});
+	}
+});
+
 test.describe('with reduced motion', () => {
 	test.use({ reducedMotion: 'reduce' });
 	for (const route of publicRoutes) {
