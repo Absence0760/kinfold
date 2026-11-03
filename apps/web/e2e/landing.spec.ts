@@ -218,6 +218,69 @@ test('the calculator prints what its sliders announce and its own maths say, at 
 	}
 });
 
+// Screen-reader parity: the settled live summary a screen reader hears must
+// state only money the sighted reader can see. A stale announcement reads a
+// figure that is no longer on the page - the two halves of the audience then
+// hear different money beside the same sliders.
+async function liveMoneyProblems(page: Page, section: string) {
+	const report = await page.evaluate((sel: string) => {
+		const root = document.querySelector(sel);
+		if (!root) return { live: '', printed: [] as string[], absent: true };
+		const liveEl = root.querySelector('[aria-live]');
+		const liveText = liveEl ? (liveEl.textContent || '').replace(/\s+/g, ' ').trim() : '';
+		const full = root.textContent || '';
+		// The live region is one contiguous run of the section text - drop it so
+		// what is left is only what the sighted reader sees.
+		const printedText = liveText ? full.replace(liveText, '') : full;
+		const printed: string[] = [];
+		for (const m of printedText.matchAll(/\$[\d,]+/g)) printed.push(m[0]);
+		return { live: liveText, printed: printed, absent: false };
+	}, section);
+	const found: string[] = [];
+	if (report.absent) return ['section ' + section + ' is not on the page: the audit read nothing'];
+	if (report.live === '') {
+		found.push('section ' + section + ' has no live summary text: a screen reader hears no summary at all');
+		return found;
+	}
+	for (const m of report.live.matchAll(/\$[\d,]+/g)) {
+		if (!report.printed.includes(m[0])) {
+			found.push('the live summary announces ' + m[0] + ', but that figure is not printed in section ' + section + ': a screen reader hears money the sighted reader never sees');
+		}
+	}
+	return found;
+}
+
+async function waitForSummary(page: Page, section: string) {
+	const read = (sel: string) => {
+		const el = document.querySelector(sel)?.querySelector('[aria-live]');
+		return el ? (el.textContent || '') : '';
+	};
+	const before = await page.evaluate(read, section);
+	await page.waitForFunction((args: { sel: string; prev: string }) => {
+		const el = document.querySelector(args.sel)?.querySelector('[aria-live]');
+		return (el ? (el.textContent || '') : '') !== args.prev;
+	}, { sel: section, prev: before });
+}
+
+test.describe('screen-reader summaries', () => {
+	test('the calculator summary settles to money the page shows', async ({ page }) => {
+		await gotoHydrated(page, '/#calculator');
+		expect(await liveMoneyProblems(page, '#calculator')).toEqual([]);
+		await page.getByRole('slider', { name: /Home loan needed/ }).press('End');
+		await waitForSummary(page, '#calculator');
+		expect(await liveMoneyProblems(page, '#calculator')).toEqual([]);
+	});
+
+	test('the board summary settles to money the page shows', async ({ page }) => {
+		await gotoHydrated(page, '/#board');
+		expect(await liveMoneyProblems(page, '#board')).toEqual([]);
+		await page.getByRole('slider', { name: /This month.s repair fund/ }).press('Home');
+		await waitForSummary(page, '#board');
+		expect(await liveMoneyProblems(page, '#board')).toEqual([]);
+	});
+});
+
+
 test.describe('request board', () => {
 	test('the board\'s figures add up at the default fund', async ({ page }) => {
 		await gotoHydrated(page, '/#board');
