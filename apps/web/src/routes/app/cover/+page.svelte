@@ -35,6 +35,9 @@
 	let heading = $state<HTMLElement>();
 	let message = $state('');
 
+	/** The filed annual deductibles that apply (null = none filed yet). */
+	const annuals = $derived((cover?.filed ?? []).flatMap((r) => r.annual_deductible_cents === null ? [] : [r.annual_deductible_cents]));
+
 	/** The vehicles with no class stated yet, oldest first. */
 	const unclassed = $derived((cover?.assets ?? []).filter((a) => a.vehicle_class === null));
 
@@ -91,12 +94,19 @@
 			{#each cover.filed as r}
 				<li>
 					<strong>{r.vehicle_class} · {r.plan}</strong>
-					<span class="muted">{formatCents(r.premium_cents)} premium · up to {formatCents(r.cap_cents)} per claim</span>
+					<span class="muted">{formatCents(r.premium_cents)} premium · up to {formatCents(r.cap_cents)} per claim{#if r.annual_deductible_cents !== null} · {formatCents(r.annual_deductible_cents)} a year at most{/if}</span>
 				</li>
 			{/each}
 		</ul>
 	{/if}
 	<p class="section-note">Premiums for this member: {formatCents(cover.premiumCents)} a year, paid in full.</p>
+	{#if annuals.length > 0}
+			<p class="section-note">
+				An insured member gets back at most {formatCents(Math.min(...annuals))} a year as deductible cover. This year
+				{#if cover.deductibleUsedCents > 0}has already used {formatCents(cover.deductibleUsedCents)}{:else}has used none of it{/if} — past that,
+				the share you carry on your next claim rises; you are never refused for it and you never wait longer.
+			</p>
+		{/if}
 </section>
 
 {#if message}<p class="note" role="status">{message}</p>{/if}

@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The cover console shows the filed annual deductible and what this year has used
+
+- **The rule was already enforced in the schema; the member just couldn't see it**: `loadCover` now also reads `annual_deductible_cents` on the filed rates and the member's own `claims` rows (RLS answers with claims on their requests only), and the console names the smallest filed annual next to each rate ("a year at most") plus one sentence on what this insurance year has already used. A member who can't see the annual can't understand why their share rose — the refusal wording would otherwise be the only clue.
+- **The year window is restated in TS to match the schema's**: the same calendar year `record_claim` uses for the floor, and a denied claim's paid nothing so it consumes none — both pinned in `data.test.ts` (a 2025 paid claim is out, a denial counts for zero).
+- **Used dollars are read, not recomputed from the partner's gross**: the sums go over `paid_cents`, exactly the column the annual floor is computed from, so the console and the door can never disagree about what the deductible has left.
+- **Reversal:** if the annual should stay a partner-side term the member never sees, drop the claims read and `deductibleUsedCents` in `loadCover` plus the two notes in `app/cover/+page.svelte`; the schema floor (`annual_deductible_cents`, `set_annual_deductible`, the `record_claim` block) stays either way.
+
 ## 2026-11-02 — The shared nav bar's section links are page-root-qualified, not bare fragments
 
 - **What was broken**: the site chrome renders on every prerendered page, but the nav's section ids (`requests`, `board`, ...) exist only on the landing page, so a bare `#requests` on `/transparency` pointed at that page's own missing anchor — a silent dead link. Kit's prerender link check (`prerender_missing_id`) only surfaced it once `/transparency` stopped crashing outright.

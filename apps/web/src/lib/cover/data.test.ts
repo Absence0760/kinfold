@@ -23,9 +23,14 @@ const sedan = { id: 'v1', description: 'A grey sedan', vehicle_class: 'sedan', r
 const unclassed = { id: 'v2', description: 'A van with no class stated', vehicle_class: null, removed_on: null };
 const retired = { id: 'v3', description: 'A retired coupe', vehicle_class: 'sedan', removed_on: '2026-09-01' };
 const rates = [
-	{ vehicle_class: 'sedan', plan: 'basic', premium_cents: 12900, cap_cents: 50000 },
-	{ vehicle_class: 'sedan', plan: 'standard', premium_cents: 18900, cap_cents: 100000 },
-	{ vehicle_class: 'van', plan: 'basic', premium_cents: 18900, cap_cents: 50000 }
+	{ vehicle_class: 'sedan', plan: 'basic', premium_cents: 12900, cap_cents: 50000, annual_deductible_cents: 150000 },
+	{ vehicle_class: 'sedan', plan: 'standard', premium_cents: 18900, cap_cents: 100000, annual_deductible_cents: 300000 },
+	{ vehicle_class: 'van', plan: 'basic', premium_cents: 18900, cap_cents: 50000, annual_deductible_cents: null }
+];
+const claims = [
+	{ status: 'paid', paid_cents: 40000, recorded_at: '2026-06-01T00:00:00Z' },
+	{ status: 'denied', paid_cents: 0, recorded_at: '2026-06-02T00:00:00Z' },
+	{ status: 'paid', paid_cents: 25000, recorded_at: '2025-06-01T00:00:00Z' }
 ];
 
 describe('loadCover', () => {
@@ -34,14 +39,18 @@ describe('loadCover', () => {
 			covered_assets: { data: [sedan, unclassed, retired], error: null },
 			cover_plans: { data: rates, error: null },
 			cover_choices: { data: { plan: 'standard' }, error: null },
-			cover_premium_cents: { data: 18900, error: null }
+			cover_premium_cents: { data: 18900, error: null },
+			claims: { data: claims, error: null }
 		});
 		const detail = await loadCover(db, 'a1');
-		expect(asked).toEqual(['covered_assets', 'cover_plans', 'cover_choices', 'cover_premium_cents']);
+		expect(asked).toEqual(['covered_assets', 'cover_plans', 'cover_choices', 'cover_premium_cents', 'claims']);
 		expect(detail.assets).toEqual([sedan, unclassed]);
 		expect(detail.filed).toEqual(rates.filter((r) => r.vehicle_class === 'sedan'));
 		expect(detail.plan).toEqual('standard');
 		expect(detail.premiumCents).toEqual(18900);
+		// The insurance year is the calendar year: the paid claim from 2025 is out,
+		// the denial paid nothing so it uses none; only the 2026 paid claim counts.
+		expect(detail.deductibleUsedCents).toEqual(40000);
 	});
 
 	it('no plan chosen reads as nothing chosen, not as a written row', async () => {

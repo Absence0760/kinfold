@@ -28,6 +28,8 @@ export interface FiledRateRow {
 	/** bigint cents over the wire; a single member's premium never nears 2^53. */
 	premium_cents: number;
 	cap_cents: number;
+	/** The filed annual deductible; null means the class has no annual yet. */
+	annual_deductible_cents: number | null;
 }
 
 export interface CoverDetail {
@@ -38,24 +40,32 @@ export interface CoverDetail {
 	plan: string | null;
 	/** The cooperative's paid premiums for this member, in cents. */
 	premiumCents: number;
+	/** Deductible dollars this member's paid claims already used this year. */
+	deductibleUsedCents: number;
 }
 
 export async function loadCover(db: Db, uid: string): Promise<CoverDetail> {
-	const [assetsRes, filedRes, planRes, premiumRes] = await Promise.all([
+	const [assetsRes, filedRes, planRes, premiumRes, claimsRes] = await Promise.all([
 		// `covered_assets` grew the rating-law class; read it through the seam.
 		fromNew(db, 'covered_assets')
 			.select('id, description, vehicle_class, removed_on')
 			.eq('member_id', uid),
 		// `cover_plans` and `cover_choices` are newer than the committed types.
-		fromNew(db, 'cover_plans').select('vehicle_class, plan, premium_cents, cap_cents'),
+		fromNew(db, 'cover_plans').select(
+			'vehicle_class, plan, premium_cents, cap_cents, annual_deductible_cents'
+		),
 		fromNew(db, 'cover_choices').select('plan').eq('member_id', uid).maybeSingle(),
 		// `cover_premium_cents` is newer than the generated types; see rpcNew.
-		rpcNew(db, 'cover_premium_cents', { p_member: uid })
+		rpcNew(db, 'cover_premium_cents', { p_member: uid }),
+		// The member's own claims (RLS answers with claims on their requests):
+		// what has already used the annual deductible this insurance year.
+		fromNew(db, 'claims').select('status, paid_cents, recorded_at')
 	]);
 	fail(assetsRes.error);
 	fail(filedRes.error);
 	fail(planRes.error);
 	fail(premiumRes.error);
+	fail(claimsRes.error);
 	const allAssets = (assetsRes.data ?? []) as {
 		id: string;
 		description: string;
@@ -66,11 +76,22 @@ export async function loadCover(db: Db, uid: string): Promise<CoverDetail> {
 	const classes = new Set(assets.map((a) => a.vehicle_class).filter((c): boolean => c !== null));
 	const filed = ((filedRes.data ?? []) as FiledRateRow[]).filter((r) => classes.has(r.vehicle_class));
 	const chosen = (planRes.data ?? null) as { plan: string } | null;
+	// The insurance year is the calendar year: the same window `record_claim`
+	// uses for the annual floor. A denied claim paid nothing and uses none.
+	const year = new Date().getFullYear();
+	const deductibleUsedCents = ((claimsRes.data ?? []) as {
+		status: string;
+		paid_cents: number;
+		recorded_at: string;
+	}[])
+		.filter((c) => c.status !== 'denied' && new Date(c.recorded_at).getFullYear() === year)
+		.reduce((sum, c) => sum + c.paid_cents, 0);
 	return {
 		assets,
 		filed,
 		plan: chosen?.plan ?? null,
-		premiumCents: (premiumRes.data ?? 0) as number
+		premiumCents: (premiumRes.data ?? 0) as number,
+		deductibleUsedCents
 	};
 }
 
