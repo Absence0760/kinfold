@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The phone app gains a lint gate, run where the SDK is
+
+- **The decision**: `check:mobile` (`flutter analyze`) joins the root scripts and the CI mobile job, run right after the job bootstraps the SDK — the same carve-out shape as check:edge: CI's runners don't ship the tool, so the job that installs it runs it, and the package.json divider says so. The Flutter tests compile the code but never fail on lint slips (an unused binding, dead code, a deprecated call); this gate is what keeps the mobile tree from drifting quietly as it grows.
+- **Why analyze joins CI's mobile job rather than the check chain**: the check chain runs in CI's web job, whose runners have no Flutter SDK; adding the gate there would make every push red at the typecheck step for a tool that isn't installed. The mobile job is the job that owns the SDK, so the gate belongs there.
+- **Teeth**: an unused binding in the shell's profile module was named by the gate as file:line ("The value of the local variable 'unusedStanding' isn't used", exit 1) — the shape CI answers with; restored byte-exact, 0 issues, 25 tests still green.
+- **Reversal:** when CI caches the SDK across runs (the followup's durable fix), the analyze step can join the check chain as a cached install, and the divider's carve-out sentence retires.
+
 ## 2026-11-03 — The pairing guard covers the phone app's modules too
 
 - **The decision**: the lib module with a test beside it is the repo's structure guard against coverage rot, and the mobile leg extended it from the web tree to `apps/mobile/lib` in the same gate, using Dart's own file names (`lib/<path>/m.dart` pairs with `test/<path>/m_test.dart`). One gate covering both app surfaces is what keeps the phone tree from eroding the same way the web tree cannot.
