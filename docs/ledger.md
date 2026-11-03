@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The share rule's effect is logged where the money lands, not left to be re-derived
+
+- **The decision**: every `pool_allocations` row now carries the `share_bps` the need line actually applied (default 0 for rows the old algorithm wrote), and `run_pool_allocation` writes it alongside `need_cents` and `grant_cents`. The run still logs the rule version on `pool_runs.settings`; this is the missing per-request half.
+- **Why**: the share depends on how often a member's pool requests were PAID, and that window moves every day - an auditor replaying a past run cannot recompute a member's share at that day from today's data. design.md's fairness audit asks for figures that can be re-derived; the version stamp alone does not pin the count.
+- **The shape of the fix**: the migration is an `alter table ... add column` plus a `create or replace` of the function whose body differs from the current one in exactly two spots (the candidate table gains the share field; the insert logs it) - verified by diffing against the live body, so the band math, reserve and ordering stay untouched.
+- **Reversal:** drop the column and the logging to go back to deriving the share from the count at audit time; nothing else depends on the column, and the grants do not change with or without it.
+
 ## 2026-11-03 — The "how often paid" record dates a payout by when it was SENT, not by when it was opened
 
 - **What was wrong**: `pool_requests_paid_3y` filtered on `payouts.created_at`, but the board already counts payouts by `sent_at` ("Payouts are counted by when they were sent"), and a payout row is opened at capture time, which can be months before the fund actually pays the request. Counting by the open date put a waited-for payout outside the three-year window the function's own comment promises - quietly shrinking the member's share under the rule built the same day.
