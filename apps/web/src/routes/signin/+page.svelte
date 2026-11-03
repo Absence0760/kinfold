@@ -69,6 +69,9 @@
 
 			<h1>Sign in</h1>
 			<p class="intro">Welcome back. Your requests, loans and private giving record are here.</p>
+			<!-- Standalone page (no nav badge), so it states the site's status
+                     itself: a preview build must never read as live operation. -->
+			<p class="preview" role="note"><strong>Design preview.</strong> Kinfold isn’t open yet.</p>
 
 			{#if !configured}
 				<p class="notice" role="alert">
@@ -320,6 +323,11 @@
 	.intro {
 		color: var(--muted);
 		margin-top: -12px;
+	}
+
+	.preview {
+		color: var(--text);
+		font-size: 14px;
 	}
 
 	.hint {

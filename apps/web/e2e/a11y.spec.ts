@@ -480,6 +480,21 @@ async function documentTitleProblems(page: Page) {
 	});
 }
 
+// The site's honesty promise: nothing a reader lands on may read as live
+// operation. Landing and transparency carry the nav badge, and the sign-in and
+// error pages are standalone, so the audit demands the page's OWN printed words
+// name the preview status - head metadata does not count, a screen reader and
+// a reader-mode browser read the body.
+async function previewStatusProblems(page: Page) {
+	return await page.evaluate(() => {
+		const words = (document.body.innerText || '').replace(/\s+/g, ' ');
+		if (/design preview|not open yet|isn\u2019t operating/i.test(words)) return [];
+		const heading = document.querySelector('h1');
+		const where = (heading?.textContent || 'no heading').trim();
+		return [`the page under "${where}" never names the design-preview status: a reader cannot tell they are not looking at live operation`];
+	});
+}
+
 async function contrastProblems(page: Page) {
 	const problems = await page.evaluate(() => {
 		const found = [];
@@ -614,6 +629,21 @@ for (const route of publicRoutes) {
 // The design ships a dark scheme too (tokens via prefers-color-scheme), so
 // contrast - the one rule that depends on what the page paints - has to hold
 // in both. The browser setting is Playwright's, not a class swap.
+for (const route of publicRoutes) {
+	test(`${route} announces its design-preview status`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		expect(await previewStatusProblems(page)).toEqual([]);
+	});
+}
+
+for (const route of prerenderedPublicRoutes) {
+	test(`${route} names its design-preview status before any script runs`, async ({ page }) => {
+		await page.goto(route);
+		await page.waitForLoadState('networkidle');
+		expect(await previewStatusProblems(page)).toEqual([]);
+	});
+}
+
 for (const route of publicRoutes) {
 	test(`${route} carries a descriptive document title`, async ({ page }) => {
 		await gotoHydrated(page, route);

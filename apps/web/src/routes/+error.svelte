@@ -38,6 +38,11 @@
 		</a>
 		<h1 bind:this={heading} tabindex="-1">{copy.title}</h1>
 		<p>{copy.body}</p>
+		<!-- The site is a design preview everywhere a reader can land: landing and
+             transparency carry the nav badge, but this page is standalone, so it
+             states the status itself - otherwise a mistyped link reads as a live
+             site that happens to be missing. -->
+		<p class="status" role="note"><strong>Design preview.</strong> Kinfold isn’t open yet.</p>
 		<div class="actions">
 			{#if copy.retry}
 				<button type="button" class="btn btn-primary" onclick={retry} aria-disabled={retrying}>
@@ -99,6 +104,11 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 10px;
+	}
+
+	.status {
+		margin-top: 4px;
+		font-size: 13px;
 	}
 
 	.actions button[aria-disabled='true'] {
