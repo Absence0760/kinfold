@@ -157,6 +157,23 @@ for (const file of files) {
 	  }
 	 }
 
+	  // Prose may not print the same word twice back to back (the the, not no): the
+	  // slip a careful reader catches on a page, and the docs gate is where a README
+	  // typo would otherwise ride a push. Code fences, inline code and link targets
+	  // are blanked first - repeating an identifier is code, not prose. Blanking keeps
+	  // the line count so the accusation still carries a true line number.
+	  {
+	   const blankLines = (mm) => mm.replace(/[^\n]/g, '');
+	   const prose = text.replace(/^ {0,3}(```|~~~)[\s\S]*?^\1[ \t]*$/gm, blankLines)
+	    .replace(/`[^`\n]*`/g, './/.')
+	    .replace(/\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (mm) => mm.replace(/[^\]\)]/g, ' '));
+	   for (const m of prose.matchAll(/(?<![-\w/`])([A-Za-z]{2,})[ \t]+\1(?![-\w/`])/g)) {
+	    const line = prose.slice(0, m.index).split('\n').length;
+	    const context = prose.slice(Math.max(0, m.index - 32), m.index + m[0].length + 32).split('\n').join(' ').trim();
+	    problems.push(`${file}:${line}: doubled word "${m[1]}" in prose: "${context}" - a slip a careful reader would catch`);
+	   }
+	  }
+
 	 const codeFree = text.replace(/^ {0,3}(```|~~~)[\s\S]*?^\1[ \t]*$/gm, '');
 	 for (const m of codeFree.matchAll(/(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
 	  const target = m[1];
