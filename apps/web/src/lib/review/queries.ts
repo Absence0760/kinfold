@@ -4,6 +4,7 @@ import type { NeedsDecision, ReviewDecision, RequestStatus } from './labels.ts';
 import {
 	buildAppeals,
 	buildQueue,
+	type FraudFindingRow,
 	type AppealItem,
 	type AppealRow,
 	type EvidenceRow,
@@ -58,7 +59,7 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 	if (rows.length === 0) return [];
 
 	const ids = rows.map((r) => r.id);
-	const [scores, evidence, reviews, blocked, needs, answered] = await Promise.all([
+	const [scores, evidence, reviews, blocked, needs, answered, fraud] = await Promise.all([
 		db.from('scores').select(SCORE_COLUMNS).in('request_id', ids),
 		db.from('evidence').select(EVIDENCE_COLUMNS).in('request_id', ids),
 		db
@@ -69,7 +70,8 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 		loadReviewFlags(db, ids),
 		// `needs_records` and `needs_reviews` are newer than the generated types.
 		fromNew(db, 'needs_records').select('request_id, score, formula_version').in('request_id', ids),
-		fromNew(db, 'needs_reviews').select(NEEDS_REVIEW_COLUMNS).in('request_id', ids)
+		fromNew(db, 'needs_reviews').select(NEEDS_REVIEW_COLUMNS).in('request_id', ids),
+		loadFraudSignals(db, ids)
 	]);
 	fail(scores.error);
 	fail(evidence.error);
@@ -83,8 +85,38 @@ export async function loadQueue(db: Db, viewerId: string): Promise<QueueItem[]> 
 		(reviews.data ?? []) as ReviewRow[],
 		(needs.data ?? []) as NeedsRow[],
 		(answered.data ?? []) as NeedsReviewRow[],
+		fraud,
 		// `review_flags` is newer than the generated types; see rpcNew.
 		(blocked as string[])
+	);
+}
+
+/**
+ * What the fraud checks found against each request. The door answers with kind
+ * and severity only — the match detail never crosses — and refuses a member
+ * without console standing; for those callers the console shows nothing rather
+ * than failing, so a panel member's queue still loads.
+ */
+export async function loadFraudSignals(db: Db, ids: string[]): Promise<FraudFindingRow[]> {
+	if (ids.length === 0) return [];
+	const parts = await Promise.all(
+		ids.map((id) => rpcNew(db, 'review_fraud_signals', { p_request: id }))
+	);
+	const rows: FraudFindingRow[] = [];
+	for (let i = 0; i < ids.length; i += 1) {
+		const { data, error } = parts[i];
+		if (error) {
+			if (error.code === '42501') continue;
+			throw error;
+		}
+		for (const found of ((data ?? []) as unknown as { kind: string; severity: string }[])) {
+			rows.push({ request_id: ids[i], kind: found.kind, severity: found.severity });
+		}
+	}
+	// High-severity findings read first, newest first within a severity.
+	return rows.sort(
+		(a, b) =>
+			(b.severity === 'high' ? 1 : 0) - (a.severity === 'high' ? 1 : 0)
 	);
 }
 

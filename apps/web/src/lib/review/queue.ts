@@ -101,6 +101,17 @@ export interface NeedsReviewView {
 	at: string;
 }
 
+export interface FraudFindingRow {
+	request_id: string;
+	kind: string;
+	severity: string;
+}
+
+export interface FraudFinding {
+	kind: string;
+	severity: string;
+}
+
 export interface QueueItem {
 	request: QueueRequestRow;
 	score: ScoreView | null;
@@ -113,6 +124,8 @@ export interface QueueItem {
 	needsReviews: NeedsReviewView[];
 	/** False when the database says this viewer may not review it. */
 	mayReview: boolean;
+	/** Open findings from the fraud checks, high severity first. */
+	findings: FraudFinding[];
 }
 
 /**
@@ -182,6 +195,8 @@ export function buildQueue(
 	needs: readonly NeedsRow[] = [],
 	/** Needs answers already on these requests, as RLS lets this viewer read them. */
 	needsReviews: readonly NeedsReviewRow[] = [],
+	/** Open fraud-check findings for these requests, any order. */
+	fraudFindings: readonly FraudFindingRow[] = [],
 	/** Requests the database says this viewer may not review. */
 	mayNotReview: readonly string[] = []
 ): QueueItem[] {
@@ -196,6 +211,7 @@ export function buildQueue(
 	const ev = groupBy(evidence);
 	const mine = groupBy(myReviews);
 	const answered = groupBy(needsReviews);
+	const found = groupBy(fraudFindings);
 	return [...requests]
 		.sort(
 			(a, b) =>
@@ -221,7 +237,8 @@ export function buildQueue(
 					at: row.created_at
 				}))
 				.sort((a, b) => a.at.localeCompare(b.at)),
-			mayReview: !mayNotReview.includes(request.id)
+			mayReview: !mayNotReview.includes(request.id),
+			findings: [...(found.get(request.id) ?? [])].map((f) => ({ kind: f.kind, severity: f.severity }))
 		}));
 }
 

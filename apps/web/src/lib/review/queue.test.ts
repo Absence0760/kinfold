@@ -78,6 +78,27 @@ describe('latestScores', () => {
 });
 
 describe('buildQueue', () => {
+
+	it('the checks\u2019 findings ride along in kind and severity only', () => {
+		const items = buildQueue(
+			[request('flagged', { status: 'in_review', submitted_at: '2026-10-01T00:00:00Z' })],
+			[],
+			[],
+			[],
+			[],
+			[],
+			[
+				{ request_id: 'flagged', kind: 'duplicate_photos', severity: 'high' },
+				{ request_id: 'flagged', kind: 'cross_shop', severity: 'low' }
+			]
+		);
+		expect(items[0].findings).toEqual([
+			{ kind: 'duplicate_photos', severity: 'high' },
+			{ kind: 'cross_shop', severity: 'low' }
+		]);
+		expect(JSON.stringify(items[0].findings)).not.toContain('request_id');
+	});
+
 	it('puts actionable requests first, then oldest submission first', () => {
 		const items = buildQueue(
 			[

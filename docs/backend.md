@@ -188,6 +188,7 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | Mortgage gaps point at public help, not at Kinfold-as-counselor | mortgage-gap request pages carry a `PublicHelpPanel` (HUD-approved counselors, forbearance/modification, public repair help) and the copy that public money never joins the Fund; bridging loans await pilot licence review | request page copy, roadmap 3c |
 | A Fund loan borrower pauses and resumes by agreement | `pause_fund_loan` inside the allowance (append-only pause rows, unpaid installments pushed back); `resume_fund_loan` early by the borrower, `resume_ended_fund_pauses` service-only; a paused loan still collects | fund loan pauses, roadmap 3a |
 | A Fund loan borrower asks the lending Fund to restructure | `restructure_fund_loan` stages one pending ask (monthly only, never a past start); `apply_fund_loan_restructure` (service-only) re-spreads unpaid installments, outstanding unchanged; restructure rows are read by the borrower only | fund loan restructures, roadmap 3a |
+| Fraud findings | A reviewer/admin (or service) calls `review_fraud_signals(request)` and gets kind + severity, high first, unresolved only; the match `detail` jsonb never crosses; every read audit-logged. Members get nothing. |
 
 ## Access model
 

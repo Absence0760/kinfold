@@ -122,6 +122,25 @@
 		</section>
 	{/if}
 
+	{#if item.findings.length}
+		<section aria-labelledby="{id}-findings">
+			<h4 id="{id}-findings">What the checks found</h4>
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="history" role="list">
+				{#each item.findings as f}
+					<li>
+						<strong>{f.severity === 'high' ? 'High severity' : 'Low severity'}</strong>
+						<span class="muted">{f.kind}</span>
+					</li>
+				{/each}
+			</ul>
+			<p class="muted small">The checks’ match detail stays private: the console sees THAT a pattern was found, not how it matches.</p>
+		</section>
+	{:else}
+		<p class="muted small">The checks found nothing open against this request.</p>
+	{/if}
+
 	{#if item.needs && item.mayReview}
 		<NeedsForm requestId={r.id} ondecided={(message) => ondecided(message)} />
 	{/if}

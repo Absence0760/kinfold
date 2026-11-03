@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { decideClaim, loadStandingClaims } from './queries.ts';
+import { decideClaim, loadFraudSignals, loadStandingClaims } from './queries.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -37,6 +37,46 @@ describe('loadStandingClaims', () => {
 	it('a refused read fails loudly rather than showing no claims', async () => {
 		const { db } = fakeDb({ claims: { data: null, error: { message: 'permission denied for table claims' } } });
 		await expect(loadStandingClaims(db)).rejects.toThrow(/permission denied/);
+	});
+});
+
+describe('loadFraudSignals', () => {
+	it('a reviewer’s read carries kind and severity only', async () => {
+		const { db, asked } = fakeDb({
+			review_fraud_signals: { data: [{ kind: 'duplicate_photos', severity: 'high', detail: { photo_sha256: 'deadbeef' } }], error: null }
+		});
+		const rows = await loadFraudSignals(db, ['r1']);
+		expect(asked).toEqual(['review_fraud_signals']);
+		expect(rows).toEqual([{ request_id: 'r1', kind: 'duplicate_photos', severity: 'high' }]);
+		expect(JSON.stringify(rows)).not.toContain('deadbeef');
+	});
+
+	it('a request with no findings reads as an empty list', async () => {
+		const { db, asked } = fakeDb({ review_fraud_signals: { data: [], error: null } });
+		const rows = await loadFraudSignals(db, ['r1']);
+		expect(asked).toEqual(['review_fraud_signals']);
+		expect(rows).toEqual([]);
+	});
+
+	it('a console refusal reads as nothing shown, not a broken queue', async () => {
+		const { db, asked } = fakeDb({
+			review_fraud_signals: { data: null, error: { message: 'fraud signals are read by the operations console', code: '42501' } }
+		});
+		const rows = await loadFraudSignals(db, ['r1']);
+		expect(asked).toEqual(['review_fraud_signals']);
+		expect(rows).toEqual([]);
+	});
+
+	it('any other failure still reaches the console loudly', async () => {
+		const { db } = fakeDb({ review_fraud_signals: { data: null, error: { message: 'permission denied for table fraud_signals', code: 'P0002' } } });
+		await expect(loadFraudSignals(db, ['r1'])).rejects.toThrow(/permission denied/);
+	});
+
+	it('no requests means no reads', async () => {
+		const { db, asked } = fakeDb({});
+		const rows = await loadFraudSignals(db, []);
+		expect(asked).toEqual([]);
+		expect(rows).toEqual([]);
 	});
 });
 

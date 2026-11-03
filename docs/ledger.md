@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The console reads WHAT the checks found, never HOW they match (`review_fraud_signals`)
+
+- **Fraud standing was invisible to the people who act on it**: `private.fraud_signals` decides scoring (`in_review` on a high-severity finding) but nothing let a reviewer read it — the console promised fraud signals with no door behind the promise. New door: kind + severity, high first, resolved findings gone.
+- **The match `detail` stays private** (photo hashes, cross-reference ids): a reviewer sees THAT a pattern was found, not HOW the checks matched, so the checks' keying can't be reverse-engineered from the console. The read answers through the function, not a table policy — `private.fraud_signals` keeps its no-raw-reads default and only the door can be called.
+- **Every look is on the trail** (`fraud_signals.read`, count only): fraud standing is PII-adjacent, and this repo audit-logs every privileged read of member-adjacent state.
+- **A console refusal is not a broken queue**: the read treats 42501 as “not for this role” (panel members keep their queue), while any other failure still reaches the console loudly.
+- **Reversal:** if findings should stay entirely inside scoring, delete the door and the `findings` leg (`queries.ts`, `queue.ts`, the card block); the triggers that move statuses never consult these fields, and the web layers carry everything else.
+
 ## 2026-11-02 — A pending identity check is named on the home, not left implicit
 
 - **Silence is the worst failure mode for a new member**: signing up leaves a member `pending_verification`, and every read the member area does comes back empty — an empty home reads as "there is nothing here", not as "you cannot post yet". The home now carries an identity-check block (status via `identityWord`, plus what passing unlocks) while the check is outstanding, so the reason is on the page the member is already looking at.
