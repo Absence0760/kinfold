@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The nav announces the page's sections in the page's own order
+
+- **The decision**: two orders describe the same list - the nav announces the sections in one, the page presents them in another - and they have to agree, because a reader walking the menu top to bottom should land in reading order; an inversion sends them jumping back up the page mid-walk. The audit reads the document order of the sections and of the nav links and names the disagreeing pair with both page positions.
+- **Two honest shapes found while writing the rule**: the nav carries the ids twice (the desktop row and the phone menu), so the sequence is read once per id at its first announcement - comparing the concatenation double-counted cross-half pairs and accused correct markup; and from a page that carries no sections, nav links are cross-document jumps to the landing page, so those pages are skipped (an ungated first pass accused all four routes). Both are in the rule as written, not bolted on after.
+- **Teeth**: swapping calculator before products in the nav's own list named the inversion at both projects, hydrated and no-JS copy (4 tests). Restored byte-exact.
+- **What it found**: nothing today - after the two honest shapes above, the nav's order matches the page's on every public surface; the rule guards the next section added to the landing copy, where nav and page are edited separately.
+- **Reversal:** if the nav ever legitimately orders sections by prominence rather than page position (a deliberate editorial choice), that nav joins a named carve-out so the rule stays about the default reading-order menu.
+
 ## 2026-11-03 — A public page brands the site as Kinfold, spelled one way, and names it at least once
 
 - **The decision**: two promises over a page's printed words. Every word that starts like the brand root (kinf-) has to carry the brand exactly, and the body has to name the brand at least once - a page that never says who published it leaves a reader landing there guessing. Letters carry the promise, case does not: the brand lockup paints KINFOLD through CSS text-transform and the DOM's innerText reflects the painting, so a case-sensitive compare accused the correct source copy - a real finding on the first run, from the error page's lockup - and the fix folded case rather than exempting the page. The copy drift the rule exists for is a letter-shape slip (Kinfield), not a case choice.
