@@ -179,7 +179,91 @@ for (const route of publicRoutes) {
 	});
 }
 
+// WCAG's contrast promise, the last half of the accessibility bullet: text a
+// reader can see but cannot tell from its background is unreadable for low
+// vision, so every run of text is measured against the colors the page paints.
+async function contrastProblems(page: Page) {
+	const problems = await page.evaluate(() => {
+		const found = [];
+		const parse = (c = '') => {
+			const m = /rgba?\(([^)]*)\)/.exec(c);
+			if (!m) return null;
+			const n = m[1].split(',').map((x) => Number(x.trim()));
+			return { r: n[0], g: n[1], b: n[2], a: n.length === 4 ? n[3] / 255 : 1 };
+		};
+		const channel = (v = 0) => {
+			const s = v / 255;
+			return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+		};
+		const luminance = (c = { r: 0, g: 0, b: 0, a: 1 }) =>
+			0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);
+		const composite = (top = { r: 0, g: 0, b: 0, a: 1 }, under = { r: 0, g: 0, b: 0, a: 1 }) => ({
+			r: top.r * top.a + under.r * (1 - top.a),
+			g: top.g * top.a + under.g * (1 - top.a),
+			b: top.b * top.a + under.b * (1 - top.a),
+			a: 1
+		});
+		// The page paints its background; every element's own background-color
+		// stacks on top of its ancestors', and the element's own is the one its
+		// text sits on.
+		const backgroundOf = (el: Element) => {
+			let acc = { r: 255, g: 255, b: 255, a: 1 };
+			const stack = [];
+			for (let p: Element | null = el; p; p = p.parentElement) {
+				const bg = parse(getComputedStyle(p).backgroundColor);
+				if (bg && bg.a > 0) stack.push(bg);
+			}
+			for (let i = stack.length - 1; i >= 0; i -= 1) acc = composite(stack[i], acc);
+			return acc;
+		};
+		const opacityOf = (el: Element) => {
+			let alpha = 1;
+			for (let p: Element | null = el; p; p = p.parentElement) {
+				alpha *= Number(getComputedStyle(p).opacity);
+			}
+			return alpha;
+		};
+		for (const el of document.body.querySelectorAll('*')) {
+			// Only the element's own text runs: text inside a child belongs to
+			// that child, which is measured with its own color.
+			let text = '';
+			for (const node of el.childNodes) {
+				if (node.nodeType === 3) text += node.textContent;
+			}
+			text = text.trim();
+			if (!text) continue;
+			const style = getComputedStyle(el);
+			if (style.visibility === 'hidden' || style.display === 'none') continue;
+			const size = parseFloat(style.fontSize || '');
+			if (!size) continue;
+			const weight = Number(style.fontWeight || 400);
+			// WCAG's thresholds: large print (18.67px, or 14px bold) may sit at 3:1.
+			const threshold = (size >= 18.67 || (size >= 14 && weight >= 700)) ? 3 : 4.5;
+			const inkRaw = parse(style.color);
+			if (!inkRaw) continue;
+			const bg = backgroundOf(el);
+			const ink = composite({ ...inkRaw, a: inkRaw.a * opacityOf(el) }, bg);
+			const one = luminance(ink);
+			const two = luminance(bg);
+			const ratio = (Math.max(one, two) + 0.05) / (Math.min(one, two) + 0.05);
+			if (ratio < threshold) {
+				found.push(`${el.tagName}.${(el.getAttribute('class') || '')} text at ${ratio.toFixed(2)}:1 needs ${threshold}:1: ${text.slice(0, 40)}`);
+			}
+		}
+		return found;
+	});
+	return problems;
+}
+
 const prerenderedPublicRoutes = ['/', '/transparency'];
+
+for (const route of publicRoutes) {
+	test(`${route} keeps its text at a readable contrast`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		expect(await contrastProblems(page)).toEqual([]);
+	});
+}
+
 
 // The same promise has to hold for the copy a reader gets when JavaScript is
 // blocked - reader mode, a blocked tracker, a script-free browser: for the
@@ -200,6 +284,11 @@ test.describe('with JavaScript blocked', () => {
 			await page.goto(route);
 			await page.waitForLoadState('networkidle');
 			expect(await overflowReports(page)).toEqual([]);
+		});
+		test(`${route} keeps its text at a readable contrast without JavaScript`, async ({ page }) => {
+			await page.goto(route);
+			await page.waitForLoadState('networkidle');
+			expect(await contrastProblems(page)).toEqual([]);
 		});
 	}
 });
