@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The 404 fallback’s way-home link joined the dead-link test, not a new spec
+
+- **The decision**: the e2e dead-link test pinned the fallback’s words and its missing retry button, but nothing checked what replaces the retry — a visitor who mistyped a link has exactly one way home. The assertion joined the existing test (one way-home link, its exact label) instead of opening a second spec that would re-pin the copy and the missing button: the suite’s near-duplicate specs are how it starts to rot, and the fact belongs where the fallback is already read.
+- **Teeth**: deleting the actions’ home link on the site named the new count assertion on both viewports; restored byte-exact, 200 e2e green.
+- **Reversal:** if the error page’s affordances grow (a second action, an alternate exit), the assertions earn their own spec and the loop shape follows the affordance set.
+
 ## 2026-11-03 — The second swept copy pair matched except one web-side outlier
 
 - **The decision**: the seeded demo people (emails, names, roles, summaries) were swept field-for-field across the web and the phone app the same way the sign-in sentences were. Every field matched except one: Sam’s summary was the only displayed string in the whole repo written with a straight apostrophe, where every other sentence uses the typographic mark. Fixed at the source on the web side (the Dart copy already carried the mark), quoted single like its sibling fields so the string’s quoting stops being the reason for the drift. No test pinned the old spelling, so nothing had to move with it.
