@@ -318,6 +318,44 @@ async function keyboardTrapProblems(page: Page) {
 	return [];
 }
 
+// WCAG 2.4.3 (second shape): Tab has to follow the VISUAL reading order, not
+// just the source order. The site forbids positive tabindex (the first shape,
+// below), so the walk is source order - which a CSS reorder (flex `order`,
+// grid placement) would silently break: the reader Tabbing downward suddenly
+// jumps up the page. Compare the rects of consecutive stops.
+async function visualFocusOrderProblems(page: Page) {
+	const reachable = await reachableFocusables(page);
+	const stops = [];
+	for (let i = 0; i < reachable; i += 1) {
+		await page.keyboard.press('Tab');
+		const stop = await page.evaluate(() => {
+			const el = document.activeElement;
+			if (!el || el === document.body || el === document.documentElement) return null;
+			const r = el.getBoundingClientRect();
+			if (r.height === 0 || r.width === 0) return null;
+			return { top: Math.round(r.top), left: Math.round(r.left), height: Math.round(r.height), stop: el.getAttribute('data-e2e-stop') };
+		});
+		if (stop !== null) stops.push(stop);
+	}
+	const found = [];
+	for (let i = 1; i < stops.length; i += 1) {
+		const prev = stops[i - 1];
+		const next = stops[i];
+		if (prev === null || next === null) continue;
+		// Same line: tops overlap within a line's height. Moving LEFT on a
+		// line breaks reading order; a jump UP the page does too.
+		const sameLine = Math.abs(next.top - prev.top) < Math.max(prev.height, next.height);
+		if (sameLine) {
+			if (next.left < prev.left) {
+				found.push(`focus moved LEFT along a line at stop ${i + 1}: reading order is broken`);
+			}
+		} else if (next.top < prev.top) {
+			found.push(`focus jumped UP the page at stop ${i + 1} (from ${prev.top}px to ${next.top}px): a CSS reorder puts a later element above an earlier one`);
+		}
+	}
+	return found;
+}
+
 // WCAG 2.4.3: Tab follows reading order. A positive tabindex rewires the
 // walk away from it - a trap no page of ours should ship.
 async function positiveTabindexProblems(page: Page) {
@@ -542,7 +580,8 @@ for (const route of publicRoutes) {
 		await gotoHydrated(page, route);
 		const trap = await keyboardTrapProblems(page);
 		const order = await positiveTabindexProblems(page);
-		expect([...trap, ...order]).toEqual([]);
+		const visual = await visualFocusOrderProblems(page);
+		expect([...trap, ...order, ...visual]).toEqual([]);
 	});
 }
 
