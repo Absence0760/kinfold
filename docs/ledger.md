@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The annual deductible caps a member's paid-back dollars; the member's share rises once it runs out
+
+- **A filed term, not a rule invented here**: rating law lets a member recover at most the annual deductible in an insurance year, so `annual_deductible_cents` sits on `cover_plans` beside its premium and cap and the partner files it (`set_annual_deductible`, service only) — the seeded value (three claims' worth of that class's cap) is a local stand-in like every other number on that table.
+- **The floor is computed, never trusted**: `record_claim` sums what that member's claims already PAID this insurance year (calendar year; a denial paid nothing so it consumes none) and refuses a share below `gross - remaining`; the feed's numbers stay the partner's words, and the books can never credit deductible dollars the filed terms would not pay.
+- **Rising share, never a refusal**: design.md promises frequent claimants pay more of their own repair but "never wait longer or get refused", so the exhausted claim records with the share raised to the whole loss and pays nothing — the member carries it. Refusing instead would turn insurance into a queue that punishes unlucky people, which is the exact behaviour design.md forbids.
+- **`paid_cents` now written by the door**: the previous `record_claim` left that NOT-NOT-NULL column unset, so a feed claim would have failed at insert time (the pgTAP suites run only in CI, so this was latent). The new door writes `paid = gross - share` itself, which is what the row's own check already promised.
+- **Reversal:** if the annual deductible should instead be enforced on the partner's side (they simply stop paying claims once it is spent), delete `annual_deductible_cents`, `set_annual_deductible` and the annual-floor block in `20261102580000_annual_deductible.sql` plus `annual_deductible_test.sql`; keep the `paid_cents` write either way, the row's check needs it.
+
 ## 2026-11-02 — The signin page's no-stack entry is e2e-covered; the stack-dependent flow is not
 
 - **What the test can honestly pin**: /signin is never prerendered, so `e2e/signin.spec.ts` pins the adapter's `200.html` fallback actually puts the page on the wire (title, heading, hydrate marker) — and that with no key configured the page shows its notice and NO form, instead of a dead form or a crash. That path needs no stack, so it belongs in the default suite.
