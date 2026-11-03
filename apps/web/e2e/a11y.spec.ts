@@ -300,10 +300,8 @@ async function keyboardTrapProblems(page: Page) {
 	if (!last) {
 		return ['the walk ended off the page and never came back: a keyboard trap holds focus'];
 	}
-	if (last.name !== first.name || last.x !== first.x || last.y !== first.y) {
-		if (last.stop !== first.stop || last.stop === null) {
-			return [`the walk ended at ${last.name} instead of returning to ${first.name}: focus is trapped or a stop was missed`];
-		}
+	if (last.stop === null || last.stop !== first.stop) {
+		return [`the walk ended at ${last.name} instead of returning to ${first.name}: focus is trapped or a stop was missed`];
 	}
 	return [];
 }
