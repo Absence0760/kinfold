@@ -250,6 +250,45 @@ async function liveMoneyProblems(page: Page, section: string) {
 	return found;
 }
 
+// Screen-reader counts have to match the cards: the live region announces how
+// many requests are funded, partly funded, waiting and needing more evidence,
+// and every card prints its own status label. If the two drift, a screen reader
+// misreports the board beside a picture that says otherwise.
+async function summaryCountsProblems(page: Page) {
+	const report = await page.evaluate(() => {
+		const liveEl = document.querySelector('#board [aria-live]');
+		const live = liveEl ? (liveEl.textContent || '').replace(/\s+/g, ' ').trim() : '';
+		const announced = live.match(/With a \$[\d,]+ fund: (\d+) funded, (\d+) partly funded, (\d+) waiting, (\d+) needing more evidence/);
+		const cards = [];
+		for (const li of document.querySelectorAll('#board ul.board > li')) {
+			const status = li.querySelector(':scope > .status');
+			cards.push(status ? (status.textContent || '').trim() : '');
+		}
+		return { live: live, announced: announced ? [Number(announced[1]), Number(announced[2]), Number(announced[3]), Number(announced[4])] : null, cards: cards };
+	});
+	if (!report.announced) {
+		return ['the live region under #board does not state its counts where the audit can read them: ' + report.live];
+	}
+	const found = [];
+	const words = ['Funded', 'Partly funded', 'Waiting', 'Needs more evidence'];
+	for (let i = 0; i < report.announced.length; i += 1) {
+		const seen = report.cards.filter((c) => c === words[i]).length;
+		if (report.announced[i] !== seen) {
+			found.push('the summary announces ' + report.announced[i] + ' ' + words[i].toLowerCase() + ', but ' + seen + ' cards print that status: a screen reader misreports the board beside a picture that says otherwise');
+		}
+	}
+	const total = report.announced.reduce((a, b) => a + b, 0);
+	if (total !== report.cards.length) {
+		found.push('the summary counts ' + total + ' requests but the board renders ' + report.cards.length + ' cards: the counts and the picture describe different boards');
+	}
+	for (let i = 0; i < report.cards.length; i += 1) {
+		if (report.cards[i] === '') {
+			found.push('card ' + (i + 1) + ' prints no status label: a screen reader cannot tell what state it is in');
+		}
+	}
+	return found;
+}
+
 async function waitForSummary(page: Page, section: string) {
 	const read = (sel: string) => {
 		const el = document.querySelector(sel)?.querySelector('[aria-live]');
@@ -280,6 +319,25 @@ test.describe('screen-reader summaries', () => {
 	});
 });
 
+
+test.describe('board summary counts', () => {
+	test('the live counts match the cards at the default fund', async ({ page }) => {
+		await gotoHydrated(page, '/#board');
+		expect(await summaryCountsProblems(page)).toEqual([]);
+	});
+
+	test('the counts still match after driving the fund', async ({ page }) => {
+		await gotoHydrated(page, '/#board');
+		const pool = page.getByRole('slider', { name: /This month.s repair fund/ });
+		await pool.press('Home');
+		await waitForSummary(page, '#board');
+		expect(await summaryCountsProblems(page)).toEqual([]);
+		await pool.press('ArrowRight');
+		await pool.press('ArrowRight');
+		await waitForSummary(page, '#board');
+		expect(await summaryCountsProblems(page)).toEqual([]);
+	});
+});
 
 test.describe('request board', () => {
 	test('the board\'s figures add up at the default fund', async ({ page }) => {
