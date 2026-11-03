@@ -2,6 +2,15 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The phone shell lands as a Dart package the machine can test headless
+
+- **The decision**: 1a's shell entered as `apps/mobile` — provider seam, sign-in words, standing words, profile read — and its tests run through `flutter test` headless: the seam's transport is injectable, so the unit tests pin the exact calls (paths, methods, bodies) without ever reaching a network, and the code default is the dev stack's own API port (local-first). A fresh clone answers the phone app's layers before any phone does.
+- **Copy duplicated per workspace, deliberately**: the failure sentences, the standing words and the seeded demo people exist in both Dart and TypeScript. A Dart package and a Svelte app share no module system, and the repo's no-premature-abstraction rule extracts a shared file only at the third caller; instead of a cross-language loader trick, the tests pin the two copies against each other, so the drift a careful reader would catch becomes a red test on whichever side drifts. The seam to a shared copy is a future decision, not this one.
+- **Chained like every other gate**: `test:mobile` joins the root test recipe and the docs divider names its prerequisite (`flutter --version` answers); CI gains a mobile job that bootstraps the SDK the same way the local run does. The SDK clone per CI run is the expedient half of a named durable fix (an SDK cache) — tracked, not left dangling.
+- **Teeth**: a standing word mutated in the Dart source named both profile tests on the site (not the test); `flutter analyze` ran clean. Restored byte-exact, 23 tests green.
+- **What it found**: the wiring traps, not the copy — the root-scripts guard's delegation shape (`cd apps/mobile && flutter test`, no pnpm workspace inside Flutter), the divider key drift, the generated trees (`pubspec.lock`, `.dart_tool/`, `build/`) ignored, the invariant's chain rule satisfied. The copy drift the parity tests exist for is what a future edit will hit.
+- **Reversal:** when a shared copy of these sentences exists, the test pins the seam instead of the pair, and the duplication bullet's rule is retired.
+
 ## 2026-11-03 — The phone toolchain is installed on the build machine, not excused
 
 - **The decision**: the roadmap parked 1a for a missing toolchain, so the toolchain got installed rather than the leg left waiting: the Flutter SDK (channel stable, 3.47.9, with Dart 3.13.7) is cloned at `~/sdk/flutter`, symlinked into `~/.local/bin` so a fresh shell answers `which flutter dart`, and `flutter --version` answers. The roadmap’s own unblock condition was the test — build when `flutter --version` answers — so satisfying it is the leg’s prerequisite being met, not the leg being built.
