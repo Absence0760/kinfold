@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Reduced motion is a rule, and green needed two traps cleared before it could ship
+
+- **The decision**: `a11y.spec.ts` grew a motion rule under Playwright's `reducedMotion: “reduce”` context - no element on a public surface may run an animation (computed `animationName` other than none with nonzero duration), and `html` may not smooth-scroll, because a skip-link jump that glides is motion a reduced-motion reader asked to drop. The rule runs on both passes (hydrated and the prerendered no-JS copy), keeping the shared rule list.
+- **Why the browser setting, not a JS toggle**: the site suppresses via CSS media queries, so the honest context is Playwright setting the real preference - the audit reads the page the reader's browser preference produced, not a page pretending to honour a flag.
+- **Two vacuity traps, cleared before shipping**: the first sabotage (re-animating `.skeleton` inside the reduce block) stayed green because Playwright reused a stale preview server on 7790 - the tests were reading the wrong artifact; and with the server fresh, still green, because no skeleton element exists on the public routes - an absent target cannot be accused. The proof that shipped mutates elements that really sit on the public pages (the nav badge animated, `html` smooth-scrolling in the reduce block) and names both offenders on all twelve reduced-motion tests.
+- **What it found**: nothing to fix - nothing on the public surfaces animates under reduce (the board width transition lives inside a `prefers-reduced-motion: no-preference` guard, so its duration is 0s there), so the verdict comes from the standard, not from silence.
+- **Reversal:** if a component ever applies an unguarded motion-property transition, the rule gains a `transitionDuration` clause filtered to motion properties (width, transform, offsets) - not a blanket one, because color hover transitions are not motion; when the member consoles join the audit, the skeleton loading state joins with its suppression already standing.
+
 ## 2026-11-03 — Contrast is measured with WCAG's own ratio, on the colors the page paints
 
 - **The decision**: the audit grew a contrast check per public surface (hydrated and the no-JS copy): every element's own text runs are measured with WCAG's ratio formula - 4.5:1, 3:1 for large print (18.67px, or 14px bold) - against the background stack the page actually paints: every opaque background-color from the page down to the element's own, composited in order, carrying each layer's opacity.
