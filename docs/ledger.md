@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The reduced-motion rule now forbids motion-property transitions, judged per property
+
+- **The decision**: the motion rule grew the transition clause its own Reversal bullet had promised: under reduced motion, no element may run a transition on width/height/transform/left/right/top/bottom - the properties that can MOVE content. Not blanket: a color hover transition is not motion and accusing it would pressure the site into dropping harmless polish, so the rule filters by property.
+- **The \`all\` judgement call**: `transition-property: all` counts as motion. A page wanting any transition anywhere is scoping sloppily; the honest fix is naming the property at the source rather than weakening the rule, and a blanket-all pass would quietly un-audit every named transition too.
+- **Computed styles make this cheap**: the reduced-motion context already resolves the site's media-query guards, so the guard that works reads as `transitionDuration 0s` here - the rule audits the page the preference produced, matching how the animation half works.
+- **Teeth**: removing the site's `prefers-reduced-motion: no-preference` guard around the board's width transition made the rule name it (`pool-share glides on width (0.2s)`) on the reduced-motion tests; restored byte-exact, green.
+- **Reversal:** if a component legitimately wants a transform settle that reduced-motion readers can tolerate (a 1-frame reflow hint), that component opts out per-rule rather than the audit loosening its property filter.
+
 ## 2026-11-03 — The standing audits I kept running by hand became a gate (test:invariants)
 
 - **The decision**: three tree invariants - loader modules paired with sibling `*.test.ts`, migrations a strictly increasing queue of 14-digit stamps, pgTAP `plan(N)` counting its top-level assertion calls - moved from my repeated manual sweeps into `scripts/check_repo_invariants.mjs` (`test:invariants`), wired into the root `test` chain and the CI web job. An invariant that only a habit enforces can silently rot between sweeps; the tree is authoritative, so the rule should live next to it.
