@@ -17,6 +17,7 @@
 	import { poolProblems, usesPool } from '#lib/requests/eligibility.ts';
 	import { asPeopleOnly, draftToInput, fundForKind, payeeKindLabel } from '#lib/requests/form.ts';
 	import { payoutText } from '#lib/requests/payout.ts';
+	import { fairLenderLines } from '#lib/requests/lender-help.ts';
 	import { minScoreFor, reviewSinceScore, scoreBand } from '#lib/requests/score-band.ts';
 	import {
 		appealState,
@@ -38,6 +39,7 @@
 	import InspectionsPanel from './InspectionsPanel.svelte';
 	import PublicHelpPanel from './PublicHelpPanel.svelte';
 	import CoverHelpPanel from './CoverHelpPanel.svelte';
+	import FairLenderPanel from './FairLenderPanel.svelte';
 	import EvidencePanel from './EvidencePanel.svelte';
 	import InvitePanel from '#lib/invites/InvitePanel.svelte';
 
@@ -524,7 +526,12 @@
 	{/if}
 
 	{#if r.kind === 'mortgage_gap'}
+		<FairLenderPanel lines={fairLenderLines(r.kind)} />
 		<PublicHelpPanel />
+	{/if}
+
+	{#if r.kind === 'down_payment'}
+		<FairLenderPanel lines={fairLenderLines(r.kind)} />
 	{/if}
 
 	{#if r.kind === 'car_damage' || r.kind === 'car_deductible'}
