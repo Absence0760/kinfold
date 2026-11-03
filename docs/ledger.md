@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The docs gate now demands every file path the ledger cites still resolves
+
+- **The decision**: `check_docs_hygiene.mjs` reads every inline-code span in `docs/ledger.md` that looks like a repo path and fails naming any that is no longer a tracked path. A ledger entry points at the code its decision changed; when that file is renamed the pointer rots silently and the reader of the decision cannot find what was changed - the same class of drift the link rule catches, one syntax (inline code, not markdown links) away.
+- **Judged only for concrete claims, and the carve-outs are the whole judgement**: a token containing `*` or an angle bracket is a pattern (`apps/backend/functions/<fn>/<name>.ts` names a shape, not a file); a bare name with no extension and no trailing slash may be a planned directory (`apps/mobile`, the roadmap's future Flutter app) or a build artifact, so it is not judged; a trailing slash claims a directory and must have tracked files under it. `src/...` resolves under `apps/web/` because that is how the app is spoken of throughout the ledger. 26 concrete citations resolve today.
+- **Teeth**: `git mv` of a cited module (`apps/web/src/lib/loans/fund.ts`) made the gate name the rotted citation by exact token; restored, green. A first draft without the concrete-token filter fired on five honest placeholders, which is how each carve-out was written - the rule was fixed to the citation language, not to whichever files happen to pass.
+- **Reversal:** if the docs gate grows a file-rename audit (a push that renames a module should also rewrite its ledger citations), this rule becomes a suggestion rather than a failure; planned-directory citations gain a marker (e.g. a trailing `…`) instead of loosening the bare-name carve-out.
+
 ## 2026-11-03 — Document titles are audited for content and for telling the surfaces apart
 
 - **The decision**: WCAG 2.4.2 (document title) joined the audit in two shapes - every public surface carries exactly one non-empty `<title>` (hydrated, and on the prerendered no-JS copy where the rule matters most), and one test collects titles across all four public surfaces and demands the Set has no duplicates, because a screen reader announces the title at page load and a reader with tabs or bookmarks open cannot tell identical titles apart.
