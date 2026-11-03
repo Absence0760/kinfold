@@ -78,6 +78,17 @@ test('the mortgage copy asks for the two things a counselor can ask a bank for',
 	await expect(page.getByRole('link', { name: /housing counselor/i })).toHaveCount(0);
 });
 
+test('a dead link answers the error page, not a blank shell', async ({ page }) => {
+	// The static adapter answers unknown paths with 200.html, so the copy the
+	// visitor reads - and the copy that tells them to stop, not to retry - is
+	// what the fallback actually puts on the wire.
+	await gotoHydrated(page, '/a-link-nobody-meant');
+	await expect(page.getByRole('heading', { level: 1 })).toHaveText('We can\u2019t find that page');
+	await expect(page.locator('body')).toContainText('The link may be old or mistyped.');
+	// A 404 offers no retry: the copy's `retry: false` reaches the screen.
+	await expect(page.getByRole('button', { name: /try again/i })).toHaveCount(0);
+});
+
 test.describe('without JavaScript', () => {
 	test.use({ javaScriptEnabled: false });
 
