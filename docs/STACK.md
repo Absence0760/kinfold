@@ -28,7 +28,7 @@ Code layout in `apps/web/src/lib`: `auth/` (session helpers, the dev demo accoun
 | `pnpm build:web` | Prerender to `apps/web/build/`. S3 + CloudFront must serve `200.html` for unknown paths so `/app/*` loads |
 | `pnpm preview:web` | Serve the production build on 7790 |
 | `pnpm check` | svelte-check typecheck for the web workspace, then `deno fmt --check` + `deno check` for the edge functions |
-| `pnpm test` | Vitest unit tests + the root-scripts guard + the repo-invariants guard (`test:invariants`) + the markdown-hygiene guard (`test:docs`, which also demands every file path cited in `docs/ledger.md` still names a tracked file) + pgTAP (needs `dev:db:up` first). Does not run the e2e tests |
+| `pnpm test` | Vitest unit tests + the root-scripts guard + the repo-invariants guard (`test:invariants`) + the markdown-hygiene guard (`test:docs`, which also demands every file path cited in `docs/ledger.md` still names a tracked file) + the test-chain guard (every `test:*` in root package.json is chained into `pnpm test` by whole name — the one exception, `test:web:e2e`, needs the built site and Chromium and gets its own command and CI job — and every name the recipe runs is defined) + pgTAP (needs `dev:db:up` first). Does not run the e2e tests |
 | `pnpm test:web:e2e` | Playwright end-to-end tests of the public site: builds it and serves it with `vite preview` on 7790 (reuses a server already on 7790 outside CI), then runs desktop Chrome and a Pixel 7 phone. Needs `setup:e2e` once |
 | `pnpm test:edge` | Deno unit tests of the edge functions in `apps/backend/functions` (fake `Db`, no stack, no Docker) |
 | `pnpm test:backend:db` | pgTAP only: schema, invariants, RLS |

@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The repo gate now demands the root test chain runs every gate it defines
+
+- **The decision**: `check_repo_invariants.mjs` gained a fourth rule - every `test:*` script in the root package.json has to appear in the test recipe by whole name (`run <gate>`), and every name the recipe runs has to be defined. A gate that no one runs is how a whole-repo check comes to exist but never to fire: the repo grows a script, CI may run it, but `pnpm test` - the thing a developer actually types - keeps running the old list.
+- **The carve-out is named in the rule, not inferred**: `test:web:e2e` sits outside the chain on purpose (it needs the built site and Chromium, and the root chain has to run without Docker); the set is spelled out here so adding a second exception is a visible decision rather than a widening of the rule.
+- **Teeth**: dropping `test:docs` from the recipe and typoing `test:edge` as `test:edg` made the rule name all three problems - the dropped gate, the renamed gate, and the undefined name. Restored byte-exact, green.
+- **What it found**: nothing today - the chain runs every gate; the rule guards the next `test:*` added without chaining it, which is the realistic drift (a feature ships with its gate defined but unchained).
+- **Reversal:** if a gate is deliberately parked (say a stack-gated suite lands with a CI job but not in `pnpm test`), it joins the named carve-out set with a ledger note - the set stays explicit, the rule does not grow a wildcards.
+
 ## 2026-11-03 — The calculator's printed figures are audited at every slider stop, against its own module
 
 - **The decision**: two halves of the public page's central promise were unwatched. (1) A sighted reader reads the printed label next to each slider, a screen reader hears the slider's `aria-valuetext` - nothing demanded the two agree. (2) The result figures were pinned only at one input, so a wrong split at another stop sailed past. The audit now reads the printed DOM at whatever stop the reader left the sliders and demands each printed label equals what the control announces, and every figure - headline interest saved, both monthly payments, both interest totals, the note's per-month line or its prompt - equals what `compareSavings` says for the inputs read back off the DOM. Tested at the defaults and after driving every slider Home, End, Home again.
