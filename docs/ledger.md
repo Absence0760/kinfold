@@ -4,8 +4,8 @@ The record of judgment calls taken on the operator's behalf while building the r
 
 ## 2026-11-03 — The structure audit now refuses generated files from the phone tree too
 
-- **The decision**: the audit that refuses tracked files inside generated directories (“the audit reads the live build, not a snapshot”) was web/backend-only; Flutter’s build output (`apps/mobile/build/`, `.dart_tool/`) sat outside it, so the mobile leg’s own pending item: a future `git add apps/mobile/...` slip that pulled a build artifact in would pass silently. The list grows with both dirs, the same rule shape, no new rule.
-- **Teeth**: staging `apps/mobile/build/native_assets/linux/native_assets.json` made the rule name it by path with exit 1; unstaged, green. The artifact was never committed.
+- **The decision**: the audit that refuses tracked files inside generated directories (“the audit reads the live build, not a snapshot”) was web/backend-only; Flutter’s build output (the mobile tree’s build and .dart_tool directories) sat outside it, so the mobile leg’s own pending item: a future `git add apps/mobile/...` slip that pulled a build artifact in would pass silently. The list grows with both dirs, the same rule shape, no new rule.
+- **Teeth**: staging one of the mobile tree’s build-output asset files made the rule name it by path with exit 1; unstaged, green. The artifact was never committed.
 - **Reversal:** if Flutter’s own ignore files were committed and trusted as the single source of generated paths, the audit would read them instead of keeping a list of its own.
 
 ## 2026-11-03 — The phone app's sign-in step decides once: a session or the member's words
