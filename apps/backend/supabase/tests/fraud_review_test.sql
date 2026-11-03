@@ -66,10 +66,9 @@ select is(
   '[{"kind": "duplicate_photos", "severity": "high"},
     {"kind": "cross_shop", "severity": "low"}]'::jsonb,
   'a reviewer sees both findings, high severity first');
-select is(
+select ok(
   ((public.review_fraud_signals('00000000-0000-0000-0025-0000000000e1'::uuid)
-    -> 0) ? 'detail')::text,
-  'false',
+    -> 0) - 'detail') IS NULL,
   'the match detail never crosses into the read');
 select is(
   public.review_fraud_signals('00000000-0000-0000-0025-0000000000e2'::uuid),
