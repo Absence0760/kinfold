@@ -11,9 +11,11 @@ name: CI
 # on it and a skipped job counts as passing, so a docs-only push reports the
 # gate green without a second workflow.
 #
-# e2e (Playwright) is NOT in CI yet: it still runs on demand only (`setup:e2e`
-# per machine, then `test:web:e2e`) — see docs/STACK.md "No CI job yet" note
-# and followups.md.
+# e2e (Playwright) IS in CI: the public prerendered site needs no stack, so the
+# public site's e2e specs run on every code push. `e2e` job installs Chromium
+# (`setup:e2e`), then Playwright builds the site and serves it itself
+# (`webServer: pnpm build && pnpm preview`) — no Docker, no Supabase CLI.
+# The stack-dependent member-area flow is still not covered (docs/STACK.md).
 
 on:
   push:
@@ -106,10 +108,54 @@ jobs:
       - name: pgTAP (schema, invariants, RLS)
         run: pnpm test:backend:db
 
+  e2e:
+    name: e2e
+    if: needs.changes.outputs.code == 'true'
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+        with:
+          version: 10.33.2
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Playwright downloads its own Chromium build; keeping it in a cached
+      # directory keyed on the @playwright/test version means one download per
+      # version bump, not one per push.
+      - name: Cache Playwright's Chromium build
+        uses: actions/cache@58eb117e85aeb3744e23b8b3f75258e12722217e # v1.3.0
+        with:
+          path: apps/web/.e2e-chromium-cache
+          key: e2e-chromium-${{ hashFiles('apps/web/package.json') }}
+
+      - name: Install Chromium for Playwright
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: apps/web/.e2e-chromium-cache
+        run: pnpm setup:e2e
+
+      - name: Playwright e2e (public prerendered site, desktop Chrome + Pixel 7)
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: apps/web/.e2e-chromium-cache
+        run: pnpm test:web:e2e
+
+
   ci-gate:
     name: CI gate
     if: always()
-    needs: [changes, web, backend]
+    needs: [changes, web, backend, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Aggregate job results
@@ -117,6 +163,7 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           WEB_RESULT: ${{ needs.web.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
         run: |
           for r in "$CHANGES_RESULT" "$WEB_RESULT" "$BACKEND_RESULT"; do
             case "$r" in

@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — e2e now runs in CI, with the Chromium download cached per version
+
+- **The earlier call**: e2e stayed out of CI because CI would pay for Playwright's own Chromium download on every push. That was the honest state then — the gate ran `check`, `test:web`, `test:scripts` and pgTAP, and e2e was "on demand per machine".
+- **The change**: the specs grew to cover the whole public site (landing, navigation, the savings calculator, `/transparency`, and both no-stack ENTRY paths — 44 tests across desktop Chrome and Pixel 7), and the only thing that kept them off CI was the download cost, not a product gap. So the `e2e` job went into `ci.yml` with `actions/cache` on `apps/web/.e2e-chromium-cache`, keyed on `hashFiles('apps/web/package.json')` — the `@playwright/test` version lives in that file, so the cost is one download per version bump, not one per push.
+- **Why it is safe to run in CI without a stack**: every spec in `apps/web/e2e` runs against the production build (`webServer: pnpm build && pnpm preview`) and needs nothing the stack provides. The stack-dependent member-area flow stays out of the run, so the job never needs Docker or the Supabase CLI, and the CI `backend` job keeps its own.
+- **How the config already fits CI**: `playwright.config.ts` reads `process.env.CI` and switches to no server reuse, no `test.only`, one worker, `retries: 0` and a non-opening HTML reporter. Verified locally with `CI` set: 44 passed, 0 failed, 8.5 s single-worker — the CI job runs the same commands (`pnpm setup:e2e`, then `pnpm test:web:e2e`) with `PLAYWRIGHT_BROWSERS_PATH` pointed at the cached directory, which Playwright honours exactly (the first local run without it failed with "Executable doesn't exist at .../chromium_headless_shell-1248", which is what pinned the env var's necessity).
+- **Reversal:** if the public-site specs ever need a stack (e.g. a signed-in flow added later), this job must split — a `e2e:stack` project run in the `backend` job where Docker already exists, not in this one, or the gate starts lying about what it ran.
+
 ## 2026-11-03 — The reserve panel joins the console as a read of the run, not a re-derivation
 
 - **The last deferred piece of 1e**: the ops console had the reconcile alerts but not the reserves. A weekly allocation run leaves part of a fund's money in reserve for the next band, and an operator who sees a fund pay nothing needs to know WHY: was the money all in reserve, did the run allocate and then leak, is the reserve figure stale?

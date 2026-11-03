@@ -99,3 +99,5 @@ backend.config
 # directory-level ignore would defeat the negation.
 /reviews/*
 !/reviews/README.md
+# Playwright Chromium build cached beside the web app (CI `e2e` job)
+apps/web/.e2e-chromium-cache/
