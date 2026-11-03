@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The markdown sweep now runs over ALL 81 tracked `.md` files, scaffold included
+
+- **What the sweep checks** (filed as the standing hygiene rule, not a one-off pass): final newline, no doubled blank line, no trailing whitespace or tabs, table rows with one escaped-pipe-aware cell count per block, no heading-level skips (fence-aware: a `# Web` line inside a report template doesn't count), and every relative link resolving to a tracked path.
+- **What got fixed here**: `.claude/commands/persona.md` had a doubled blank line; `.claude/agents/audit/compliance-auditor.md` put a pipe inside a code span in a table row (`grep -rn "fetch(\|https://"`) so naive checkers read a fifth cell — the starting point is now two separate greps, which keeps the same intent and leaves the cell unambiguous. (`2262b83`)
+- **What was NOT "fixed" and why**: 63 of the 81 files open with `##` rather than `#`. That is the scaffold's own convention — agent definitions and slash-command bodies are included documents, not standalone ones — so promoting every heading would rewrite 63 files for no reader benefit. Only `docs/` and top-level files carry an h1 title.
+- **Reversal:** if the scaffold is ever restyled to h1-rooted files, bump every heading in those 63; the rest of the checks stay as they are.
+
 ## 2026-11-03 — The share rule's effect is logged where the money lands, not left to be re-derived
 
 - **The decision**: every `pool_allocations` row now carries the `share_bps` the need line actually applied (default 0 for rows the old algorithm wrote), and `run_pool_allocation` writes it alongside `need_cents` and `grant_cents`. The run still logs the rule version on `pool_runs.settings`; this is the missing per-request half.
