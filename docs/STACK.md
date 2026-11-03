@@ -28,7 +28,7 @@ Code layout in `apps/web/src/lib`: `auth/` (session helpers, the dev demo accoun
 | `pnpm build:web` | Prerender to `apps/web/build/`. S3 + CloudFront must serve `200.html` for unknown paths so `/app/*` loads |
 | `pnpm preview:web` | Serve the production build on 7790 |
 | `pnpm check` | svelte-check typecheck for the web workspace, then `deno fmt --check` + `deno check` for the edge functions |
-| `pnpm test` | Vitest unit tests + the root-scripts guard + the markdown-hygiene guard (`test:docs`) + pgTAP (needs `dev:db:up` first). Does not run the e2e tests |
+| `pnpm test` | Vitest unit tests + the root-scripts guard + the repo-invariants guard (`test:invariants`) + the markdown-hygiene guard (`test:docs`) + pgTAP (needs `dev:db:up` first). Does not run the e2e tests |
 | `pnpm test:web:e2e` | Playwright end-to-end tests of the public site: builds it and serves it with `vite preview` on 7790 (reuses a server already on 7790 outside CI), then runs desktop Chrome and a Pixel 7 phone. Needs `setup:e2e` once |
 | `pnpm test:edge` | Deno unit tests of the edge functions in `apps/backend/functions` (fake `Db`, no stack, no Docker) |
 | `pnpm test:backend:db` | pgTAP only: schema, invariants, RLS |
@@ -59,9 +59,9 @@ applies before it touches a file are pinned there, without a stack. `pnpm check:
 
 `apps/backend` is a Supabase project. Migrations live in `apps/backend/supabase/migrations` and pgTAP tests in `apps/backend/supabase/tests`; change the schema through a new migration plus a test, then `pnpm gen:types`. The schema overview, the invariants the database enforces and the edge functions are in [backend.md](backend.md).
 
-A pgTAP file's `select plan(N)` must equal the number of top-level assertions it makes — `is`, `is_ok`, `is_not_null`, `isnull`/`isnot`, `isnt`, `like`, `results_eq`, `ok`, `lives_ok`, `throws_ok`, `throws_like` — each call is one test, and a suite that runs short of its plan FAILS in `pnpm test:backend:db` (pgTAP reports the gap as a failure, not a pass). So a suite that can't be run here is audited by counting, not by eyeballing: `grep -cE "^select (is|is_ok|is_not_null|isnull|isnot|isnt|like|results_eq|ok|lives_ok|throws_ok|throws_like)\(" <file>` must print the same number the file's `plan()` claims. All 62 suites agree on 2026-11-03.
+A pgTAP file's `select plan(N)` must equal the number of top-level assertions it makes — `is`, `is_ok`, `is_not_null`, `isnull`/`isnot`, `isnt`, `like`, `results_eq`, `ok`, `lives_ok`, `throws_ok`, `throws_like` — each call is one test, and a suite that runs short of its plan FAILS in `pnpm test:backend:db` (pgTAP reports the gap as a failure, not a pass). The counting is now a gate rather than a habit: `test:invariants` (`scripts/check_repo_invariants.mjs`) reads every pgTAP suite and fails naming any whose `plan(N)` disagrees with its count of top-level assertion calls (pgTAP's own `set_config` feeds a run constant and asserts nothing). All 66 suites agree on 2026-11-03.
 
-Every module under `apps/web/src/lib` has a matching `*.test.ts` — the one exception is `supabase/client.ts`, the seam module itself: its value import can't resolve the `$app/env/public` virtual module outside a built app, so a vitest file would fail on import; its behaviour is pinned instead by every loader that fakes the seam and by the no-stack e2e entries (`sign-in.spec.ts`, `member-entry.spec.ts`). Checked the same way the pgTAP plans are: for each `*.ts` under `src/lib` a sibling `*.test.ts` must exist. Agrees on 2026-11-03.
+Every module under `apps/web/src/lib` has a matching `*.test.ts` — the one exception is `supabase/client.ts`, the seam module itself: its value import can't resolve the `$app/env/public` virtual module outside a built app, so a vitest file would fail on import; its behaviour is pinned instead by every loader that fakes the seam and by the no-stack e2e entries (`sign-in.spec.ts`, `member-entry.spec.ts`). Checked as a gate now: `test:invariants` fails naming any unpaired module, with the carve-out widened to the whole scaffold directory (`src/lib/supabase/`) so a scaffold sibling cannot slip through unpaired. Agrees on 2026-11-03.
 
 ## Clients
 
