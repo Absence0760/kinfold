@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The request loaders took the db seam last, which made the storage check testable
+
+- **The gap**: `requests/data.ts` still read the `supabase()` singleton, so its most load-bearing behaviour was untestable - the unfinished-upload check (a member's upload that died between writing the row and finishing the file leaves a row the page must mark `stored: false` and ask to re-add) and the two "matched no row" explanations (`NOT_EDITABLE`, `EVIDENCE_LOCKED`).
+- **The decision**: finish the convention the last three rounds established - every loader takes `db: Db` as its first parameter, every page and panel passes `supabase()` - and add `requests/data.test.ts` on the same `fakeDb` chain, this file also faking the storage bucket (one fixture per bucket name) so the listing and the signed-URL refusal can be pinned. The fake chain implements `single()` answering the first row, like postgrest-js.
+- **Why finish the convention instead of a global mock**: a global seam would make every test depend on module state shared across files; the db-as-parameter also names at each call site which client read the page, which is what the audit trails key on.
+- **What the pin caught on the way**: nothing functional - the loaders behaved as documented. The seam's own payoff is that these are now unit-pinned; the refactor is the change that carries that decision, so the ledger says so.
+- **Reversal:** keep the singleton per module if a page ever needs a different client (a service-role client would be a serious mistake on member pages - the seam makes passing one visible rather than hidden inside a loader).
+
 ## 2026-11-03 — The loans loaders got their own vitest, and the agreement row is read once
 
 - **The gap**: `loans/data.ts` was the last loader module with no test of its own - the loans console's behaviour on a real fake client (role wording, the pause allowance window, a miss as money behind, an unreadable loan as nothing) was load-bearing and eyeball-only.
