@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The reserve panel joins the console as a read of the run, not a re-derivation
+
+- **The last deferred piece of 1e**: the ops console had the reconcile alerts but not the reserves. A weekly allocation run leaves part of a fund's money in reserve for the next band, and an operator who sees a fund pay nothing needs to know WHY: was the money all in reserve, did the run allocate and then leak, is the reserve figure stale?
+- **The decision**: mirror the alerts door exactly - `review_pool_runs(limit)` answers the run itself (fund, the fund's money, allocated, reserve, algorithm version, `run_at`) to reviewers/admins plus the service, refuses with 42501 otherwise, and audit-logs the read. No client-side comparison, no re-derivation, and nothing here moves money.
+- **Why list only the latest run per fund**: the panel answers the fund's money as it is now. A run is a snapshot of a week, so a history of runs on one fund would answer three questions at once and read like a ledger - the history already has its own home (the trail, and the reconcile alerts in 2h), and the fund accounts are reconciled there.
+- **Why `algorithm_version` crosses**: the published weights cross to everyone on `/transparency`, and the version is what priced a run, so the fairness audit can be cited beside the figures. The run's `settings` jsonb stays out - it can carry band/need inputs that belong to individual requests, and the console has no need for them.
+- **Reversal:** if a fund ever needs to compare two runs side by side (a reserve that drifted over a quarter), the door should take two run ids rather than a limit - that belongs with the quarterly open-books report, not with a weekly console panel.
+
 ## 2026-11-03 — Every web lib module now has a test; the seam module deliberately does not
 
 - **The invariant**: after the last loader refactor, each `*.ts` under `apps/web/src/lib` has a sibling `*.test.ts`. The sweep is the same kind of count the pgTAP plans use, so `docs/STACK.md` now states it as an invariant rather than a wish.
