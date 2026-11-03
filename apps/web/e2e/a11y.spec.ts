@@ -500,6 +500,30 @@ async function documentTitleProblems(page: Page) {
 // but never drop more than one level at a time. A jump from a section title
 // straight into a sub-sub-heading hides the level between - a reader follows
 // the outline past a section that should contain them (WCAG 1.3.1).
+// A shipped page may not carry scaffold words: a half-written section, a TODO
+// left in copy, or lorem from a template publishes itself to every reader, and
+// the words that mark it are exactly the ones a careful reader would catch. The
+// audit reads the page's printed words and names each placeholder it finds with
+// the words around it, so the copy line is findable.
+async function scaffoldWordsProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		const words = (document.body.innerText || '').replace(/\s+/g, ' ');
+		const shapes = ['lorem ipsum', 'placeholder', 'coming soon', 'TODO', 'TBD', 'FIXME', 'XXX'];
+		for (const shape of shapes) {
+			const needle = shape.toLowerCase();
+			let at = words.toLowerCase().indexOf(needle);
+			while (at !== -1) {
+				const around = words.slice(Math.max(0, at - 24), at + shape.length + 24).trim();
+				found.push('the page prints scaffold words "' + shape + '" near "' + around + '": a half-written section shipped itself to every reader');
+				at = words.toLowerCase().indexOf(needle, at + needle.length);
+			}
+		}
+		return found;
+	});
+}
+
+
 async function headingSkipProblems(page: Page) {
 	return await page.evaluate(() => {
 		const found = [];
@@ -732,6 +756,7 @@ for (const route of publicRoutes) {
 		expect(await staleAnchorsProblems(page)).toEqual([]);
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 		expect(await headingSkipProblems(page)).toEqual([]);
+		expect(await scaffoldWordsProblems(page)).toEqual([]);
 	});
 }
 
@@ -743,6 +768,7 @@ for (const route of prerenderedPublicRoutes) {
 		expect(await staleAnchorsProblems(page)).toEqual([]);
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 		expect(await headingSkipProblems(page)).toEqual([]);
+		expect(await scaffoldWordsProblems(page)).toEqual([]);
 	});
 }
 
