@@ -495,6 +495,35 @@ async function documentTitleProblems(page: Page) {
 // reader read ten hundred, and a formatted figure that drifts from this
 // shape (a locale change, say) reads the same number everywhere else but
 // not here.
+// Heading navigation is how screen readers and browser extensions move through
+// a page, and it follows the outline: levels may step sideways or back up,
+// but never drop more than one level at a time. A jump from a section title
+// straight into a sub-sub-heading hides the level between - a reader follows
+// the outline past a section that should contain them (WCAG 1.3.1).
+async function headingSkipProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		const heads = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+		for (let i = 1; i < heads.length; i += 1) {
+			const prev = heads[i - 1];
+			const cur = heads[i];
+			const prevLevel = Number(prev.tagName.slice(1));
+			const curLevel = Number(cur.tagName.slice(1));
+			const name = (cur.textContent || '').trim();
+			const prevName = (prev.textContent || '').trim();
+			if (name === '') {
+				found.push('a level ' + curLevel + ' heading beside "' + prevName + '" prints no words: heading navigation has a stop with no name, so a screen reader hears silence at a real stop');
+				continue;
+			}
+			if (curLevel - prevLevel > 1) {
+				found.push('the outline drops from "' + prevName + '" (level ' + prevLevel + ') to "' + name + '" (level ' + curLevel + '): a heading level is skipped, so heading navigation jumps past a section that should contain the reader');
+			}
+		}
+		return found;
+	});
+}
+
+
 async function wellFormedMoneyProblems(page: Page) {
 	const out = await page.evaluate(() => {
 		const found = [];
@@ -702,6 +731,7 @@ for (const route of publicRoutes) {
 		expect(await previewStatusProblems(page)).toEqual([]);
 		expect(await staleAnchorsProblems(page)).toEqual([]);
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
+		expect(await headingSkipProblems(page)).toEqual([]);
 	});
 }
 
@@ -712,6 +742,7 @@ for (const route of prerenderedPublicRoutes) {
 		expect(await previewStatusProblems(page)).toEqual([]);
 		expect(await staleAnchorsProblems(page)).toEqual([]);
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
+		expect(await headingSkipProblems(page)).toEqual([]);
 	});
 }
 
