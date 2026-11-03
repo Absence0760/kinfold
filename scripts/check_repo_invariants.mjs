@@ -30,6 +30,16 @@ for (const f of files) {
 	}
 }
 
+// --- the phone app's lib modules ship sibling tests (same pairing rule,
+// Dart's own file names: lib/<path>/m.dart <-> test/<path>/m_test.dart) ---
+for (const f of files) {
+	if (!f.startsWith('apps/mobile/lib/') || !f.endsWith('.dart')) continue;
+	const sibling = f.replace('apps/mobile/lib/', 'apps/mobile/test/').replace(/\.dart$/, '_test.dart');
+	if (!files.includes(sibling)) {
+		problems.push(`mobile module ${f} has no sibling ${sibling}`);
+	}
+}
+
 // --- migration queue order ---
 const migrations = files.filter((f) => f.endsWith('.sql') && f.includes('supabase/migrations/'));
 for (let i = 1; i < migrations.length; i += 1) {

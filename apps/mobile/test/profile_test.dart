@@ -1,18 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kinfold_mobile/profile.dart';
-import 'package:kinfold_mobile/dashboard/membership.dart';
 
 // The first screen’s words: the standing a member row carries is shown in the
 // member’s words — the same sentences as the web’s identityWord.
 void main() {
-  test('the standing words are the web’s, all four', () {
-    expect(identityWord('pending_verification'), 'Not done yet — the check has to pass before you can post');
-    expect(identityWord('active'), 'Done');
-    expect(identityWord('suspended'), 'Suspended');
-    expect(identityWord('closed'), 'Closed');
-  });
-
   test('no member row yet reads as itself, not as “Done”', () {
     final profile = viewerProfile(memberBody: '[]');
     expect(profile.standing, 'no account row yet');
