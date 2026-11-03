@@ -33,6 +33,7 @@ const shareBoard = fc
 			amount: dollars(50_000),
 			fundedShare: fc.double({ min: 0, max: 1.2, noNaN: true }),
 			coveredShare: fc.double({ min: 0, max: 0.9, noNaN: true }),
+			recoveredShare: fc.double({ min: 0, max: 1.1, noNaN: true }),
 			score: fc.integer({ min: 0, max: 100 }),
 			paid3y: fc.integer({ min: 0, max: 12 })
 		}),
@@ -45,6 +46,7 @@ const shareBoard = fc
 				amount: r.amount,
 				funded: Math.round(r.amount * r.fundedShare * 100) / 100,
 				covered: Math.round(r.amount * r.coveredShare * 100) / 100,
+				recovered: Math.round(r.amount * r.recoveredShare * 100) / 100,
 				score: r.score,
 				paid3y: r.paid3y
 			}))
@@ -55,7 +57,9 @@ const SHARE_V1 = { stepBps: 1000, capBps: 3000 };
 
 /** What the member still needs the pool for, once their own share is out. */
 const needWithShare = (r: FundingRequest, share: ShareRule) => {
-	const gap = Math.max(0, r.amount - (r.covered ?? 0) - r.funded);
+	// Money recovered for the same damage (2g) shrinks what the pool
+	// still needs, exactly as the schema's need line reads it.
+	const gap = Math.max(0, r.amount - (r.covered ?? 0) - r.funded - (r.recovered ?? 0));
 	const carry = Math.min(share.capBps, (r.paid3y ?? 0) * share.stepBps);
 	return gap - Math.floor(gap * carry / 10000);
 };
@@ -159,6 +163,24 @@ describe('allocatePool properties', () => {
 					// carries, never a bigger grant and never a refusal.
 					expect(a.grant).toBeLessThanOrEqual(need(requests[i]) + EPS);
 					expect(a.grant).toBeLessThanOrEqual(needWithShare(requests[i], SHARE_V1) + EPS);
+				});
+			})
+		);
+	});
+
+	it('recovered money shrinks the grant and never fills the ask', () => {
+		fc.assert(
+			fc.property(shareBoard, dollars(200_000), (requests, pool) => {
+				const { allocations } = allocatePool(requests, pool, { share: SHARE_V1 });
+				allocations.forEach((a, i) => {
+					const r = requests[i];
+					const gap = Math.max(0, r.amount - (r.covered ?? 0) - r.funded - (r.recovered ?? 0));
+					// The grant cannot exceed the gap, share aside, and money recovered
+					// for the same damage never marks the request filled.
+					expect(a.grant).toBeLessThanOrEqual(gap + EPS);
+					if ((r.covered ?? 0) + r.funded < r.amount && (r.covered ?? 0) + r.funded + (r.recovered ?? 0) >= r.amount) {
+						expect(a.status).not.toBe('funded');
+					}
 				});
 			})
 		);

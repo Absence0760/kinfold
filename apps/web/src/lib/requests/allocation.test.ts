@@ -91,4 +91,30 @@ describe('allocatePool', () => {
 		expect(a.a.grant).toBe(700);
 		expect(a.a.status).toBe('partial');
 	});
+
+	// The schema's need line is amount minus insured cover, pledges and money
+	// already recovered for the same damage (2g's `request_recoveries`, read
+	// through `private.recovered_cents`), so the mirror reads `recovered` too.
+	it('money recovered for the same damage shrinks what the pool still needs', () => {
+		// A 1,000.00 ask with 300.00 recovered by another insurer: the pool
+		// grants the 700.00 that is still owed.
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, recovered: 300 }], 900));
+		expect(a.a.grant).toBe(700);
+		// Recovered money never fills the request on its own: unlike insured
+		// cover, it is not money that counts toward the ask.
+		expect(a.a.status).toBe('partial');
+	});
+
+	it('fully recovered money leaves the request waiting, not funded', () => {
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, recovered: 1000 }], 900));
+		expect(a.a.grant).toBe(0);
+		expect(a.a.status).toBe('waiting');
+	});
+
+	it('the share rule prices what remains after recovered money', () => {
+		// 1,000.00 with 300.00 recovered leaves a 700.00 gap; a tenth of the
+		// gap is the member's own share, so the pool sends 630.00.
+		const a = byId(allocatePool([{ id: 'a', amount: 1000, score: 92, funded: 0, recovered: 300, paid3y: 1 }], 900, { share: shareRule }));
+		expect(a.a.grant).toBe(630);
+	});
 });

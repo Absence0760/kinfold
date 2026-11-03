@@ -19,6 +19,11 @@ export interface FundingRequest {
 	funded: number;
 	/** Already paid by insured deductible cover, stacked before pledges. */
 	covered?: number;
+	/** Money already recorded for the same damage elsewhere (another insurer's
+	 * recovery, FEMA/SBA/state money, the member's own cover). It shrinks what
+	 * the pool still needs, but it is not money Kinfold raised and not insured
+	 * cover, so unlike `covered` it never fills the request on its own. */
+	recovered?: number;
 	/** Pool requests this member had paid in the last three years. */
 	paid3y?: number;
 	/** Evidence score, 0 to 100. */
@@ -66,11 +71,17 @@ export function allocatePool(
 
 	for (const band of [...bands.keys()].sort((a, b) => b - a)) {
 		const members = bands.get(band)!;
+		// Money that already covers the damage - insured cover and money
+		// recovered for it elsewhere - leaves less for the pool; the published
+		// share rule then moves part of the rest onto the member.
+		const gap = (r: FundingRequest) =>
+			Math.max(0, r.amount - (r.covered ?? 0) - r.funded - (r.recovered ?? 0));
+		// The member's own share rises with how often their pool requests were
+		// paid, and caps whatever the count.
 		const carryBps = (r: FundingRequest) =>
 			Math.min(share?.capBps ?? 0, (r.paid3y ?? 0) * (share?.stepBps ?? 0));
 		const need = (r: FundingRequest) =>
-			Math.max(0, r.amount - (r.covered ?? 0) - r.funded) -
-				Math.floor(Math.max(0, r.amount - (r.covered ?? 0) - r.funded) * carryBps(r) / 10000);
+			gap(r) - Math.floor(gap(r) * carryBps(r) / 10000);
 		const totalNeed = members.reduce((sum, r) => sum + need(r), 0);
 		if (totalNeed === 0) continue;
 		const fill = Math.min(1, left / totalNeed);
@@ -86,6 +97,8 @@ export function allocatePool(
 		const grant = grants.get(r.id) ?? 0;
 		let status: AllocationStatus;
 		if (r.score < minScore) status = 'needs-review';
+		// `recovered` is deliberately absent: money recorded for the same
+		// damage elsewhere shrinks the need but never marks the request filled.
 		else if ((r.covered ?? 0) + r.funded + grant >= r.amount) status = 'funded';
 		else if (grant > 0) status = 'partial';
 		else status = 'waiting';
