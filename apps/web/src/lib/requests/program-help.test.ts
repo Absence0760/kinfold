@@ -41,8 +41,8 @@ describe('programHelpLines', () => {
 		expect(cityLine.body).toContain('24 CFR 92.503');
 		expect(cityLine.body).toContain('24 CFR 92.220');
 		expect(cityLine.body).toContain('that ask goes to the city, not to this page');
-		const [agencyLine] = programHelpLines('down_payment');
-		expect(agencyLine.body).toContain('never becomes the agency');
+		const [stateAgencyLine] = programHelpLines('down_payment');
+		expect(stateAgencyLine.body).toContain('never becomes the agency');
 		// Programme money and Fund money stay two pots, and the page says it.
 		expect(lastLine.body).toContain('never joins the Fund’s money');
 		expect(lastLine.body).toContain('funder keeps its own name');
