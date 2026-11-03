@@ -111,6 +111,16 @@ async function screenReaderProblems(page: Page) {
 				found.push('link: no name a reader can hear: ' + (a.href || ''));
 			}
 		}
+		// A <summary> is a disclosure control a keyboard reader and a screen reader
+		// both reach as a Tab stop; when its only content is an icon (the nav menu
+		// shows a hamburger svg), an unnamed summary leaves the reader hearing
+		// silence at a real stop with no idea what opening it does.
+		for (const s of document.querySelectorAll('summary')) {
+			const name = (s.textContent || '').trim() || (s.getAttribute('aria-label') || '').trim();
+			if (!name) {
+				found.push('summary: disclosure control with no name a reader can hear: ' + (s.getAttribute('class') || ''));
+			}
+		}
 		// Form fields must carry a label the reader can hear: either one
 		// wired by id, one wrapped around the field, or the field's own
 		// label attribute. A bare field is a mystery button.
