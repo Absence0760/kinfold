@@ -370,6 +370,27 @@ async function visualFocusOrderProblems(page: Page) {
 	return found;
 }
 
+// WCAG 2.5.8 (target size): a finger has to be able to hit the control, so
+// every VISIBLE interactive element needs a 24x24 CSS-px box. Two carve-outs
+// from the standard itself: elements with no box at all are the same hidden/
+// closed-details convention as the walk rules, and links inside a paragraph
+// are prose links the standard exempts (they move with the text).
+async function touchTargetProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		for (const el of document.querySelectorAll('a, button')) {
+			const r = el.getBoundingClientRect();
+			if (r.width === 0 || r.height === 0) continue;
+			if (el.closest('p') !== null) continue;
+			if (r.width < 24 || r.height < 24) {
+				const what = ((el.getAttribute('class') || '') + ' ' + (el.textContent || '')).trim().split(' ')[0];
+				found.push(`hit target ${what} is ${Math.round(r.width)}x${Math.round(r.height)}px, under the 24x24 a finger needs`);
+			}
+		}
+		return found;
+	});
+}
+
 // WCAG 2.4.3: Tab follows reading order. A positive tabindex rewires the
 // walk away from it - a trap no page of ours should ship.
 async function positiveTabindexProblems(page: Page) {
@@ -601,6 +622,13 @@ for (const route of publicRoutes) {
 
 // WCAG 2.4.2 wants titles that tell the surfaces apart: a reader with several
 // tabs open (or a bookmark list) cannot tell identical titles apart.
+for (const route of publicRoutes) {
+	test(`${route} keeps every visible hit target at least 24 by 24`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		expect(await touchTargetProblems(page)).toEqual([]);
+	});
+}
+
 test('public surfaces carry distinct titles', async ({ page }) => {
 	const titles = [];
 	for (const route of publicRoutes) {
@@ -609,6 +637,7 @@ test('public surfaces carry distinct titles', async ({ page }) => {
 	}
 	expect(new Set(titles).size).toBe(titles.length);
 });
+
 
 test.describe('in dark mode', () => {
 	test.use({ colorScheme: 'dark' });
