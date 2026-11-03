@@ -133,7 +133,7 @@
 	}
 
 	.assets,
-	rates {
+	.rates {
 		list-style: none;
 		margin: 12px 0 0;
 		padding: 0;
