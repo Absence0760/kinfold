@@ -65,8 +65,31 @@ for (const f of tests) {
 	}
 }
 
+// --- the root test chain runs every gate ---
+// A gate that is not chained is a gate CI and pnpm test never run, which is
+// exactly how a whole-repo check comes to exist but never to fire. The chain
+// names gates by "run <name>", so the name is checked whole, and every name
+// the chain runs has to be a defined script (a typo would fail at run time,
+// but only for whoever happens to type it). e2e is deliberately outside the
+// chain: it needs the built site and Chromium, so it gets its own command and
+// its own CI job - docs/STACK.md and the ledger keep that decision.
+const chain = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts;
+const recipe = chain['test'];
+const outsideChain = new Set(['test:web:e2e']);
+for (const key of Object.keys(chain)) {
+	if (!key.startsWith('test:') || outsideChain.has(key)) continue;
+	if (!recipe.includes('run ' + key)) {
+		problems.push('root package.json defines ' + key + ' but its test recipe never runs it');
+	}
+}
+for (const m of recipe.matchAll(/run (test:[a-z0-9:]+)/g)) {
+	if (!(m[1] in chain)) {
+		problems.push('the test recipe runs ' + m[1] + ', which no script defines');
+	}
+}
+
 if (problems.length) {
 	console.error(`Repo invariants: ${problems.length} problem(s)\n  ${problems.join('\n  ')}`);
 	process.exit(1);
 }
-console.log(`Repo invariants: ${migrations.length} migrations in order, ${tests.length} pgTAP plans agree, lib modules paired`);
+console.log(`Repo invariants: ${migrations.length} migrations in order, ${tests.length} pgTAP plans agree, lib modules paired, test chain complete`);
