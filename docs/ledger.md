@@ -2,21 +2,28 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
-## 2026-11-02 — The share rule is listed on the public transparency page, next to the needs weights
+## 2026-11-03 — The "how often paid" record dates a payout by when it was SENT, not by when it was opened
+
+- **What was wrong**: `pool_requests_paid_3y` filtered on `payouts.created_at`, but the board already counts payouts by `sent_at` ("Payouts are counted by when they were sent"), and a payout row is opened at capture time, which can be months before the fund actually pays the request. Counting by the open date put a waited-for payout outside the three-year window the function's own comment promises - quietly shrinking the member's share under the rule built the same day.
+- **The fix is the read, not a new column**: `coalesce(p.sent_at, p.created_at)` - `sent_at` is stamped by the existing trigger when a payout becomes `sent`, and the fallback keeps rows without a stamp (fixtures, older data) dated honestly rather than silently dropped.
+- **Why this matters now**: the share rule reads this count, so the same payout decides both "how many runs fell short" on the open books and "how much of the next repair the member carries" - the two must agree on what "paid" means.
+- **Reversal:** if the record should date by when money was pledged rather than sent, restore `p.created_at` in the window and drop the coalesce; the share rule keeps working under either date, it just counts a different "paid".
+
+## 2026-11-03 — The share rule is listed on the public transparency page, next to the needs weights
 
 - **A published rule should be readable without reading a table**: the fairness audit asks "which rule priced whom when", the member's card names the version that priced their share, and the only public place that answered was `share_rules` itself - so `/transparency` now lists every version with its step and cap (newest first, percentages spelled by the existing `shareWord`), mirroring how the needs weights are already published.
 - **The read is soft like the weights':** if the table refuses, the published months still show and the section explains itself (`shareProblem`), so a refused rule never blanks the books.
 - **Only the rule crosses**: the page publishes step and cap, never who was paid how often - the counts stay on the member's own card (`my_share`) and behind the self-only read the schema enforces.
 - **Reversal:** if the rule should stay table-only for the auditor, delete `loadShareRules`, the `share` section in `transparency/+page.svelte` and the read in `transparency/+page.ts`; the member's card (`my_share`) and the pool's need line stay either way.
 
-## 2026-11-02 — The member's own share answers on their reliability card: same numbers, no new facts
+## 2026-11-03 — The member's own share answers on their reliability card: same numbers, no new facts
 
 - **Why the console read exists**: the share rule shrinks the fund's grant to a frequent claimant, and the member had no way to see WHY - the home's reliability record showed counts, not the share. `my_share()` (no arguments, `auth.uid()` inside, authenticated-only) answers the same three numbers the pool reads (`pool_requests_paid_3y`, `member_share_bps`, `share_rule_version`), so the card and the door can never disagree.
 - **A no-argument self read, not a parameterised one**: the parameterised read (`member_share_bps`) already refuses other members, but the home's affordance should not offer a place to point at someone else at all - `my_share()` has nothing to point at, the same shape as `my_reliability()`.
 - **The home read is soft**: a missing share row means the card says nothing about the rule; it never makes the home fail, because the reliability record itself is the read that must answer. The share line sits inside the reliability card (with the counts that price it) rather than a new section, since design.md keeps the reliability record one replacement-for-a-credit-score card.
 - **Reversal:** if the share should stay invisible to members (the grant size then the only clue), delete `my_share`, the loader read and the card lines in `app/+page.svelte`; the rule and the pool's need line stay either way.
 
-## 2026-11-02 — How often a member's pool requests were paid raises their own share, by a published versioned rule
+## 2026-11-03 — How often a member's pool requests were paid raises their own share, by a published versioned rule
 
 - **design.md's promise built**: "how often a member's pool requests are paid (in the last three years) raises their own share of the next request, the same way a deductible works" - so `share_rules` is a versioned, effective-dated published table (like `needs_formulas` and dues formulas), `member_share_bps` reads the member's own `pool_requests_paid_3y` count times the step capped at the cap, and `run_pool_allocation`'s need line subtracts that share - a frequent claimant gets a smaller grant and pays the rest themselves, never a refusal and never a wait.
 - **v1 weights are local stand-ins** (a tenth per paid request, capped at three tenths) pending actuarial review, like every other number on that table; the run records the `share_version` it read in `pool_runs.settings` so the fairness audit can re-derive grants.
