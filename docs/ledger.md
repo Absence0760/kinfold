@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Every test name the docs claim was checked against the repo, and three were ambiguous
+
+- **The audit**: each backticked test name in the 81 tracked `.md` files was resolved to a real artifact - a pgTAP `*.sql` in `supabase/tests`, a deno `*_test.ts` beside its function, or a vitest `*.test.ts` under `src/`. Every 14-digit migration prefix was checked the same way. Result after the fixes: 0 unknown claims.
+- **The three ambiguous ones**: `charge_dues_test`, `pay_premiums_test` and `payments_webhook_test` are deno test FILES (`apps/backend/functions/<fn>/<name>.ts`), but written without an extension in a column that otherwise lists pgTAP suites, so a reader would go looking for a `supabase/tests/<name>.sql` that never existed. They now carry `.ts`, and the one row that said both the file and "deno test" lost the redundant word.
+- **The stale count caught on the way**: `docs/STACK.md` claimed "All 58 suites agree"; the new `fund_for_kind_test` made it 59. A suite count in the docs is a claim about a date, so it now says "on 2026-11-03" to stay readable as a snapshot.
+- **The false positive class worth knowing**: `offer_fair_lending_self_test` is a schema FUNCTION whose name ends in `_test`, and `is_active_member`-style helpers can look similar. The audit therefore accepts a `*_test` token that names a `create function`, and the ledger records it so a future sweep doesn't "fix" a real function name by deleting it.
+- **Reversal:** if docs only ever cited the runner ("deno test", "pgTAP") rather than the artifact, these three rows would need no `.ts`; the file names were kept because a named artifact can be opened and a runner cannot, and the ledger's own rows already name files this way.
+
 ## 2026-11-03 — The transparency page's e2e pins the share rule's WORDING, not its figures
 
 - **The decision**: the new browser test asserts the share section's heading, its problem line, and that the intro names the share rule - it asserts no percentages, because the published share rule needs the stack and the e2e build never has one.
