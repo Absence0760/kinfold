@@ -53,6 +53,8 @@ describe('loadFundLoans', () => {
 			},
 			fund_loan_outstanding_cents: { data: 137000, error: null },
 			fund_loan_income_due_cents: { data: 31250, error: null },
+			fund_loan_pauses: { data: [{ loan_id: 'm1', months: 2, started_on: '2026-01-10' }], error: null },
+			fund_loan_restructures: { data: [{ loan_id: 'i1', months: 60, first_due: '2026-04-01', applied_at: null }], error: null },
 		});
 		const rows = await loadFundLoans(db, 'member-1');
 		// Two loans, so the two money doors are each asked once per loan; the
@@ -60,14 +62,16 @@ describe('loadFundLoans', () => {
 		expect(asked).toEqual([
 			'fund_loans',
 			'fund_loan_installments',
+			'fund_loan_pauses',
+			'fund_loan_restructures',
 			'fund_loan_outstanding_cents',
 			'fund_loan_outstanding_cents',
 			'fund_loan_income_due_cents',
 			'fund_loan_income_due_cents'
 		]);
 		expect(rows).toEqual([
-			{ loan: income, outstandingCents: 137000, shareCents: 31250, next: null },
-			{ loan: monthly, outstandingCents: 137000, shareCents: 0, next: { dueOn: '2026-02-01', owedCents: 5000 } },
+			{ loan: income, outstandingCents: 137000, shareCents: 31250, next: null, pausedUntil: null, restructureWaiting: true },
+			{ loan: monthly, outstandingCents: 137000, shareCents: 0, next: { dueOn: '2026-02-01', owedCents: 5000 }, pausedUntil: '2026-03-10', restructureWaiting: false },
 		]);
 	});
 
@@ -79,7 +83,7 @@ describe('loadFundLoans', () => {
 			fund_loan_income_due_cents: { data: 999999, error: null },
 		});
 		const rows = await loadFundLoans(db, 'member-1');
-		expect(rows).toEqual([{ loan: monthly, outstandingCents: 250000, shareCents: 0, next: null }]);
+		expect(rows).toEqual([{ loan: monthly, outstandingCents: 250000, shareCents: 0, next: null, pausedUntil: null, restructureWaiting: false }]);
 	});
 
 	it('a refused read fails loudly rather than showing no loans', async () => {

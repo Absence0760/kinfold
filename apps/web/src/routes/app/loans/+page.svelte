@@ -141,6 +141,12 @@
 								· up to {formatCents(f.shareCents)} a month, sized from your income
 							{/if}
 						</p>
+						{#if f.loan.status === 'paused' && f.pausedUntil}
+							<p class="meta">Paused until {formatDay(f.pausedUntil)}. The money still owed hasn’t changed.</p>
+						{/if}
+						{#if f.restructureWaiting}
+							<p class="meta">You asked for a new schedule; the lending partner applies it, and the money still owed never changes.</p>
+						{/if}
 						{#if f.loan.lien_bps > 0}
 							<p class="meta">Its lien sits behind the bank’s and behind any public-assistance liens, and all the liens together stay at or below 105% of the home’s value.</p>
 						{/if}
