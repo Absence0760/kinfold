@@ -132,7 +132,7 @@ describe('loadGrantReport', () => {
 				error: null
 			}
 		});
-		const grants = await loadGrantReport(db);
+		const grants: GrantRow[] = await loadGrantReport(db);
 		expect(asked).toEqual(['grant_report']);
 		expect(grants.map((g) => g.source)).toEqual(['Foundations', 'Local government']);
 		expect(grants.map((g) => g.fundLabel)).toEqual(['Home help', 'Home help']);

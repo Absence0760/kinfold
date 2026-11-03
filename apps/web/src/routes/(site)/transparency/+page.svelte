@@ -15,7 +15,7 @@
 	allocated, and how many requests were paid. Small numbers stay hidden — a month shows its counts
 	only once at least eleven requests were paid — because transparency should not unmask individuals.
 	Quarters below are the published months summed; a quarter with fewer than three published months
-	says how many months it covers.
+	says how many months it covers. The grant report at the bottom lists the money funders have reported in.
 </p>
 
 {#if problem}
