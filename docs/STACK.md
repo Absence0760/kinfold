@@ -60,6 +60,8 @@ applies before it touches a file are pinned there, without a stack. `pnpm check:
 
 A pgTAP file's `select plan(N)` must equal the number of top-level assertions it makes — `is`, `is_ok`, `is_not_null`, `isnull`/`isnot`, `isnt`, `like`, `results_eq`, `ok`, `lives_ok`, `throws_ok`, `throws_like` — each call is one test, and a suite that runs short of its plan FAILS in `pnpm test:backend:db` (pgTAP reports the gap as a failure, not a pass). So a suite that can't be run here is audited by counting, not by eyeballing: `grep -cE "^select (is|is_ok|is_not_null|isnull|isnot|isnt|like|results_eq|ok|lives_ok|throws_ok|throws_like)\(" <file>` must print the same number the file's `plan()` claims. All 60 suites agree on 2026-11-03.
 
+Every module under `apps/web/src/lib` has a matching `*.test.ts` — the one exception is `supabase/client.ts`, the seam module itself: its value import can't resolve the `$app/env/public` virtual module outside a built app, so a vitest file would fail on import; its behaviour is pinned instead by every loader that fakes the seam and by the no-stack e2e entries (`sign-in.spec.ts`, `member-entry.spec.ts`). Checked the same way the pgTAP plans are: for each `*.ts` under `src/lib` a sibling `*.test.ts` must exist. Agrees on 2026-11-03.
+
 ## Clients
 
 - **Member app: Flutter, planned** as `apps/mobile` (the estate `mobile-fullstack` pattern, as in project-stocks). Evidence capture needs the phone camera with device attestation, which a web page can't give.

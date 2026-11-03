@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Every web lib module now has a test; the seam module deliberately does not
+
+- **The invariant**: after the last loader refactor, each `*.ts` under `apps/web/src/lib` has a sibling `*.test.ts`. The sweep is the same kind of count the pgTAP plans use, so `docs/STACK.md` now states it as an invariant rather than a wish.
+- **The one exception, on purpose**: `supabase/client.ts` has no test file. It imports `$app/env/public` (a SvelteKit virtual module), so a vitest file importing its values fails at import time — a test there would need the built app, i.e. the e2e layer.
+- **How its behaviour is pinned anyway**: the seam's two escape hatches (`rpcNew`, `fromNew`) are exercised by every loader test that fakes the client, and the client's own contract ("no key configured ⇒ a notice, never a crash") is pinned by `e2e/signin.spec.ts` and `e2e/member-entry.spec.ts`, which run against a preview build with no stack.
+- **Reversal:** to test the client directly, split the env read into its own module (a plain const, importable by vitest) and keep `client.ts` building on it — then `isConfigured` gets a unit test and the seam keeps its shape.
+
 ## 2026-11-03 — The request loaders took the db seam last, which made the storage check testable
 
 - **The gap**: `requests/data.ts` still read the `supabase()` singleton, so its most load-bearing behaviour was untestable - the unfinished-upload check (a member's upload that died between writing the row and finishing the file leaves a row the page must mark `stored: false` and ask to re-add) and the two "matched no row" explanations (`NOT_EDITABLE`, `EVIDENCE_LOCKED`).
