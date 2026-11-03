@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The second swept copy pair matched except one web-side outlier
+
+- **The decision**: the seeded demo people (emails, names, roles, summaries) were swept field-for-field across the web and the phone app the same way the sign-in sentences were. Every field matched except one: Sam’s summary was the only displayed string in the whole repo written with a straight apostrophe, where every other sentence uses the typographic mark. Fixed at the source on the web side (the Dart copy already carried the mark), quoted single like its sibling fields so the string’s quoting stops being the reason for the drift. No test pinned the old spelling, so nothing had to move with it.
+- **What the sweep proved**: beyond that one outlier, all four accounts’ fields are byte-equal across the two languages, as are the loopback host set’s members and the demo password. The seeded people are now a known-equal set to edit from, like the sign-in sentences.
+- **Reversal:** when a shared copy lands, both sweeps run on the seam’s single source and these per-language sweeps retire.
+
 ## 2026-11-03 — The two sign-in copies swept: one drift, fixed at the source
 
 - **The decision**: the phone app's pinned copy got a deliberate one-at-a-time sweep — every sign-in sentence the web publishes (the four failures' texts, both network texts, both server texts, both unconfigured texts, both unknown texts, the commands) checked byte-for-byte against the Dart copy, in both directions. It found exactly one drift: the web wraps an unexpected failure message in typographic quotes, the Dart copy used straight ones. Fixed at the source (the Dart copy moves to the product's marks) and the parity test's expectation moves with it — the repo's rule that you never adjust a test to hide what the code got wrong.
