@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The transparency page's e2e pins the share rule's WORDING, not its figures
+
+- **The decision**: the new browser test asserts the share section's heading, its problem line, and that the intro names the share rule - it asserts no percentages, because the published share rule needs the stack and the e2e build never has one.
+- **Why**: without the stack every section shows its unconfigured line, so the only share-rule truth a preview build can carry is that the section exists and reads like a share rule. The figures themselves stay pinned by vitest (`data.test.ts`, two versions with their percentages) and by pgTAP (`paid_share_test`); the e2e closes the gap between them - that a real browser renders the section in its spot between the weights and the grants.
+- **Reversal:** if the e2e project ever runs against the local stack, this test can assert the seeded v1 percentages (10%/30%) directly; keep it wording-only while the stack stays out.
+
 ## 2026-11-03 — The pool's TS mirror now reads recovered money as its own field
 
 - **What was wrong**: `allocation.ts` - the web's reference implementation of the pool's need line - read `amount - covered - funded`, while the schema reads `amount - insured_cover - raised - recovered`. Money recorded for the same damage (2g's `request_recoveries`, via `private.recovered_cents`) was simply absent from the mirror, so the two disagreed on any request with recovered money: the mirror asked the pool for money the schema already had covered. Nothing in the app passes `recovered` today (the landing board never has recoveries), so it caused no wrong figure on screen - a latent divergence, not a visible bug.
