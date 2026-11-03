@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { loadOpenBooks, quarterlySummaries, type QuarterlySummary } from './data.ts';
+import { loadNeedsFormulas, loadOpenBooks, quarterlySummaries, shareWord, type QuarterlySummary } from './data.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -84,5 +84,31 @@ describe('quarterlySummaries', () => {
 
 	it('no published months is no report, not empty money', () => {
 		expect(quarterlySummaries([])).toEqual([]);
+	});
+});
+
+describe('loadNeedsFormulas', () => {
+	it('the published weights read newest version first', async () => {
+		const { db, asked } = fakeDb({
+			needs_formulas: {
+				data: [
+					{ version: 2, need_bps: 6000, readiness_bps: 3000, reliability_bps: 1000, effective_from: '2026-04-01' },
+					{ version: 1, need_bps: 5000, readiness_bps: 2500, reliability_bps: 2500, effective_from: '2026-01-01' }
+				],
+				error: null
+			}
+		});
+		const formulas = await loadNeedsFormulas(db);
+		expect(asked).toEqual(['needs_formulas']);
+		expect(formulas.map((f) => f.version)).toEqual([2, 1]);
+		expect(formulas.map((f) => shareWord(f.needBps))).toEqual(['60%', '50%']);
+		expect(formulas[0].effectiveFrom).toBe('2026-04-01');
+		expect(shareWord(6000)).toBe('60%');
+		expect(shareWord(3333)).toBe('33.3%');
+	});
+
+	it('a refused read fails loudly rather than hiding the formula', async () => {
+		const { db } = fakeDb({ needs_formulas: { data: null, error: { message: 'permission denied for table needs_formulas' } } });
+		await expect(loadNeedsFormulas(db)).rejects.toThrow(/permission denied/);
 	});
 });

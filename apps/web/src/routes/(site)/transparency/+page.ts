@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from '#lib/supabase/client.ts';
-import { loadOpenBooks, quarterlySummaries } from '#lib/transparency/data.ts';
+import { loadNeedsFormulas, loadOpenBooks, quarterlySummaries } from '#lib/transparency/data.ts';
 import { classifyLoadError } from '#lib/auth/errors.ts';
 
 const MESSAGE: Record<string, string> = {
@@ -9,18 +9,26 @@ const MESSAGE: Record<string, string> = {
 };
 
 /**
- * The published open books. `open_books` is public (anon readable), so this
- * needs no session: if the read fails, the page explains the failure kind
- * rather than showing blank money as zero.
+ * The published open books and the published needs weights. Both tables are
+ * public (anon readable), so this needs no session; each read explains its own
+ * failure kind rather than showing blank money or blank weights as zero.
  */
 export async function load() {
 	if (!isConfigured()) {
-		return { books: [], quarters: [], problem: 'The published books need the database to be configured.' };
+		const problem = 'The published books need the database to be configured.';
+		return { books: [], quarters: [], problem, formulas: [], formulaProblem: problem };
 	}
-	try {
-		const books = await loadOpenBooks(supabase());
-		return { books, quarters: quarterlySummaries(books), problem: null };
-	} catch (e) {
-		return { books: [], quarters: [], problem: MESSAGE[classifyLoadError(e)] };
-	}
+	// The weights are a separate read: if the table refuses, the published
+	// months still show, and the section explains itself.
+	const [booksResult, formulasResult] = await Promise.all([
+		loadOpenBooks(supabase()).then(
+			(books) => ({ books, quarters: quarterlySummaries(books), problem: null }),
+			(e) => ({ books: [], quarters: [], problem: MESSAGE[classifyLoadError(e)] })
+		),
+		loadNeedsFormulas(supabase()).then(
+			(formulas) => ({ formulas, formulaProblem: null }),
+			(e) => ({ formulas: [], formulaProblem: MESSAGE[classifyLoadError(e)] })
+		)
+	]);
+	return { ...booksResult, ...formulasResult };
 }

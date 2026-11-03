@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The transparency page publishes every version of the needs formula, not just the current one
+
+- **Why publish weights at all**: `design.md` says applicants for Fund help are chosen by a *published* needs formula, and the fairness audit has to re-derive any place in the queue. A score nobody can re-derive cannot be defended at the panel, so the weights cross to the public page.
+- **Every version stays listed**: `needs_formulas` keeps old rows so a member can ask which formula priced their place; showing only the newest would make past decisions unreadable and unreproducible.
+- **Weights only, never inputs**: the inputs that feed a score stay with the member, and the page says so beside the list. The read is public (`using (true)`), so it needs no session, and a refused weights read leaves the published books standing rather than blanking the page.
+- **Reversal:** if the weights should go back to being current-version-only (or off the page entirely), delete `loadNeedsFormulas` in `#lib/transparency/data.ts` and the "How members are chosen" section; the formula table, `record_needs` and the fairness audit are untouched either way.
+
 ## 2026-11-02 — The loans console shows the Fund's loans in their own section, and reads their money from the schema
 
 - **Their own section, not mixed into "Money you borrowed"**: a family loan has a lender member on the other side, an invitation pair and a written agreement; a Fund loan has none of those — the Fund signed at once and the money reached the payee through the partner's disbursement. Listing both under one heading would read as if a person had lent the money, so the Fund's loans get their own heading and their own cards, with no agreement page.

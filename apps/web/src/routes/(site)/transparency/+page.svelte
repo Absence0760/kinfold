@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { formatCents } from '#lib/dashboard/format.ts';
+	import { shareWord } from '#lib/transparency/data.ts';
 
-	let { books, quarters, problem } = $props();
+	let { books, quarters, problem, formulas, formulaProblem } = $props();
 </script>
 
 <svelte:head>
@@ -64,4 +65,25 @@
 			</dl>
 		</div>
 	{/each}
+{/if}
+
+<h2 id="formula">How members are chosen</h2>
+{#if formulaProblem}
+	<p class="empty">{formulaProblem}</p>
+{:else if formulas.length === 0}
+	<p class="empty">No needs formula has been published yet.</p>
+{:else}
+	<ul class="formulas">
+		{#each formulas as f}
+			<li>
+				Version {f.version}, used from {f.effectiveFrom}: need {shareWord(f.needBps)}, readiness
+				{shareWord(f.readinessBps)}, reliability {shareWord(f.reliabilityBps)}.
+			</li>
+		{/each}
+	</ul>
+	<p class="note">
+		The weights are public and the score behind any place in the queue can be re-derived from them; the inputs
+		that feed them stay private to the member. Older versions stay listed so a member can ask which formula
+		priced their place.
+	</p>
 {/if}

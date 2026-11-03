@@ -91,6 +91,43 @@ export async function loadOpenBooks(db: Db): Promise<OpenBook[]> {
 	});
 }
 
+export interface NeedsFormula {
+	version: number;
+	/** The day the version started being used, as stored. */
+	effectiveFrom: string;
+	/** Weights in bps (they sum to 10000, the schema checks it). */
+	needBps: number;
+	readinessBps: number;
+	reliabilityBps: number;
+}
+
+/** A weight as a share of ten thousand, spelled for readers. */
+export function shareWord(bps: number): string {
+	const pct = bps / 100;
+	return pct % 1 === 0 ? `${pct}%` : `${pct.toFixed(1)}%`;
+}
+
+/**
+ * The published needs formulas, newest version first: `needs_formulas` is
+ * readable by everyone and old versions stay so every member can ask which
+ * formula priced their place in the queue. Only weights cross; inputs stay
+ * private.
+ */
+export async function loadNeedsFormulas(db: Db): Promise<NeedsFormula[]> {
+	// needs_formulas isn't in the committed generated types yet (`fromNew` seam).
+	const result = await fromNew(db, 'needs_formulas')
+		.select('version, need_bps, readiness_bps, reliability_bps, effective_from')
+		.order('version', { ascending: false });
+	const rows = must<Record<string, unknown>[]>(result, 'the published needs formula');
+	return rows.map((row) => ({
+		version: Number(row['version']),
+		effectiveFrom: String(row['effective_from']),
+		needBps: Number(row['need_bps']),
+		readinessBps: Number(row['readiness_bps']),
+		reliabilityBps: Number(row['reliability_bps'])
+	}));
+}
+
 /** Calendar quarter a month belongs to, e.g. "Q3 2026". */
 function quarterOf(month: string): string {
 	const [year, index] = month.split('-').map(Number);
