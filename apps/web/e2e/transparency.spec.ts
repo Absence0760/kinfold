@@ -37,3 +37,19 @@ test('the share-rule section reads like a share rule, not like the books', async
 	const shareNote = page.locator('#share ~ p');
 	await expect(shareNote.first()).toContainText('need the database to be configured');
 });
+
+test('the counselor section names nobody the schema did not publish', async ({ page }) => {
+	await gotoHydrated(page, '/transparency');
+	await expect(page.locator('#counsel')).toBeVisible();
+	const headings = page.getByRole('heading', { level: 2 });
+	await expect(headings.nth(3)).toHaveText('The certified housing counselor');
+	// With no stack no agency can stand, so the section says so rather than
+	// naming anyone: the certification stays on the published row's paper.
+	const notice = page.locator('#counsel + p');
+	await expect(notice).toHaveCount(1);
+	await expect(notice.first()).toContainText('need the database to be configured');
+	// The agency block - its name, its credential, its contact link - stays
+	// out of a stack-less build: the page invents no agency beside a request.
+	await expect(page.locator('#counsel + ul')).toHaveCount(0);
+	await expect(page.locator('#counsel + a')).toHaveCount(0);
+});
