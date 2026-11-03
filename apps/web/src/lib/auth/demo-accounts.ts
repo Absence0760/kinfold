@@ -26,7 +26,7 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
 		email: 'sam@test.com',
 		name: 'Sam',
 		roles: 'Member · CA',
-		summary: "Maria's brother and lender. Has an open car damage request on the board."
+		summary: 'Maria’s brother and lender. Has an open car damage request on the board.'
 	},
 	{
 		email: 'james@test.com',
