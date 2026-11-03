@@ -88,8 +88,23 @@ for (const m of recipe.matchAll(/run (test:[a-z0-9:]+)/g)) {
 	}
 }
 
+// --- built artifacts stay out of the tracked tree ---
+// The e2e audit reads the production build; a committed build directory is a
+// snapshot that ages silently - the next audit pass would accuse stale HTML,
+// and a push would ship it. Generated trees (the SvelteKit output, Playwright
+// traces and caches) are never decisions, so nothing in them may be tracked.
+const generatedDirs = ['apps/web/build/', 'apps/web/.svelte-kit/', 'apps/web/test-results/', 'apps/web/.e2e-chromium-cache/', 'apps/backend/node_modules/', 'node_modules/', 'dist/'];
+for (const f of files) {
+	for (const dir of generatedDirs) {
+		if (f.startsWith(dir)) {
+			problems.push('tracked file ' + f + ' sits in the generated directory ' + dir + ' - the audit reads the live build, not a snapshot');
+			break;
+		}
+	}
+}
+
 if (problems.length) {
 	console.error(`Repo invariants: ${problems.length} problem(s)\n  ${problems.join('\n  ')}`);
 	process.exit(1);
 }
-console.log(`Repo invariants: ${migrations.length} migrations in order, ${tests.length} pgTAP plans agree, lib modules paired, test chain complete`);
+console.log(`Repo invariants: ${migrations.length} migrations in order, ${tests.length} pgTAP plans agree, lib modules paired, test chain complete, generated dirs untracked`);
