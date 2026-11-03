@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The counselor section is pinned e2e only where a stack-free build can speak
+
+- **The decision**: `transparency.spec.ts` gains a counselor-section test that pins the stack-less state - the heading is there, the section carries its own notice line, and the agency block (its name, its credential, its contact link) renders nothing. It does not try to pin the copy that names an agency, because that state needs a published row and no stack-less build has one.
+- **Why pin the empty state at all**: the goal asks for e2e where appropriate, and the honest claim here is the one a stack-free build CAN make - the page invents no agency. That is exactly the claim a fair-housing auditor looks for beside a mortgage gap, and the no-stack entry already exists, so the pin costs nothing new.
+- **Why not fake the agency state**: seeding a counselor row into the preview build would test the e2e build, not the app, and would let the pin pass while the real read stayed broken. The agency-state copy is pinned at its source by `data.test.ts` (loader) and `words.test.ts`/`public-help.test.ts` (the two sentences that name it).
+- **Reversal:** when the stack-configured Playwright project exists (the STACK.md open note), the agency-state copy joins e2e there - the name, the credential and the contact link each become a visible assertion, and this empty-state pin moves to the no-agency case rather than staying the only counselor pin.
+
 ## 2026-11-03 — The mortgage-gap panel names the agency through the same line the loan console speaks
 
 - **The decision**: the mortgage-gap `PublicHelpPanel` counselor copy is now the generated sentence from `publicHelpCounselLine` (`requests/public-help.ts`) — the same shape `bankReliefNote` builds for the loan console — so the two member surfaces cannot name different agencies, and the panel no longer re-decides which agency stands. The heading is shared the same way (`publicHelpHeading`).
