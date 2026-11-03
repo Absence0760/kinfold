@@ -242,6 +242,24 @@ async function motionProblems(page: Page) {
 // (walk ancestors for it), and a closed <details> hides its contents
 // without any display:none at all - the browser skips them on Tab, so
 // counting them would accuse a walk that is behaving correctly.
+// The other half of the assistive-tech promise: a subtree marked aria-hidden
+// is invisible to a screen reader, so it must not contain interactive
+// elements. Tab still stops on them, and the reader gets a live stop that
+// announces nothing - the page speaks silence at a control that works.
+async function hiddenInteractiveProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		for (const host of document.querySelectorAll('[aria-hidden="true"]')) {
+			const swallow = host.querySelectorAll('a[href], button, input, select, textarea, [tabindex]');
+			if (swallow.length > 0) {
+				const names = [...swallow].map((el) => el.tagName + ((el.getAttribute('class') || '').split(' ')[0]));
+				found.push('aria-hidden subtree contains ' + swallow.length + ' interactive element(s): ' + names.join(', ') + ' - a reader hears nothing at stops Tab still reaches');
+			}
+		}
+		return found;
+	});
+}
+
 async function reachableFocusables(page: Page) {
 	return await page.evaluate(() => {
 		let count = 0;
@@ -622,6 +640,21 @@ for (const route of publicRoutes) {
 
 // WCAG 2.4.2 wants titles that tell the surfaces apart: a reader with several
 // tabs open (or a bookmark list) cannot tell identical titles apart.
+for (const route of publicRoutes) {
+	test(`${route} hides no interactive element from assistive tech`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		expect(await hiddenInteractiveProblems(page)).toEqual([]);
+	});
+}
+
+for (const route of prerenderedPublicRoutes) {
+	test(`${route} hides no interactive element before any script runs`, async ({ page }) => {
+		await page.goto(route);
+		await page.waitForLoadState('networkidle');
+		expect(await hiddenInteractiveProblems(page)).toEqual([]);
+	});
+}
+
 for (const route of publicRoutes) {
 	test(`${route} keeps every visible hit target at least 24 by 24`, async ({ page }) => {
 		await gotoHydrated(page, route);
