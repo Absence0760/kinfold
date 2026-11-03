@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A denial always carries the person's words, and both doors ask before they write
+
+- **The decision**: `claims` gains a table check — a `denied` row must carry a `reason` of at least ten characters — and `deny_claim` and the console's `decide_claim` refuse that floor before any write. design.md says denials are "only by a person, with appeal" and, in declared disasters, "a decision with a payment statement or decline letter": a claim denied with nothing but a status shows the member a closed badge and no words, hands an appeal nothing to answer, and gives a decline letter nothing to quote. Roadmap 2c needed a floor, not a comment.
+- **Ten characters is the appeal's own floor**: `appeal_claim` already asks the requester for ten characters, so both halves of a disagreement ask alike. The number is a legibility floor, not one of the policy figures waiting for actuarial review.
+- **Why two enforcements**: the door's refusal names the reason it wants and runs first, so an aborted console denial leaves neither a review nor a denial (`decide_claim` rides one transaction with the reviewer's refusal); the table check backstops every route, including the service writing directly, so a partner feed cannot walk around the invariant.
+- **Reversal:** if a denial ever legitimately has no reason — say a feed marks a claim void rather than a person refusing it — void becomes its own status and the check moves with it; it is not a reason-less denial. Raising the floor is one edit in three places (the check and the two door refusals), and the panel's rendering never changes.
+
 ## 2026-11-03 — Accessibility gets assertions before a screen reader ever posts a request
 
 - **The decision**: `apps/web/e2e/a11y.spec.ts` audits the hydrated landing, transparency and sign-in pages (both viewports) against what a screen reader depends on - the page's language, the viewport meta (large text needs a reflow, which a fixed viewport blocks), a heading outline with one `h1` anchor and no skipped levels, `alt` on every image, a name on every button and link, a label every visible form field can hear. The roadmap promises the member app is usable with a screen reader "from day one, because people post requests on their worst days" - a promise with no test behind it is a promise no one can keep, so the promise gets rules before any reader posts.
