@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Fund loans get their own missed-installment view, and a default plan of one
+
+- **The decision**: `fund_loan_missed_installments` is a NEW view rather than a widening of `loan_missed_installments`, and `apply_fund_loan_default` is a service-only door that only stops collection. Roadmap 1h promises missed installments on every loan and design.md's ladder for Fund loans ends in "on true default, repayment when the home is sold or refinanced with cash out. The Fund never forecloses." Neither rule was anywhere: Fund loans could be overdue invisibly, and a Fund loan that stopped being collected had no way to read closed.
+- **Why the view is not shared**: a Fund loan's pauses push unpaid installments back instead of flagging installment rows, so the family view's `not i.paused` predicate would silently drop every Fund row if the two were unioned; and a family loan's forgiveness rows reference `family_loans`, so a Fund loan cannot be forgiven even to ask for it. The honest shape is two views and one default plan per ladder.
+- **One default plan**: family loans choose among forgive / repay-on-sale / mediate; a Fund loan has exactly one - stop collecting, pay the lien when the home is sold or refinanced. Adding a `default_plan` field would be a policy figure waiting for counsel, and the forgiveness table already refuses it, so the single plan is the schema's own boundary, not a guess.
+- **The console names what the schema listed** (`fund_loanMissed` sums only the view's `owed_cents`) so the page never re-derives what counts as overdue: the ten-day rule and "still collecting" live in one place.
+- **Reversal:** if Fund loans later take real default plans, the plan becomes a filed column and `loan_forgiveness` grows a Fund sibling table - the view does not move, because the missed rule is about collection, not about the plan. Dropping the view onto the family one is a one-line change and would be wrong until Fund pauses stop pushing dates back.
+
 ## 2026-11-03 — A denial always carries the person's words, and both doors ask before they write
 
 - **The decision**: `claims` gains a table check — a `denied` row must carry a `reason` of at least ten characters — and `deny_claim` and the console's `decide_claim` refuse that floor before any write. design.md says denials are "only by a person, with appeal" and, in declared disasters, "a decision with a payment statement or decline letter": a claim denied with nothing but a status shows the member a closed badge and no words, hands an appeal nothing to answer, and gives a decline letter nothing to quote. Roadmap 2c needed a floor, not a comment.
