@@ -15,6 +15,10 @@ export interface OpenBook {
 	reserveCents: number;
 	monthlyPoolRuns: number;
 	monthlyPoolRunsShort: number;
+	/** Pool requests that got a grant this month (0 when the month hides it). */
+	monthlyPoolRequests: number;
+	/** Of the granted money, the part that reached a household with no family lender. */
+	noLenderCents: number;
 }
 
 /** A published quarter: the three months summed, months counted honestly. */
@@ -30,6 +34,8 @@ export interface QuarterlySummary {
 	reserveCents: number;
 	poolRuns: number;
 	poolRunsShort: number;
+	poolRequests: number;
+	noLenderCents: number;
 }
 
 type Result<T> = { data: T | null; error: { message: string; code?: string } | null; status?: number };
@@ -70,7 +76,7 @@ export async function loadOpenBooks(db: Db): Promise<OpenBook[]> {
 	// open_books isn't in the committed generated types yet (`fromNew` seam).
 	const result = await fromNew(db, 'open_books')
 		.select(
-			'fund, month, requests_paid, paid_out_cents, allocated_cents, reserve_cents, pool_runs, pool_runs_short, published_at'
+			'fund, month, requests_paid, paid_out_cents, allocated_cents, reserve_cents, pool_runs, pool_runs_short, pool_requests, no_lender_cents, published_at'
 		)
 		.order('month', { ascending: false });
 	const rows = must<Record<string, unknown>[]>(result, 'the open books');
@@ -86,7 +92,9 @@ export async function loadOpenBooks(db: Db): Promise<OpenBook[]> {
 			allocatedCents: Number(row['allocated_cents']),
 			reserveCents: Number(row['reserve_cents']),
 			monthlyPoolRuns: Number(row['pool_runs']),
-			monthlyPoolRunsShort: Number(row['pool_runs_short'])
+			monthlyPoolRunsShort: Number(row['pool_runs_short']),
+			monthlyPoolRequests: Number(row['pool_requests']),
+			noLenderCents: Number(row['no_lender_cents'])
 		};
 	});
 }
@@ -222,7 +230,9 @@ export function quarterlySummaries(books: OpenBook[]): QuarterlySummary[] {
 				allocatedCents: book.allocatedCents,
 				reserveCents: book.reserveCents,
 				poolRuns: book.monthlyPoolRuns,
-				poolRunsShort: book.monthlyPoolRunsShort
+				poolRunsShort: book.monthlyPoolRunsShort,
+				poolRequests: book.monthlyPoolRequests,
+				noLenderCents: book.noLenderCents
 			});
 			continue;
 		}
@@ -233,6 +243,8 @@ export function quarterlySummaries(books: OpenBook[]): QuarterlySummary[] {
 		acc.reserveCents += book.reserveCents;
 		acc.poolRuns += book.monthlyPoolRuns;
 		acc.poolRunsShort += book.monthlyPoolRunsShort;
+		acc.poolRequests += book.monthlyPoolRequests;
+		acc.noLenderCents += book.noLenderCents;
 	}
 	const fundOrder = ['protection', 'home_fund', 'people'];
 	/** "Q3 2026" -> sortable number: year * 10 + quarter. */
@@ -242,3 +254,18 @@ export function quarterlySummaries(books: OpenBook[]): QuarterlySummary[] {
 		return fundOrder.indexOf(a.fund) - fundOrder.indexOf(b.fund);
 	});
 }
+
+/**
+ * The fairness share the design makes public: how much of a fund's granted
+ * money went to households that had no family lender of their own (design.md,
+ * "How we know it's helping" — the headline measure against the risk of mostly
+ * helping families who were already comfortable). A percentage needs a base of
+ * at least thirty granted requests (design.md's small-numbers rules), so a
+ * month or quarter too small to back a share answers null: the page says the
+ * share is not published yet rather than hinting at the month's size.
+ */
+export function reachShareBps(poolRequests: number, allocatedCents: number, noLenderCents: number): number | null {
+	if (poolRequests < 30 || allocatedCents <= 0) return null;
+	return Math.round((noLenderCents * 10000) / allocatedCents);
+}
+

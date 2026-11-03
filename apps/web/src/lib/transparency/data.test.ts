@@ -7,6 +7,7 @@ import {
 	loadShareRules,
 	quarterlySummaries,
 	shareWord,
+	reachShareBps,
 	type GrantRow,
 	type QuarterlySummary
 } from './data.ts';
@@ -29,8 +30,8 @@ function fakeDb(fixtures: Record<string, Fixture>) {
 }
 
 const rows = [
-	{ fund: 'protection', month: '2026-10-01', requests_paid: 12, paid_out_cents: 500000, allocated_cents: 400000, reserve_cents: 100000, pool_runs: 4, pool_runs_short: 1 },
-	{ fund: 'home_fund', month: '2026-09-01', requests_paid: 11, paid_out_cents: 300000, allocated_cents: 200000, reserve_cents: 50000, pool_runs: 3, pool_runs_short: 0 }
+	{ fund: 'protection', month: '2026-10-01', requests_paid: 12, paid_out_cents: 500000, allocated_cents: 400000, reserve_cents: 100000, pool_runs: 4, pool_runs_short: 1, pool_requests: 12, no_lender_cents: 260000 },
+	{ fund: 'home_fund', month: '2026-09-01', requests_paid: 11, paid_out_cents: 300000, allocated_cents: 200000, reserve_cents: 50000, pool_runs: 3, pool_runs_short: 0, pool_requests: 34, no_lender_cents: 100000 }
 ];
 
 describe('loadOpenBooks', () => {
@@ -51,7 +52,9 @@ describe('loadOpenBooks', () => {
 			allocatedCents: 200000,
 			reserveCents: 50000,
 			monthlyPoolRuns: 3,
-			monthlyPoolRunsShort: 0
+			monthlyPoolRunsShort: 0,
+			monthlyPoolRequests: 34,
+			noLenderCents: 100000
 		});
 	});
 
@@ -68,8 +71,8 @@ describe('loadOpenBooks', () => {
 });
 
 describe('quarterlySummaries', () => {
-	const oct = { fund: 'protection', fundLabel: 'Car help', month: '2026-10-01', yearMonth: 'October 2026', monthlyRequestsPaid: 12, paidOutCents: 500000, allocatedCents: 400000, reserveCents: 100000, monthlyPoolRuns: 4, monthlyPoolRunsShort: 1 };
-	const sep = { fund: 'protection', fundLabel: 'Car help', month: '2026-09-01', yearMonth: 'September 2026', monthlyRequestsPaid: 11, paidOutCents: 300000, allocatedCents: 200000, reserveCents: 50000, monthlyPoolRuns: 3, monthlyPoolRunsShort: 0 };
+	const oct = { fund: 'protection', fundLabel: 'Car help', month: '2026-10-01', yearMonth: 'October 2026', monthlyRequestsPaid: 12, paidOutCents: 500000, allocatedCents: 400000, reserveCents: 100000, monthlyPoolRuns: 4, monthlyPoolRunsShort: 1, monthlyPoolRequests: 12, noLenderCents: 260000 };
+	const sep = { fund: 'protection', fundLabel: 'Car help', month: '2026-09-01', yearMonth: 'September 2026', monthlyRequestsPaid: 11, paidOutCents: 300000, allocatedCents: 200000, reserveCents: 50000, monthlyPoolRuns: 3, monthlyPoolRunsShort: 0, monthlyPoolRequests: 34, noLenderCents: 100000 };
 
 	it('a full quarter sums its three months', () => {
 		const jul = { ...sep, month: '2026-07-01', yearMonth: 'July 2026', monthlyRequestsPaid: 13, paidOutCents: 100000, allocatedCents: 50000, reserveCents: 25000, monthlyPoolRuns: 2, monthlyPoolRunsShort: 0 };
@@ -93,6 +96,25 @@ describe('quarterlySummaries', () => {
 
 	it('no published months is no report, not empty money', () => {
 		expect(quarterlySummaries([])).toEqual([]);
+	});
+});
+
+describe('reachShareBps', () => {
+	it('a month or quarter too small to back a share answers null', () => {
+		// design.md's small-numbers rules: a percentage needs a base of at least
+		// thirty granted requests, so a 12-request month publishes no share.
+		expect(reachShareBps(12, 400000, 260000)).toBeNull();
+		expect(reachShareBps(29, 400000, 260000)).toBeNull();
+		// No granted money at all is no share either, rather than a 0% claim.
+		expect(reachShareBps(34, 0, 0)).toBeNull();
+	});
+
+	it('a backed share is the fund’s own money split honestly', () => {
+		expect(reachShareBps(34, 200000, 100000)).toBe(5000);
+		expect(shareWord(reachShareBps(34, 200000, 100000) as number)).toBe('50%');
+		// The share rounds to whole percentage points and never exceeds the whole.
+		expect(reachShareBps(34, 300000, 100001)).toBe(3333);
+		expect(reachShareBps(34, 300000, 300000)).toBe(10000);
 	});
 });
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { formatCents } from '#lib/dashboard/format.ts';
-	import { shareWord } from '#lib/transparency/data.ts';
+import { reachShareBps, shareWord } from '#lib/transparency/data.ts';
 
 	// A page's `$props()` is the page context: the load result sits under `data` (see the other route pages).
 	let { data } = $props();
@@ -15,6 +15,8 @@
 	Every month, the cooperative publishes its own totals: money paid out, what the repair fund
 	allocated, and how many requests were paid. Small numbers stay hidden — a month shows its counts
 	only once at least eleven requests were paid — because transparency should not unmask individuals.
+	The fairness measure below names the share of a fund's granted money that reached households with no family lender
+	of their own.
 	Quarters below are the published months summed; a quarter with fewer than three published months
 	says how many months it covers. The share rule says what part of a repair a member carries themselves; the grant report lists the money funders have reported in.
 </p>
@@ -108,6 +110,31 @@
 		How often a member's pool requests were paid sets how much of the next repair they carry themselves: the
 		fund's grant to them shrinks by that share and they pay the rest. A smaller grant is never a refusal and
 		never a wait. Older versions stay listed so a member can ask which rule priced their share.
+	</p>
+{/if}
+
+<h2 id="reach">Help reaching families without a family lender</h2>
+{#if data.problem || data.books.length === 0}
+	<p class="empty">No month has published its fairness share yet.</p>
+{:else}
+	<ul class="reach">
+		{#each data.books as book}
+			{@const share = reachShareBps(book.monthlyPoolRequests, book.allocatedCents, book.noLenderCents)}
+			<li>
+				{book.yearMonth} · {book.fundLabel}:
+				{#if share === null}
+					not enough granted requests to publish a share yet.
+				{:else}
+					{shareWord(share)} of the money the fund granted went to members with no family loan of their own.
+				{/if}
+			</li>
+		{/each}
+	</ul>
+	<p class="note">
+		The biggest risk for a fund is mostly helping families who could already lean on relatives. This measure answers
+		how much of the granted money reached households that had no family lender: a family loan that never carried money
+		— proposed, or cancelled — never counts as a lender, and the month behind a published share carries at least
+		thirty granted requests.
 	</p>
 {/if}
 
