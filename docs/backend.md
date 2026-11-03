@@ -119,7 +119,7 @@ Loan lifecycle:
 
 Only `active` or `paused` loans can be paused, forgiven or defaulted, and a loan that owes nothing is never defaulted. The borrower can resume early at any time (the pushed-back dates stay pushed back); the service resumes a loan only once its latest pause has run out.
 
-`request_raised_cents(request)` returns the amount raised only to the owner, a supporter, a verified member while the request is open on the board, or the service role; anyone else gets null. Internal callers use `private.raised_cents`. `loan_outstanding_cents` is security invoker (only the loan's parties get a balance), and `pool_requests_paid_3y` answers a member only about themselves.
+`request_raised_cents(request)` returns the amount raised only to the owner, a supporter, a verified member while the request is open on the board, or the service role; anyone else gets null. Internal callers use `private.raised_cents`. `loan_outstanding_cents` is security invoker (only the loan's parties get a balance), and `pool_requests_paid_3y` answers a member only about themselves. `share_rules` is a published, versioned table (step per paid request, cap, effective date) and `member_share_bps` runs the count through it - same self-only rule, so a member reads their own share and the service reads anyone's. The pool's need line subtracts that share: a frequent claimant's grant shrinks, never a refusal or a wait (`paid_share_test`).
 
 Member-facing functions: `my_reliability()` (the record that replaces a credit score) and `my_giving_record()` (what the member has paid in, given and lent, and what they've received). Both return only the caller's own data.
 
@@ -168,6 +168,7 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | A link can be handed back | `revoke_invite(invite)` for the owner only, refused once someone joined; a cancelled link never accepts and never previews | `invite_preview_test` |
 | Names stay inside an invite pair | `request_names(request)` answers an owner with their supporters' names (plus the relationship each said) and a supporter with the owner's name plus their own; no other reader reaches a `members` row | `invite_preview_test` |
 | Pool pays by band, highest first, all at once | `run_pool_allocation` (same algorithm as `apps/web/src/lib/requests/allocation.ts`) | `pool_test` |
+| A frequent claimant's grant shrinks, never a refusal or a wait | `share_rules` + `member_share_bps` + the share term in `run_pool_allocation`'s need line (mirrored by `allocation.ts` with `paid3y`/`share`) | `paid_share_test` |
 | The pools never mix | Every ledger journal stays within one fund and has at least two lines (deferred constraint trigger, `post_journal`) | `ledger_test`, `hardening_test` |
 | Open books | `open_books` (published monthly snapshots) and `fund_settings` readable by anyone; `fund_settings` changes logged | `rls_test`, `board_privacy_test` |
 | The giving record is private and never ranks | `my_giving_record` returns only the caller's data; nothing in allocation reads it | `repayment_test` |

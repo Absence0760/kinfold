@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — How often a member's pool requests were paid raises their own share, by a published versioned rule
+
+- **design.md's promise built**: "how often a member's pool requests are paid (in the last three years) raises their own share of the next request, the same way a deductible works" - so `share_rules` is a versioned, effective-dated published table (like `needs_formulas` and dues formulas), `member_share_bps` reads the member's own `pool_requests_paid_3y` count times the step capped at the cap, and `run_pool_allocation`'s need line subtracts that share - a frequent claimant gets a smaller grant and pays the rest themselves, never a refusal and never a wait.
+- **v1 weights are local stand-ins** (a tenth per paid request, capped at three tenths) pending actuarial review, like every other number on that table; the run records the `share_version` it read in `pool_runs.settings` so the fairness audit can re-derive grants.
+- **The count stays self-only**: `member_share_bps` runs `pool_requests_paid_3y`, so an authenticated member may ask only about their own share while the service may ask about anyone - the same rule as the count itself, pinned by a refusal in `paid_share_test`.
+- **The TS mirror took an optional shape** (`paid3y` on `FundingRequest`, `share` in `AllocationOptions`) so existing callers and every existing pinned figure stay exactly as they were; a member with no paid history gets the identical grant, so no older `pool_cover_test` or `allocation.test.ts` figure moves.
+- **Reversal:** if the share should raise the member's share of the REPAIR (their pledge side) instead of shrinking the grant, move the term out of the allocation into the member-facing figures; deleting the rule entirely is just removing `share_rules`, `member_share_bps` and the need-line term - the pool then grants the same amount to everyone.
+
 ## 2026-11-02 — The member area's no-stack ENTRY is e2e-covered: /app must redirect to /signin
 
 - **The redirect was already the rule** (`app/+layout.ts` sends an unconfigured visitor to `signinUrl(url)`); what `e2e/member-entry.spec.ts` pins is the browser-visible consequence, for all seven unparameterised member routes (`/app`, `/app/board`, `/app/cover`, `/app/invite`, `/app/loans`, `/app/requests/new`, `/app/review`), each keeping its own return path in `?next=`: the preview build's member area is never a half-empty shell or a crash through the SPA fallback.
