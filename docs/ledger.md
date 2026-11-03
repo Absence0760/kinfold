@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The Fund loan console offers the fair-lending self-test and treats the schema's "already recorded" refusal as its marker
+
+- **Only unsecured loans carry the form**: loans secured by the home answer on the credit union's government monitoring form (1002.13), which is service-only, so offering a self-test there would be a form the borrower can never complete. The schema refuses the same thing; the console just doesn't offer it.
+- **The console can't know whether the offer already happened**: nothing client-side can read `private.fair_lending` — that is the decision the previous entry locked in — so the form stays available and the schema's "this loan's self-test data is already recorded" refusal, explained in the Fund's words, is the marker that an offer landed.
+- **All four disclosures are one acknowledgement in the wrapper**: the schema takes four booleans (the law's four required disclosures); the console asks the borrower to check all four and passes one flag, so the UI can't drift out of sync with what the door needs.
+- **Reversal:** if the self-test should not be offered in-app, delete `apps/web/src/routes/app/loans/fund/[id]/FairLendingPanel.svelte`, its import and render in that page, and `offerFundLoanSelfTest`/`fundSelfTestProblem` in `#lib/loans/fund.ts`; the monitoring form is unaffected since it never crosses to clients.
+
 ## 2026-11-02 — Fair-lending demographics live in a private table no client can read, reached by two doors
 
 - **Two routes, one law**: 12 CFR 1002.5 bars asking race, ethnicity or sex, so the only ways in are the law's own exceptions — the government monitoring form (1002.13) for loans secured by the home, collected by the credit union (service only), and the voluntary self-test with its four disclosures (1002.5(b)(1)), offered by the borrower themselves. Nothing else asks, so the schema has no third door.

@@ -279,6 +279,42 @@ export function fundSplit(
 	}));
 }
 
+/**
+ * The voluntary fair-lending self-test (1002.5(b)(1)): the borrower offers
+ * their own race, ethnicity and sex for the fairness audit. The schema refuses
+ * unless all four disclosures are acknowledged and refuses a second offer on a
+ * loan — the borrower can never read the record back, so that refusal is the
+ * console's marker that the offer went through.
+ */
+export async function offerFundLoanSelfTest(
+	db: Db,
+	loan: string,
+	acknowledged: boolean,
+	race: string,
+	ethnicity: string,
+	sex: string
+) {
+	call(await rpcNew(
+		db,
+		'offer_fair_lending_self_test',
+		{
+			p_loan: loan,
+			p_purpose_ack: acknowledged,
+			p_use_ack: acknowledged,
+			p_limit_ack: acknowledged,
+			p_retain_ack: acknowledged,
+			p_race: race,
+			p_ethnicity: ethnicity,
+			p_sex: sex
+		}
+	));
+}
+
+export function fundSelfTestProblem(acknowledged: boolean): string | null {
+	if (!acknowledged) return 'Check all four disclosures before offering the self-test.';
+	return null;
+}
+
 export interface FundPlannedPayment {
 	seq: number;
 	dueOn: string;

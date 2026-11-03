@@ -80,6 +80,12 @@ export function explainLoanError(error: DbError | null | undefined): string {
 		return `This Fund loan allows ${fundAllowance[1]} pause month${fundAllowance[1] === '1' ? '' : 's'} a year and ${fundAllowance[2]} ${fundAllowance[2] === '1' ? 'is' : 'are'} used. For more time, ask the lending Fund for a new schedule.`;
 	if (/income schedules are computed from income; nothing to reschedule/i.test(message))
 		return 'Income payments are sized from income every month; there is no fixed schedule to change.';
+	if (/self-test data is already recorded/i.test(message))
+		return 'The self-test is offered once per loan. The auditor keeps the record from that offer; refresh and the page keeps showing it.';
+	if (/answers on the government monitoring form, not a self-test/i.test(message))
+		return 'A Fund loan secured by the home answers on the credit union\u2019s government monitoring form \u2014 there is nothing to offer here.';
+	if (/the self-test needs all four disclosures acknowledged/i.test(message))
+		return 'The self-test is only an offer once all four disclosures are read \u2014 purpose, how they are collected, their limits, and how long they are kept.';
 	if (/income due for this month is not owed/i.test(message))
 		return 'Nothing is owed this month, so there is nothing to record.';
 	if (/a restructure the partner has not answered yet/i.test(message))

@@ -165,6 +165,12 @@ describe('Fund loan doors read in the Fund\u2019s words', () => {
 		expect(explainLoanError({ message: 'income due for this month is not owed' })).not.toMatch(FALLBACK);
 	});
 
+	it('explains the fair-lending self-test doors', () => {
+		expect(explainLoanError({ message: 'this loan\u2019s self-test data is already recorded' })).not.toMatch(FALLBACK);
+		expect(explainLoanError({ message: 'the self-test needs all four disclosures acknowledged' })).not.toMatch(FALLBACK);
+		expect(explainLoanError({ message: 'fund loan secured by the home answers on the government monitoring form, not a self-test' })).not.toMatch(FALLBACK);
+	});
+
 	it('keeps the family-lender allowance message distinct', () => {
 		expect(explainLoanError({ message: 'this loan allows 3 pause months a year (1 used)' })).toMatch(/your lender/);
 	});

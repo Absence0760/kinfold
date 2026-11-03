@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { loadFundLoans, loadFundLoan, pauseFundLoan, resumeFundLoan, restructureFundLoan } from './fund.ts';
+import {
+	loadFundLoans,
+	loadFundLoan,
+	pauseFundLoan,
+	resumeFundLoan,
+	restructureFundLoan,
+		offerFundLoanSelfTest,
+	fundSelfTestProblem
+} from './fund.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -139,5 +147,23 @@ describe('the Fund loan doors', () => {
 	it('a door refusal throws the schema\u2019s own message', async () => {
 		const { db } = fakeDb({ pause_fund_loan: { data: null, error: { message: 'this loan allows 3 pause months a year (3 used); ask the lending Fund to restructure' } } });
 		await expect(pauseFundLoan(db, 'm1', 4)).rejects.toThrow(/ask the lending Fund to restructure/);
+	});
+});
+
+describe('the fair-lending self-test (roadmap 3h)', () => {
+	it('the self-test door carries all four disclosures as one acknowledgement', async () => {
+		const { db, asked } = fakeDb({ offer_fair_lending_self_test: { data: null, error: null } });
+		await offerFundLoanSelfTest(db, 'm1', true, 'Black', 'Not Hispanic or Latino', 'Female');
+		expect(asked).toEqual(['offer_fair_lending_self_test']);
+	});
+
+	it('an unacknowledged self-test is refused before it is sent', () => {
+		expect(fundSelfTestProblem(false)).toMatch(/all four disclosures/);
+		expect(fundSelfTestProblem(true)).toBeNull();
+	});
+
+	it('the schema refuses a second offer on the same loan', async () => {
+		const { db } = fakeDb({ offer_fair_lending_self_test: { data: null, error: { message: 'this loan\u2019s self-test data is already recorded' } } });
+		await expect(offerFundLoanSelfTest(db, 'm1', true, 'Black', 'Not Hispanic or Latino', 'Female')).rejects.toThrow(/already recorded/);
 	});
 });

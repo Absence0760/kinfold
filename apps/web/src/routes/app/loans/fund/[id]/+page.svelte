@@ -11,6 +11,7 @@
 	import FundResumePanel from './FundResumePanel.svelte';
 	import FundRestructureForm from './FundRestructureForm.svelte';
 	import FundSignPanel from './FundSignPanel.svelte';
+	import FairLendingPanel from './FairLendingPanel.svelte';
 
 	let { data } = $props();
 
@@ -226,6 +227,7 @@
 	{#if view.actions.restructure}
 		<FundRestructureForm loan={l} outstandingCents={detail.outstandingCents} restructureWaiting={view.openAsk !== null} today={today} onchanged={changed} />
 	{/if}
+	<FairLendingPanel loan={l} onchanged={changed} />
 {/if}
 <style>
 	.back {
