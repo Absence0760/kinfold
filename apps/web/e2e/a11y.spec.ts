@@ -18,6 +18,59 @@ import { gotoHydrated } from './helpers.ts';
 
 const publicRoutes = ['/', '/transparency', '/signin', '/no-such-page-anywhere'];
 
+// WCAG's reflow promise, which is the roadmap's "large text from day one": a
+// reader at 200%% zoom has the layout of a 320px-wide screen, and a page that
+// answers it with a sideways scroll makes them drag diagonally to read a line.
+for (const route of publicRoutes) {
+	test(`${route} reflows at 320 CSS px without a sideways scroll`, async ({ page }) => {
+		// WCAG's reflow rule is what the roadmap's "large text from day one"
+		// promises: a reader at 200% zoom has the layout of a 320px-wide screen,
+		// and a page that answers it with a sideways scroll makes them drag
+		// diagonally to finish a line. The viewport is resized instead of zoomed,
+		// because the layout question is the same and a fixed viewport meta would
+		// be caught by the other audit rule.
+		await page.setViewportSize({ width: 320, height: 640 });
+		await gotoHydrated(page, route);
+		const overflows = await page.evaluate(() => {
+			const wide = [];
+			const viewport = window.innerWidth;
+			// The promise itself, in the words WCAG states it: the document must
+			// not scroll sideways to be read.
+			if (document.documentElement.scrollWidth > viewport + 1) {
+				wide.push(`the page scrolls ${document.documentElement.scrollWidth - viewport}px sideways at ${viewport}px`);
+			}
+			// Named culprits, but only real ones: an element inside a container
+			// that clips it (or inside a closed menu, which keeps its layout but
+			// shows nothing) never causes the page to scroll, so flagging one
+			// would accuse a page that a reader can already use.
+			for (const el of document.body.querySelectorAll('*')) {
+				const holder = el.closest('details');
+				if (holder && !holder.hasAttribute('open')) continue;
+				const right = el.getBoundingClientRect().right;
+				if (right > viewport + 1) {
+					let clipped = false;
+					for (let p = el.parentElement; p; p = p.parentElement) {
+						const style = getComputedStyle(p);
+						if (style.display === 'none' || style.visibility === 'hidden') {
+							clipped = true;
+							break;
+						}
+						if (style.overflowX === 'hidden' || style.overflowX === 'clip' || style.overflowX === 'scroll' || style.overflowX === 'auto') {
+							clipped = true;
+							break;
+						}
+					}
+					if (!clipped) {
+						wide.push(`${el.tagName}.${(el.getAttribute('class') || '')} sticks ${Math.round(right - viewport)}px past the edge`);
+					}
+				}
+			}
+			return wide;
+		});
+		expect(overflows).toEqual([]);
+	});
+}
+
 for (const route of publicRoutes) {
 	// The evaluate callback is plain JS: Playwright serializes it into the page,
 	// so no TypeScript annotations may appear inside it.
