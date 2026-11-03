@@ -521,6 +521,50 @@ async function documentTitleProblems(page: Page) {
 // attributes or script - and names each adjacent repeat with the words around it,
 // so the copy line is findable. Repeats across element boundaries (markup on both
 // halves) are out of scope: this reads the copy as it sits in the file.
+// The nav keeps two copies of its section links: a plain row the desktop shows,
+// and a <details> menu the narrow layout shows instead (the breakpoint swaps
+// which half is on display). A reader at any width has to be able to reach every
+// section: so each section id the nav announces needs at least one link that is
+// either painted on the page, or sits in a menu whose host and summary are both
+// painted and can be opened (the disclosure opens without script on the
+// prerendered page). When a media query turns BOTH halves off - the drift this
+// audit exists for - a reader at that width silently loses the section jump.
+async function navSectionsReachableProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		const links = [...document.body.querySelectorAll('nav[aria-label^="Sections"] a[href^="/#"]')];
+		const byId = new Map();
+		for (const a of links) {
+			const id = (a.getAttribute('href') || '').slice(2);
+			if (id === '') continue;
+			const list = byId.get(id) || [];
+			list.push(a);
+			byId.set(id, list);
+		}
+		const painted = (el: Element) => {
+			const r = el.getBoundingClientRect();
+			if (r.width <= 0 || r.height <= 0) return false;
+			const cs = getComputedStyle(el);
+			return cs.display !== 'none' && cs.visibility !== 'hidden';
+		};
+		for (const id of byId.keys()) {
+			let reachable = false;
+			for (const a of byId.get(id)) {
+				if (painted(a)) { reachable = true; break; }
+				const host = a.closest('details');
+				if (host === null) continue;
+				const sum = host.querySelector('summary');
+				if (sum !== null && painted(host) && painted(sum)) { reachable = true; break; }
+			}
+			if (!reachable) {
+				found.push('section "' + id + '": no nav link for it is painted - a reader at this width cannot jump to the section (both nav halves hidden?)');
+			}
+		}
+		return found;
+	});
+}
+
+
 async function duplicatedWordsProblems(page: Page) {
 	return await page.evaluate(() => {
 		const found = [];
@@ -804,6 +848,7 @@ for (const route of publicRoutes) {
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
 		expect(await duplicatedWordsProblems(page)).toEqual([]);
+		expect(await navSectionsReachableProblems(page)).toEqual([]);
 	});
 }
 
@@ -817,6 +862,7 @@ for (const route of prerenderedPublicRoutes) {
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
 		expect(await duplicatedWordsProblems(page)).toEqual([]);
+		expect(await navSectionsReachableProblems(page)).toEqual([]);
 	});
 }
 
