@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The member's own share answers on their reliability card: same numbers, no new facts
+
+- **Why the console read exists**: the share rule shrinks the fund's grant to a frequent claimant, and the member had no way to see WHY - the home's reliability record showed counts, not the share. `my_share()` (no arguments, `auth.uid()` inside, authenticated-only) answers the same three numbers the pool reads (`pool_requests_paid_3y`, `member_share_bps`, `share_rule_version`), so the card and the door can never disagree.
+- **A no-argument self read, not a parameterised one**: the parameterised read (`member_share_bps`) already refuses other members, but the home's affordance should not offer a place to point at someone else at all - `my_share()` has nothing to point at, the same shape as `my_reliability()`.
+- **The home read is soft**: a missing share row means the card says nothing about the rule; it never makes the home fail, because the reliability record itself is the read that must answer. The share line sits inside the reliability card (with the counts that price it) rather than a new section, since design.md keeps the reliability record one replacement-for-a-credit-score card.
+- **Reversal:** if the share should stay invisible to members (the grant size then the only clue), delete `my_share`, the loader read and the card lines in `app/+page.svelte`; the rule and the pool's need line stay either way.
+
 ## 2026-11-02 — How often a member's pool requests were paid raises their own share, by a published versioned rule
 
 - **design.md's promise built**: "how often a member's pool requests are paid (in the last three years) raises their own share of the next request, the same way a deductible works" - so `share_rules` is a versioned, effective-dated published table (like `needs_formulas` and dues formulas), `member_share_bps` reads the member's own `pool_requests_paid_3y` count times the step capped at the cap, and `run_pool_allocation`'s need line subtracts that share - a frequent claimant gets a smaller grant and pays the rest themselves, never a refusal and never a wait.
