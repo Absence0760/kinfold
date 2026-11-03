@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The phone app's sign-in step decides once: a session or the member's words
+
+- **The decision**: 1a's shell gains the step the first screen runs — configured check, the stack's own sign-in call, the provider's answer classified to the member's own notice — mirroring the web's signin page shape. The seam's words and the seam's call existed apart; nothing in the shell joined them, so a shell that 'offers sign-in' could not yet say what happens after the answer. One place answers with at most one of a session or a notice.
+- **Superseded code removed, not left beside its replacement**: provider.dart's standalone signIn (a null answer, unable to classify) is gone rather than kept beside the step that owns the same call — two shapes for one call is how trees drift; provider_test's two tests for it move into the flow's tests, which pin the same call plus every notice path (no key, success, wrong credentials, rate limit, dev server words with the check command, prod words, an answer with no words to name).
+- **Teeth**: the round's own lint gate caught the leftover (provider_test's unused 'down' after the removal) as file:line with exit 1 — the analyze gate from last round earning a real find; fixed, 0 issues, 29 tests green.
+- **Reversal:** if the shell later grows a second step (sign-up), a shared step machine is extracted at the third caller per the repo's abstraction rule, and the per-step shape retires.
+
 ## 2026-11-03 — The 404 fallback’s way-home link joined the dead-link test, not a new spec
 
 - **The decision**: the e2e dead-link test pinned the fallback’s words and its missing retry button, but nothing checked what replaces the retry — a visitor who mistyped a link has exactly one way home. The assertion joined the existing test (one way-home link, its exact label) instead of opening a second spec that would re-pin the copy and the missing button: the suite’s near-duplicate specs are how it starts to rot, and the fact belongs where the fallback is already read.
