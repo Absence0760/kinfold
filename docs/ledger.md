@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The pool's TS mirror now reads recovered money as its own field
+
+- **What was wrong**: `allocation.ts` - the web's reference implementation of the pool's need line - read `amount - covered - funded`, while the schema reads `amount - insured_cover - raised - recovered`. Money recorded for the same damage (2g's `request_recoveries`, via `private.recovered_cents`) was simply absent from the mirror, so the two disagreed on any request with recovered money: the mirror asked the pool for money the schema already had covered. Nothing in the app passes `recovered` today (the landing board never has recoveries), so it caused no wrong figure on screen - a latent divergence, not a visible bug.
+- **The shape of the fix**: `FundingRequest` gains `recovered?`, and the need line reads all four terms the schema reads. `covered` and `recovered` stay SEPARATE fields: insured deductible cover counts toward filling the ask (a claim can fund a request), recovered money never does - it is neither Kinfold's raised money nor insured cover. So a fully recovered request still waits for the pool, exactly as the schema's status rules decide.
+- **Why pin it now**: the split is the subtle half of the need line, and the property test now generates `recovered` and asserts both bounds - a grant never exceeds the gap, and a request whose only money is recovered is never `funded`. A future consumer that shows member recoveries next to pool grants cannot drift from the schema without a red test.
+- **Reversal:** fold recovered into `covered` if the mirror is only ever used for insured cover (the landing board case) - but then the mirror stops matching the schema and the property test goes red, so the split is the honest reading.
+
 ## 2026-11-03 — Every pgTAP plan count was audited against its assertions; one suite was over-planned
 
 - **What was wrong**: `evidence_lifecycle_test.sql` declared `plan(46)` but makes 43 assertions. pgTAP counts each top-level assertion call as one test, and a suite that finishes short of its plan is a FAILURE - so `pnpm test:backend:db` (which `ci.yml` runs on every push to `main`) would have been red from the day the evidence-lifecycle migration landed.
