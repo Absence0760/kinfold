@@ -9,6 +9,13 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **All four disclosures are one acknowledgement in the wrapper**: the schema takes four booleans (the law's four required disclosures); the console asks the borrower to check all four and passes one flag, so the UI can't drift out of sync with what the door needs.
 - **Reversal:** if the self-test should not be offered in-app, delete `apps/web/src/routes/app/loans/fund/[id]/FairLendingPanel.svelte`, its import and render in that page, and `offerFundLoanSelfTest`/`fundSelfTestProblem` in `#lib/loans/fund.ts`; the monitoring form is unaffected since it never crosses to clients.
 
+## 2026-11-02 — Grant money gets labelled pots of its own and never joins `available`
+
+- **Why not `available`**: design.md says grants fund the Fund, mitigation and dues — never the pool's eligibility or its payouts. Pool allocation draws only from `available`, so grant money landing there would let a grant buy a pool grant, which is neither lawful nor designed. Two new fund-level accounts (`grants`, and `federal_grants` for federally funded money per 2 CFR 200's "own pot") keep it out, and the protection fund's non-federal grants land in the `dues` pot, which the premiums door — not the pool — spends.
+- **Federal money never enters insured cover**: design.md's payment-order rule says federal money inside the cover turns payouts into federal aid and pushes them behind insurance; the door refuses that combination and the table's check enforces it too.
+- **Replays answer instead of adding**: grant money is reported by the partner, so a replayed report with the same `partner_ref` returns the grant row it already made, mirroring the premium and dues doors the ledger already treats this way.
+- **Reversal:** if grants should flow into `available` like partner transfers, delete the `grants`/`federal_grants` accounts and the fund check in `20261102550000_grant_funding.sql` (make the door journal into `available`) and drop `grants_test`'s pot assertions; the append-only rows and the "federal money never enters insured cover" rule stay either way.
+
 ## 2026-11-02 — Fair-lending demographics live in a private table no client can read, reached by two doors
 
 - **Two routes, one law**: 12 CFR 1002.5 bars asking race, ethnicity or sex, so the only ways in are the law's own exceptions — the government monitoring form (1002.13) for loans secured by the home, collected by the credit union (service only), and the voluntary self-test with its four disclosures (1002.5(b)(1)), offered by the borrower themselves. Nothing else asks, so the schema has no third door.
