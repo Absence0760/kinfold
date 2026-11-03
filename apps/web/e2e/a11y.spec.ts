@@ -490,6 +490,36 @@ async function documentTitleProblems(page: Page) {
 // the top of the page - and a target inside a display:none subtree lands them
 // on nothing. Every same-document fragment link on a public page must point at
 // an element that carries that id and is actually visible.
+// Every printed dollar figure on a public page has to be grouped the way
+// the page shows its own figures. A copy typo (1,00 or 1,000.0) makes a
+// reader read ten hundred, and a formatted figure that drifts from this
+// shape (a locale change, say) reads the same number everywhere else but
+// not here.
+async function wellFormedMoneyProblems(page: Page) {
+	const out = await page.evaluate(() => {
+		const found = [];
+		const text = document.body.innerText || '';
+		const chunks = text.split(String.fromCharCode(36));
+		for (let i = 1; i < chunks.length; i += 1) {
+			const m = /^[0-9]+(,[0-9]+)*/.exec(chunks[i]);
+			if (!m) continue;
+			let figure = m[0];
+			const rest = chunks[i].slice(figure.length);
+			if (rest.length > 1 && rest[0] === '.' && /[0-9]/.test(rest[1])) {
+				const cents = /^[0-9]+/.exec(rest.slice(1));
+				if (cents) figure += '.' + cents[0];
+			}
+			if (!/^(0|[1-9]\d{0,2}(,\d{3})*)(\.\d{2})?$/.test(figure)) {
+				const around = chunks[i].slice(0, 24).replace(/\s+/g, ' ').trim();
+				found.push('money "' + String.fromCharCode(36) + figure + '" is not grouped in threes: a reader misreads it - near "' + around + '"');
+			}
+		}
+		return found;
+	});
+	return out;
+}
+
+
 async function staleAnchorsProblems(page: Page) {
 	return await page.evaluate(() => {
 		const found = [];
@@ -671,6 +701,7 @@ for (const route of publicRoutes) {
 		await gotoHydrated(page, route);
 		expect(await previewStatusProblems(page)).toEqual([]);
 		expect(await staleAnchorsProblems(page)).toEqual([]);
+		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 	});
 }
 
@@ -680,6 +711,7 @@ for (const route of prerenderedPublicRoutes) {
 		await page.waitForLoadState('networkidle');
 		expect(await previewStatusProblems(page)).toEqual([]);
 		expect(await staleAnchorsProblems(page)).toEqual([]);
+		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 	});
 }
 
