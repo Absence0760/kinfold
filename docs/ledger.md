@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The member home dashboard leg is judged landed web-only
+
+- **The decision**: roadmap 1h ("open requests with score reasons, loans and next installment, pauses, missed installments, reliability record, private giving record") is marked landed. Each named surface exists for a signed-in member at `/app` — requests and their score bands, loans from both sides with pauses and missed installments on the loan consoles, the reliability record (which now also answers the member's own share), and the private giving record. The leg describes the dashboard's content, not a second client, so the web surfaces satisfy it.
+- **Why not wait for the phone app**: 1a owns the mobile shell and is already blocked on the missing Flutter/Dart toolchain. Folding that gap into 1h would leave the dashboard leg's own content unreviewable forever on a machine that cannot compile Flutter.
+- **Reversal:** if the mobile client turns out to need a dashboard of its own shape (different content, different order), 1h stays web-landed and the mobile dashboard becomes its own leg under 1a rather than reopening this one.
+
 ## 2026-11-03 — The loan console names the certified agency at the relief step
 
 - **The decision**: `bankReliefNote(counsel)` in `loans/words.ts` turns the certified agency into a sentence beside a family loan's terms, and the console renders it as a "Relief at the bank" entry — the agency's name, the CFR it is certified under, what forbearance and modification mean, and a link to the agency's own contact page. Roadmap 3g's ladder puts that step beside a stalled mortgage; until now the console talked about "counselors" in general and never said which agency the Fund acts through.
