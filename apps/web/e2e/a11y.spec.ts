@@ -372,6 +372,23 @@ async function linkPurposeProblems(page: Page) {
 	});
 }
 
+// WCAG 2.4.2 document title: a screen reader announces the page title when
+// the page loads, so an empty, duplicated or missing title leaves the reader
+// without a page identity. Pages that carry no content at all (the client-side
+// fallback without JS) are unjudged, same precedent as the other rules -
+// there is nothing to announce, and the rule's target is documents with content.
+async function documentTitleProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		const titles = document.head.querySelectorAll('title');
+		const own = titles.length + document.body.querySelectorAll('title').length;
+		if (own > 1) found.push(`the document carries ${own} title elements: only one is read, the page ships ambiguity`);
+		const title = (document.title || '').trim();
+		if (!title) found.push('the document has no non-empty <title>: a screen reader announces nothing at page load');
+		return found;
+	});
+}
+
 async function contrastProblems(page: Page) {
 	const problems = await page.evaluate(() => {
 		const found = [];
@@ -485,6 +502,11 @@ test.describe('with JavaScript blocked', () => {
 			await page.waitForLoadState('networkidle');
 			expect(await linkPurposeProblems(page)).toEqual([]);
 		});
+		test(`${route} carries a document title before any script runs`, async ({ page }) => {
+			await page.goto(route);
+			await page.waitForLoadState('networkidle');
+			expect(await documentTitleProblems(page)).toEqual([]);
+		});
 	}
 });
 
@@ -502,6 +524,13 @@ for (const route of publicRoutes) {
 // contrast - the one rule that depends on what the page paints - has to hold
 // in both. The browser setting is Playwright's, not a class swap.
 for (const route of publicRoutes) {
+	test(`${route} carries a descriptive document title`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		expect(await documentTitleProblems(page)).toEqual([]);
+	});
+}
+
+for (const route of publicRoutes) {
 	test(`${route} announces one destination per link name`, async ({ page }) => {
 		await gotoHydrated(page, route);
 		expect(await linkPurposeProblems(page)).toEqual([]);
@@ -516,6 +545,17 @@ for (const route of publicRoutes) {
 		expect([...trap, ...order]).toEqual([]);
 	});
 }
+
+// WCAG 2.4.2 wants titles that tell the surfaces apart: a reader with several
+// tabs open (or a bookmark list) cannot tell identical titles apart.
+test('public surfaces carry distinct titles', async ({ page }) => {
+	const titles = [];
+	for (const route of publicRoutes) {
+		await gotoHydrated(page, route);
+		titles.push(page.title());
+	}
+	expect(new Set(titles).size).toBe(titles.length);
+});
 
 test.describe('in dark mode', () => {
 	test.use({ colorScheme: 'dark' });
