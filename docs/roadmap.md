@@ -78,5 +78,5 @@ More cover types and states. A reciprocal exchange so members insure each other 
 
 - **Tests and docs ship with the code** (repo rule): pgTAP for every new rule in the database, Vitest and Deno tests for logic, Flutter tests for the app.
 - **Security sweeps** before each stage's launch (`/audit/all`, plus `auth`, `gdpr` and `third-party-data-flows`), and a scoring bias audit every year.
-- **Accessibility**: the member app is usable with a screen reader and large text from day one, because people post requests on their worst days.
+- **Accessibility**: the member app is usable with a screen reader and large text from day one, because people post requests on their worst days. **Pinned 2026-11-03:** `e2e/a11y.spec.ts` walks the public surfaces like a screen reader does - language, viewport for large text, a heading outline with no skipped levels, `alt` on every image, named buttons and links, labelled form fields; the member consoles join the audit when a stack-configured project runs them.
 - **Local-first**: every new partner arrives with a local stand-in in the same change.
