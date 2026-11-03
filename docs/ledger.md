@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The structure audit now refuses generated files from the phone tree too
+
+- **The decision**: the audit that refuses tracked files inside generated directories (“the audit reads the live build, not a snapshot”) was web/backend-only; Flutter’s build output (`apps/mobile/build/`, `.dart_tool/`) sat outside it, so the mobile leg’s own pending item: a future `git add apps/mobile/...` slip that pulled a build artifact in would pass silently. The list grows with both dirs, the same rule shape, no new rule.
+- **Teeth**: staging `apps/mobile/build/native_assets/linux/native_assets.json` made the rule name it by path with exit 1; unstaged, green. The artifact was never committed.
+- **Reversal:** if Flutter’s own ignore files were committed and trusted as the single source of generated paths, the audit would read them instead of keeping a list of its own.
+
 ## 2026-11-03 — The phone app's sign-in step decides once: a session or the member's words
 
 - **The decision**: 1a's shell gains the step the first screen runs — configured check, the stack's own sign-in call, the provider's answer classified to the member's own notice — mirroring the web's signin page shape. The seam's words and the seam's call existed apart; nothing in the shell joined them, so a shell that 'offers sign-in' could not yet say what happens after the answer. One place answers with at most one of a session or a notice.
