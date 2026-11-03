@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The loan console names the certified agency at the relief step
+
+- **The decision**: `bankReliefNote(counsel)` in `loans/words.ts` turns the certified agency into a sentence beside a family loan's terms, and the console renders it as a "Relief at the bank" entry — the agency's name, the CFR it is certified under, what forbearance and modification mean, and a link to the agency's own contact page. Roadmap 3g's ladder puts that step beside a stalled mortgage; until now the console talked about "counselors" in general and never said which agency the Fund acts through.
+- **Why a note built from the data rather than a panel string**: the agency comes from the schema's standing version, so the console and the transparency page cannot drift apart, and a member's loan page says the truth of what the Fund published today. The sentence is built in code (with its tests) because its shape is copy the member reads, while everything factual comes from the row.
+- **No certified agency yet is an honest state, not a hidden one**: with no current version the console says the loan carries no counselor yet and keeps the 120-day note, because acting early is the member's own step regardless of which agency is named — the refusal to name someone is visible, never a silent gap.
+- **Fund loans stay out of this affordance**: the lending Fund services those loans itself, so the "ask your bank for forbearance" step belongs beside a family loan at the member's own bank. Rendering the same note there would assert the Fund is a member's mortgage bank.
+- **Reversal:** when the Fund's own loan servicing grows a relief step (or a lender partner takes the family loan's servicing), the same note function carries it — the sentence, not the plumbing, is what changes.
+
 ## 2026-11-03 — The Fund names its one certified housing counselor as published data
 
 - **The decision**: `housing_counsel` is a new published, versioned, effective-dated table with a service-side `housing_counsel_version()` door (anon execute), and `/transparency` names that agency and the credential behind it. Roadmap 3c and 3g both promise the referral to HUD-approved housing counselors, and design.md's "HUD housing counseling grants" row says Kinfold **partners with one** agency certified under 24 CFR part 214 rather than becoming one — but which agency was nowhere in the schema, so a page could only point at counselors in general and a fairness auditor could not ask which agency was named beside a request.
