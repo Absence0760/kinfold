@@ -614,6 +614,34 @@ async function scaffoldWordsProblems(page: Page) {
 }
 
 
+// The site's name is its identity: a public page that never prints it leaves a
+// reader landing there unable to tell who published it, and a body typed with a
+// misspelt brand (Kinfield, kinfold in lower case) makes the same product look
+// like two different products on neighbouring pages. The audit reads the page's
+// printed words: every word starting like the brand root has to carry the brand
+// exactly as the site names it, and the body has to name it at least once.
+async function brandProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		const words = (document.body.innerText || '').replace(/\s+/g, ' ');
+		// The brand root scan ignores case: the lockup paints KINFOLD through CSS
+// text-transform, which innerText reflects - presentation, not copy. The copy
+// drift this rule exists for is a letter-shape slip (Kinfield, Kinforld), so
+// letters carry the promise and case does not.
+for (const m of words.matchAll(/\bkinf\w*\b/gi)) {
+			if (m[0].toLowerCase() !== 'kinfold') {
+				const around = words.slice(Math.max(0, m.index - 24), m.index + m[0].length + 24).trim();
+				found.push('the printed copy brands the site as "' + m[0] + '" near "' + around + '": the brand is spelled one way on every page');
+			}
+		}
+		if (!/\bKinfold\b/.test(words)) {
+			found.push('the page never prints "Kinfold" in its body: a reader landing here cannot tell who published it');
+		}
+		return found;
+	});
+}
+
+
 async function headingSkipProblems(page: Page) {
 	return await page.evaluate(() => {
 		const found = [];
@@ -847,6 +875,7 @@ for (const route of publicRoutes) {
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
+		expect(await brandProblems(page)).toEqual([]);
 		expect(await duplicatedWordsProblems(page)).toEqual([]);
 		expect(await navSectionsReachableProblems(page)).toEqual([]);
 	});
@@ -861,6 +890,7 @@ for (const route of prerenderedPublicRoutes) {
 		expect(await wellFormedMoneyProblems(page)).toEqual([]);
 		expect(await headingSkipProblems(page)).toEqual([]);
 		expect(await scaffoldWordsProblems(page)).toEqual([]);
+		expect(await brandProblems(page)).toEqual([]);
 		expect(await duplicatedWordsProblems(page)).toEqual([]);
 		expect(await navSectionsReachableProblems(page)).toEqual([]);
 	});
