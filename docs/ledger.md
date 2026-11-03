@@ -2,14 +2,6 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
-## 2026-11-03 — The audit runs its rules on the prerendered no-JS copy as well
-
-- **The decision**: the screen-reader rule list and the reflow check became functions (`screenReaderProblems`, `overflowReports`), and a new `test.describe('with JavaScript blocked')` block runs both on `/` and `/transparency` with `javaScriptEnabled: false`.
-- **Why the no-JS copy is a separate surface**: the public pages are prerendered, so a reader mode, a blocked tracker or a script-free browser receives the static adapter's HTML before any script runs, and screen readers work on that copy. An audit that only ever walked the hydrated document could pass while the version most accessibility tools actually hand a reader was broken.
-- **Same rules, not a reduced list**: factoring the checks into functions is what keeps the two passes honest - a rule added once applies to both, so a future rule cannot quietly cover only the hydrated copy.
-- **Why the client-side pages stay out**: sign-in and the error fallback are not prerendered, so with JavaScript blocked they carry no content for the rules to speak about; pinning an empty shell would accuse a page whose design is deliberate. They join the audit hydrated, and the member consoles once a configured stack exists.
-- **Reversal:** if sign-in or the error fallback is ever prerendered, it joins this pass unchanged; if a surface grows JavaScript-required content that degrades on its own, that degradation gets its own pin here rather than a relaxed rule list.
-
 ## 2026-11-03 — Contrast is measured with WCAG's own ratio, on the colors the page paints
 
 - **The decision**: the audit grew a contrast check per public surface (hydrated and the no-JS copy): every element's own text runs are measured with WCAG's ratio formula - 4.5:1, 3:1 for large print (18.67px, or 14px bold) - against the background stack the page actually paints: every opaque background-color from the page down to the element's own, composited in order, carrying each layer's opacity.
@@ -17,6 +9,14 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **The vacuity trap, caught and kept**: the first pass of this rule carried a doubled-backslash rgba regex (`\\(` instead of `\(`), so no color ever parsed, every element `continue`d, and the rule passed on every page - a green test that measured nothing. The teeth proof is what caught it: forcing the threshold to 5:1 had to name real 4.95:1 text (the preview badge, the request-board status and kind labels), and it did. A contrast rule only ships with that proof in hand.
 - **What it found**: nothing to fix. The site's tightest text sits at 4.95:1 (12px bold badges and status labels) - legal under WCAG's 4.5:1 - so the verdict comes from the standard, not from silence.
 - **Reversal:** if a restyle ever drops text below 4.5:1 this rule reports it by element and ratio; if a page ever paints with CSS gradients, the compositing helper gains a gradient branch rather than the page being skipped.
+
+## 2026-11-03 — The audit runs its rules on the prerendered no-JS copy as well
+
+- **The decision**: the screen-reader rule list and the reflow check became functions (`screenReaderProblems`, `overflowReports`), and a new `test.describe('with JavaScript blocked')` block runs both on `/` and `/transparency` with `javaScriptEnabled: false`.
+- **Why the no-JS copy is a separate surface**: the public pages are prerendered, so a reader mode, a blocked tracker or a script-free browser receives the static adapter's HTML before any script runs, and screen readers work on that copy. An audit that only ever walked the hydrated document could pass while the version most accessibility tools actually hand a reader was broken.
+- **Same rules, not a reduced list**: factoring the checks into functions is what keeps the two passes honest - a rule added once applies to both, so a future rule cannot quietly cover only the hydrated copy.
+- **Why the client-side pages stay out**: sign-in and the error fallback are not prerendered, so with JavaScript blocked they carry no content for the rules to speak about; pinning an empty shell would accuse a page whose design is deliberate. They join the audit hydrated, and the member consoles once a configured stack exists.
+- **Reversal:** if sign-in or the error fallback is ever prerendered, it joins this pass unchanged; if a surface grows JavaScript-required content that degrades on its own, that degradation gets its own pin here rather than a relaxed rule list.
 
 ## 2026-11-03 — Reflow gets teeth too: no public page may need a sideways scroll at 320 CSS px
 
