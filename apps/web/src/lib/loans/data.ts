@@ -74,6 +74,9 @@ export interface LoanDetail {
 	pauses: PauseDetailRow[];
 	/** Restructures on this loan, oldest first (the pending one is last open). */
 	readonly restructures: RestructureRow[];
+	/** The agreement the loan servicing wrote down, null until it has. */
+	agreementText: string | null;
+	agreementFinalizedAt: string | null;
 	forgiveness: ForgivenessDetailRow[];
 	/** What the `loan_missed_installments` view lists for this loan. */
 	missed: MissedRow[];
@@ -90,7 +93,7 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 	const loan: LoanDetailRow | null = loanRes.data;
 	if (!loan) return null;
 
-	const [inst, pauses, forg, missed, restructures, title, supporter] = await Promise.all([
+	const [inst, pauses, forg, missed, restructures, agreement, title, supporter] = await Promise.all([
 		db.from('loan_installments').select('*').eq('loan_id', id).order('seq'),
 		db.from('loan_pauses').select('*').eq('loan_id', id).order('started_on'),
 		db.from('loan_forgiveness').select('*').eq('loan_id', id).order('created_at'),
@@ -99,6 +102,10 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 			.select('loan_id, months, first_due, stager_signed_at, other_signed_at, created_by')
 			.eq('loan_id', id)
 			.order('created_at'),
+		fromNew(db, 'family_loans')
+			.select('agreement_text, agreement_finalized_at')
+			.eq('id', id)
+			.maybeSingle(),
 		loan.request_id ? db.from('requests').select('title').eq('id', loan.request_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
 		loan.request_id && loan.borrower_id === uid
 			? db
@@ -117,6 +124,8 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 		forgiveness: must(forg, 'forgiveness'),
 		missed: must(missed, 'missed installments'),
 		restructures: must(restructures, 'restructures'),
+		agreementText: must(agreement, 'the written agreement')?.agreement_text ?? null,
+		agreementFinalizedAt: must(agreement, 'the written agreement')?.agreement_finalized_at ?? null,
 		requestTitle: must(title, 'the request')?.title ?? null,
 		lenderRelationship: must(supporter, 'the lender')?.relationship ?? null
 	};

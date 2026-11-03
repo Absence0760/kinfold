@@ -138,6 +138,8 @@
 			side,
 			summary,
 			missedSeqs,
+			/** The day the servicing wrote the agreement down, '' until it has. */
+			agreementWhen: detail.agreementFinalizedAt ? formatDay(detail.agreementFinalizedAt) : '',
 			used,
 			left,
 			scheduled,
@@ -348,6 +350,19 @@
 					{l.borrower_signed_at ? `Borrower signed ${formatDay(l.borrower_signed_at)}` : 'Borrower: not signed yet'}.
 					{l.lender_signed_at ? `Lender signed ${formatDay(l.lender_signed_at)}` : 'Lender: not signed yet'}.
 				</dd>
+			</div>
+			<div>
+				<dt>The written agreement</dt>
+				{#if view.agreementText}
+					<dd>
+						{view.agreementText}
+						<span class="sub">Written by the loan servicing on {view.agreementWhen}, from the signing. It is history: never edited afterwards — cite it as it stands.</span>
+					</dd>
+				{:else}
+					<dd>
+						Not written yet. Once you’ve both signed, the loan servicing writes the agreement down in plain words — amount, schedule, pause allowance, lien and what happens if repayments stop — and never edits it afterwards.
+					</dd>
+				{/if}
 			</div>
 		</dl>
 	</section>

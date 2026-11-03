@@ -13,6 +13,13 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **Names only, never money**: every line says the programme's own terms move that money outside the pool, so no read of this page can be taken as Kinfold administering a federal or state programme — 2e's loans still wait on the partners.
 - **Reversal:** if the operator wants the pointer kept off the member console (say, once the state programmes are verified against current notices per the followup list), delete the panel and its import; nothing in the schema or a test depends on the copy.
 
+## 2026-11-02 — The written agreement is read where the pair reads their loan (`agreement_text` on the loan page)
+
+- **Paperwork must be readable where the deal is discussed**: the loans console now shows the agreement the servicing wrote — amount, schedule, pause allowance, lien, default plan — beside the terms it was written from, and says "not written yet" while a loan is unsigned. A member who has to answer a tax accountant, or a repair shop's credit question, reads the same record the schema wrote.
+- **Read through the seam, never a hand-edit of generated types**: `family_loans` predates the newest migrations, so the read is `fromNew(db,'family_loans').select('agreement_text, agreement_finalized_at')`; `database.types.ts` stays untouched until the stack regenerates it (see the earlier ledger entry on seams).
+- **The page quotes it, never restates it**: the copy under it says the text is history and to cite it as it stands, so nobody reads a paraphrase as the agreement.
+- **Reversal:** if the written text should stay off the member console (only in a downloadable statement), delete the block and the two loader fields; the schema, the servicing job and every test are untouched.
+
 ## 2026-11-02 — A signed loan's agreement gets written down (`finalize_loan_agreement`)
 
 - **Paperwork is a product, not an afterthought** (design.md:149): because Kinfold documents every loan properly, an unpaid family loan can qualify as a bad-debt tax deduction for the lender, which an informal handshake loan usually can't. So once both sides have signed, the loan-servicing event writes the agreement in plain words on the loan — amount, schedule as set, pause allowance, lien/IRS rate, default plan — and the job sweeps exactly the signed loans that have none yet.
