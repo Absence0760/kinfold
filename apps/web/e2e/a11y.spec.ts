@@ -209,8 +209,15 @@ async function motionProblems(page: Page) {
 // WCAG 2.4.11: a keyboard reader must SEE where focus is. The walk presses
 // real Tab keys so :focus-visible matches the way a keyboard reader's does,
 // and every stop must paint a ring.
-async function focusRingProblems(page: Page) {
-	const reachable = await page.evaluate(() => {
+// How many stops the Tab walk should make: elements a keyboard can reach.
+// Two Chromium behaviours decide, both learned from the walk disagreeing
+// with the count rather than guessed: a hidden ancestor matters but
+// Chromium does not inherit display:none into a child's computed style
+// (walk ancestors for it), and a closed <details> hides its contents
+// without any display:none at all - the browser skips them on Tab, so
+// counting them would accuse a walk that is behaving correctly.
+async function reachableFocusables(page: Page) {
+	return await page.evaluate(() => {
 		let count = 0;
 		for (const el of document.body.querySelectorAll('a[href], button, summary, input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])')) {
 			// Chromium does not inherit display:none into a child's computed
@@ -226,14 +233,23 @@ async function focusRingProblems(page: Page) {
 			}
 			if (hidden) continue;
 			// A closed <details> hides its contents without display:none at all,
-			// and the browser skips them on Tab; counting them would accuse the
-			// walk.
+			// and the browser skips them on Tab. The summary itself IS a stop
+			// (closest('details') matches it too - excluding it here undercounted
+			// the walk by one), so the skip is for contents only.
 			const holder = el.closest('details');
-			if (holder && !holder.hasAttribute('open')) continue;
+			if (holder && !holder.hasAttribute('open') && el.tagName !== 'SUMMARY') continue;
+			// Mark the stop so later walks can ask "same element?" by probe id
+			// instead of by name or pixel coords (focus styles move elements -
+			// the skip link lifts out of its hideaway slot on focus).
+			el.setAttribute('data-e2e-stop', String(count));
 			count += 1;
 		}
 		return count;
 	});
+}
+
+async function focusRingProblems(page: Page) {
+	const reachable = await reachableFocusables(page);
 	const found = [];
 	for (let i = 0; i < reachable; i += 1) {
 		await page.keyboard.press('Tab');
@@ -256,6 +272,53 @@ async function focusRingProblems(page: Page) {
 		}
 	}
 	return found;
+}
+
+// The Tab walk must CLOSE: after visiting every stop and the browser's own
+// hop off the page, focus returns to the first stop. Focus stuck anywhere
+// else is a keyboard trap (WCAG 2.1.2) or a count that disagrees with the
+// walk - the rule catches undercount, while fell-out caught overcount.
+async function keyboardTrapProblems(page: Page) {
+	const reachable = await reachableFocusables(page);
+	const stops = [];
+	for (let i = 0; i < reachable + 2; i += 1) {
+		await page.keyboard.press('Tab');
+		const stop = await page.evaluate(() => {
+			const el = document.activeElement;
+			if (!el || el === document.body || el === document.documentElement) return null;
+			const cls = el.getAttribute('class');
+			const name = cls ? `${el.tagName}.${cls}` : (el.id ? `${el.tagName}#${el.id}` : el.tagName);
+			return { name, stop: el.getAttribute('data-e2e-stop') };
+		});
+		stops.push(stop);
+	}
+	const first = stops[0];
+	const last = stops[stops.length - 1];
+	if (!first) {
+		return ['the first Tab press never reached a stop: nothing on the page is keyboard-reachable'];
+	}
+	if (!last) {
+		return ['the walk ended off the page and never came back: a keyboard trap holds focus'];
+	}
+	if (last.name !== first.name || last.x !== first.x || last.y !== first.y) {
+		if (last.stop !== first.stop || last.stop === null) {
+			return [`the walk ended at ${last.name} instead of returning to ${first.name}: focus is trapped or a stop was missed`];
+		}
+	}
+	return [];
+}
+
+// WCAG 2.4.3: Tab follows reading order. A positive tabindex rewires the
+// walk away from it - a trap no page of ours should ship.
+async function positiveTabindexProblems(page: Page) {
+	return await page.evaluate(() => {
+		const found = [];
+		for (const el of document.body.querySelectorAll('[tabindex]')) {
+			const value = parseInt(el.getAttribute('tabindex') || '', 10);
+			if (value > 0) found.push(`${el.tagName} carries tabindex ${value}: a positive value rewires the Tab walk away from reading order`);
+		}
+		return found;
+	});
 }
 
 async function contrastProblems(page: Page) {
@@ -382,6 +445,15 @@ for (const route of publicRoutes) {
 // The design ships a dark scheme too (tokens via prefers-color-scheme), so
 // contrast - the one rule that depends on what the page paints - has to hold
 // in both. The browser setting is Playwright's, not a class swap.
+for (const route of publicRoutes) {
+	test(`${route}: the Tab walk has no trap and no positive tabindex`, async ({ page }) => {
+		await gotoHydrated(page, route);
+		const trap = await keyboardTrapProblems(page);
+		const order = await positiveTabindexProblems(page);
+		expect([...trap, ...order]).toEqual([]);
+	});
+}
+
 test.describe('in dark mode', () => {
 	test.use({ colorScheme: 'dark' });
 	for (const route of publicRoutes) {
