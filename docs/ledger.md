@@ -9,6 +9,13 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **The cap applied is written onto the audit trail** with each recorded claim, so the trail can be reconciled against the filed rates at review time.
 - **Reversal:** if the partner's feed should be trusted absolutely, delete the limit check and its pgTAP `claims_capped_test`; the claims table's own checks (share ≤ gross, paid = gross − share) keep the arithmetic either way.
 
+## 2026-11-02 — The ops console reads the tail of the trail, not its detail (`review_audit_tail`)
+
+- **Decisions must be reviewable**: the roadmap promises the operations console shows the audit trail, and `private.audit_log` had no door at all. New door answers recent actions (action, target, target id, time), newest first, capped at 100 — reviewers and admins only, and the read itself is logged, so trail-reading is itself auditable.
+- **The raw `detail` jsonb never crosses** (it carries amounts, vendor references and PII-adjacent figures), and neither does the acting member's id: the console sees THAT decisions happened; the reviews/appeals/claims tables say what they were and who wrote them under their own policies.
+- **Members get nothing**: the door re-checks role and the grant excludes anon, so a member's client can't pull the trail even by guessing the function name.
+- **Reversal:** if the trail should stay entirely inside the service, delete the door and its pgTAP `audit_trail_test`; nothing else reads these rows, and the trail-writing side is unchanged.
+
 ## 2026-11-02 — The member's cover console offers only the two doors a member truly owns
 
 - **The dues/premium schema had no member surface**: filed rates, classes and plan choices landed in SQL (pgTAP-pinned) but nothing let a member see or change what they own, so premiums read as an invisible deduction. A new route `/app/cover` reads their own vehicles, the filed rates that apply, and the annual premium figure, and offers exactly two writes: `set_my_plan` (which filed set applies) and `set_vehicle_class` (the rating-law class on their own vehicle).
