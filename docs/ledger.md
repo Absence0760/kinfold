@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Mortgage pages point at a fair lender, and Kinfold prices nothing behind it
+
+- **The decision (roadmap 3e, member-facing half first)**: `mortgage_gap` and `down_payment` pages gained a "A fair lender for the mortgage" panel above the public-help panel: who may be a lender of record under the programmes lenders already accept, what a lender still sees once family money and Fund help are counted, and the flat statement that Kinfold takes no referral fees.
+- **Why the fee is not "disclosed" but refused outright**: RESPA section 8 bans compensation/referral fees for mortgage-services arrangements, and the ban is not cured by a disclosure banner — design.md's own guardrail says the same ("disclosure doesn't cure it"). A local fee that "helps you find a lender" would also be money the member pays with no repair or loan work behind it, unlike every other fee in the revenue table (each funds real work).
+- **Why the copy lives in `requests/lender-help.ts` instead of inline in the component**: the other help panels hide their copy in the markup, but the two claims this page makes about a lender (never the lender of record, prices nothing) are load-bearing for compliance review, so they get pinned by vitest rather than reviewed by eye.
+- **Why no lender appears by name**: the lender of record is a credit union, nonprofit or certified CDFI chosen by the member near their own home; naming one would be Kinfold making a market judgement it cannot make, and would read as a referral. The panel names the doors and stops there.
+- **Reversal:** when the partner credit union arrives, this panel keeps its three lines and gains a fourth that names the partner with its own published terms — the no-referral-fee rule stays, since the partner holds the mortgage, it does not sell the member an introduction to a lender.
+
 ## 2026-11-03 — e2e now runs in CI, with the Chromium download cached per version
 
 - **The earlier call**: e2e stayed out of CI because CI would pay for Playwright's own Chromium download on every push. That was the honest state then — the gate ran `check`, `test:web`, `test:scripts` and pgTAP, and e2e was "on demand per machine".
