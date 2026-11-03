@@ -18,26 +18,11 @@ Future<Response> refuse(String path, {String method = 'GET', Map<String, String>
 
 void main() {
   final Provider p = Provider(url: localStackUrl(), send: record);
-  final Provider down = Provider(url: '', send: record);
   final Provider angry = Provider(url: localStackUrl(), send: refuse);
 
   test('the local run answers the dev stack’s own port by default', () {
     expect(localStackUrl(), 'http://127.0.0.1:54721');
     expect(p.configured(), true);
-  });
-
-  test('sign-in sends the stack’s own sign-in call, in its own words', () async {
-    calls.clear();
-    final data = await signIn(p, 'maria@test.com', 'testtest');
-    expect(calls, ['POST /auth/v1/signin email=maria@test.com password=testtest']);
-    expect(data, isNotNull);
-  });
-
-  test('a build with no key signs in nobody: no call, nothing returned', () async {
-    calls.clear();
-    final data = await signIn(down, 'maria@test.com', 'testtest');
-    expect(calls, []);
-    expect(data, null);
   });
 
   test('the profile reads the two rows the first screen is made of, once each', () async {

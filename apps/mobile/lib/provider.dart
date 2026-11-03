@@ -38,15 +38,6 @@ class Provider {
 /// environment grants access to it, so pointing the default at it is safe.
 String localStackUrl() => 'http://127.0.0.1:54721';
 
-/// Sign a member in against the stack’s own sign-in endpoint. A failure answer
-/// arrives as null here; the caller attaches the member’s words (sign_in.dart).
-Future<Map<String, String>?> signIn(Provider p, String email, String password) async {
-  if (!p.configured()) return null;
-  final r = await p.send('/auth/v1/signin', method: 'POST', json: {'email': email, 'password': password});
-  if (r.status >= 400) return null;
-  return {'session': r.body};
-}
-
 /// The member’s row and roles — the profile half of the shell. The board
 /// returns rows as JSON arrays; the two reads the first screen is made of
 /// happen once each. A refused read returns null (a failed load), which is
