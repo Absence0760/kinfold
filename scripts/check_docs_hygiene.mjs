@@ -66,6 +66,34 @@ for (const file of files) {
 	 }
 	 flush(lines.length);
 
+	 // The decision ledger's own conventions, since a ledger entry without a
+	 // Reversal bullet is a decision no one can undo, and an entry filed out of
+	 // date order hides a decision from the reader who scans the top.
+	 if (file === 'docs/ledger.md') {
+	  const entries = [];
+	  for (let i = 0; i < lines.length; i += 1) {
+	   if (lines[i].startsWith('## ')) entries.push({ at: i, title: lines[i] });
+	  }
+	  let previous = '';
+	  for (let e = 0; e < entries.length; e += 1) {
+	   const start = entries[e].at;
+	   const end = e + 1 < entries.length ? entries[e + 1].at : lines.length;
+	   const body = lines.slice(start, end).join('\n');
+	   const date = /^## (\d{4}-\d{2}-\d{2}) /.exec(lines[start]);
+	   if (!date) {
+	    problems.push(`${file}:${start + 1}: a ledger entry has no decision date`);
+	    continue;
+	   }
+	   if (previous !== '' && date[1] > previous) {
+	    problems.push(`${file}:${start + 1}: dated ${date[1]} sits under ${previous}, so it is filed out of order`);
+	   }
+	   previous = date[1];
+	   if (!body.includes('**Reversal')) {
+	    problems.push(`${file}:${start + 1}: ${date[1]} has no Reversal bullet`);
+	   }
+	  }
+	 }
+
 	 const codeFree = text.replace(/^ {0,3}(```|~~~)[\s\S]*?^\1[ \t]*$/gm, '');
 	 for (const m of codeFree.matchAll(/(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
 	  const target = m[1];
