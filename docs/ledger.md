@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The loans loaders got their own vitest, and the agreement row is read once
+
+- **The gap**: `loans/data.ts` was the last loader module with no test of its own - the loans console's behaviour on a real fake client (role wording, the pause allowance window, a miss as money behind, an unreadable loan as nothing) was load-bearing and eyeball-only.
+- **The decision**: add `loans/data.test.ts` on the standard `fakeDb(fixtures)` chain, and pin the windows the schema enforces, not just the happy path: the pause allowance counts only pauses whose `started_on` falls inside the rolling twelve months (`pause_loan`'s own `current_date - interval '12 months'`), so a fixture with today 2026-06-01 and a March pause reads 4 of 6 months left; the lender viewing a loan is never handed the invite relationship, because that is how the BORROWER named their lender.
+- **The small fix it caught**: `loadLoan` called `must(agreement, ...)`, `must(title, ...)` and `must(supporter, ...)` twice - once per field of the same row - so the agreement's text and date were two separate reads of one value (and, once `must` gains a side effect, two failures). Each row is now read once into a named local.
+- **Why pin "no loans means no further reads"**: the loader's short-circuits (`requestIds.length ? … : none`) are what keep the home page at five reads for a new member; a test that counts the `asked` list is the only way to notice if one of those shortcuts is dropped.
+- **Reversal:** if the loans console moved to one joined view (an installments-and-pauses view per loan), these pins move onto the view's shape and the loader keeps only the mapping test.
+
 ## 2026-11-03 — The board's web loader took the same db seam, so its fallbacks are pinned
 
 - **The gap**: `loadBoard` read the `supabase()` singleton, so vitest couldn't hand it a fake client and its two fallbacks were eyeball-only - a `fund_settings` read that fails must leave the board standing with NO minimum (the page then drops the band's status line) rather than inventing a bar, and the fund that words a band comes from `fundForKind(kind)`, which is the same mapping the eligibility card and the request form rely on.
