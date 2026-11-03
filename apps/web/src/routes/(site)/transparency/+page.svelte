@@ -12,7 +12,7 @@ import { counselorAsks } from '#lib/requests/public-help.ts';
 	<title>Open books · what the cooperative paid, month by month</title>
 </svelte:head>
 
-<h1 id="main">Open books</h1>
+<h1>Open books</h1>
 <p>
 	Every month, the cooperative publishes its own totals: money paid out, what the repair fund
 	allocated, and how many requests were paid. Small numbers stay hidden — a month shows its counts
