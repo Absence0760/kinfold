@@ -103,7 +103,7 @@ for (const m of recipe.matchAll(/run (test:[a-z0-9:]+)/g)) {
 // snapshot that ages silently - the next audit pass would accuse stale HTML,
 // and a push would ship it. Generated trees (the SvelteKit output, Playwright
 // traces and caches) are never decisions, so nothing in them may be tracked.
-const generatedDirs = ['apps/web/build/', 'apps/web/.svelte-kit/', 'apps/web/test-results/', 'apps/web/.e2e-chromium-cache/', 'apps/backend/node_modules/', 'node_modules/', 'dist/'];
+const generatedDirs = ['apps/web/build/', 'apps/web/.svelte-kit/', 'apps/web/test-results/', 'apps/web/.e2e-chromium-cache/', 'apps/backend/node_modules/', 'node_modules/', 'dist/', 'apps/mobile/build/', 'apps/mobile/.dart_tool/'];
 for (const f of files) {
 	for (const dir of generatedDirs) {
 		if (f.startsWith(dir)) {
