@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The board's live counts must match the status labels the cards render
+
+- **The decision**: the live region beside the fund slider announces how many sample requests are in each state (funded, partly funded, waiting, needing more evidence), and every card prints its own status label. Nothing demanded the two agree - a drifted summary template would let a screen reader misreport the board beside a picture that says otherwise (WCAG 1.1.1's alternative must describe the same state as the visible one). The audit parses the announced counts out of the live text, counts the rendered labels per state, and fails any state whose count differs, any total that describes a different board than the seven rendered cards, and any card missing a label.
+- **Why parse the live text instead of re-running allocatePool in the test**: the audit's job is the page's self-consistency - what the page says about itself, not a recomputation of the module (the module's own statuses are already unit-tested in apps/web/src/lib/requests/allocatePool.test.ts). Comparing the two rendered halves keeps the e2e honest without importing the logic again.
+- **Teeth**: forcing the announced funded count to a constant named both failure shapes - the summary announces 3 funded, but 0 cards print that status (at fund zero), and the summary counts 10 requests but the board renders 7 cards. Restored byte-exact, green.
+- **What it found**: nothing today - the template and the cards agree at every fund stop tried; the rule guards the next edit to either half.
+- **Reversal:** when the sample board becomes the member-visible live board, the announced counts come from the same result object as the cards, so this audit retires and the unit tests on the allocation keep the source instead.
+
 ## 2026-11-03 — A settled screen-reader summary may only announce money the page prints
 
 - **The decision**: the live regions beside the sliders are invisible to sighted readers, so nothing demanded they agree with the visible figures. A stale announcement reads a number to a screen reader that is no longer on the page - the two halves of the audience hear different money beside the same control. The audit collects every figure the section prints (dropping the live region's own run of text) and fails any announced figure a sighted reader cannot see, before a drag and again after driving the loan slider to the end and the fund slider to zero.
