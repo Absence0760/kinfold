@@ -1,5 +1,6 @@
 import { supabase } from '#lib/supabase/client.ts';
 import { loadLoan } from '#lib/loans/data.ts';
+import { loadCertifiedCounsel } from '#lib/transparency/data.ts';
 
 /**
  * One loan, from either side. Read as the signed-in member: RLS returns the
@@ -11,5 +12,7 @@ export async function load({ parent, params, depends }) {
 	depends('app:loan');
 	const { viewer } = await parent();
 	const uid = viewer.session.user.id;
-	return { uid, detail: loadLoan(supabase(), uid, params.id) };
+	// The certified counselor is public data, read beside the loan's relief step;
+	// its failure is the page's to explain, not the loan's to lose.
+	return { uid, detail: loadLoan(supabase(), uid, params.id), counsel: loadCertifiedCounsel(supabase()) };
 }

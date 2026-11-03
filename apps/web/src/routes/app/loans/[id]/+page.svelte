@@ -19,7 +19,8 @@
 		signatures
 	} from '#lib/loans/loan.ts';
 	import { define } from '#lib/board/terms.ts';
-	import { monthsWord, ordinal } from '#lib/loans/words.ts';
+	import { bankReliefNote, monthsWord, ordinal } from '#lib/loans/words.ts';
+	import type { CertifiedCounsel } from '#lib/transparency/data.ts';
 	import Badge from '../Badge.svelte';
 	import ForgiveForm from './ForgiveForm.svelte';
 	import PauseForm from './PauseForm.svelte';
@@ -57,7 +58,36 @@
 		};
 	});
 
+	// The Fund's certified counselor, read once beside the loan's relief step. It
+	// is public data, so a failure here never hides the loan.
+	let counsel = $state<CertifiedCounsel | null | undefined>(undefined);
+	let counselFailed = $state(false);
+	let reliefCounsel = $derived(counsel === null || counsel === undefined ? null : counsel);
+	let reliefNote = $derived(
+		counselFailed
+			? 'The certified counselor could not be read this time — the loan and its figures are shown as usual.'
+			: counsel === undefined ? '' : bankReliefNote(counsel)
+	);
+	$effect(() => {
+		let live = true;
+		data.counsel.then(
+			(c) => {
+				if (!live) return;
+				counsel = c;
+				counselFailed = false;
+			},
+			() => {
+				if (live) counselFailed = true;
+			}
+		);
+		return () => {
+			live = false;
+		};
+	});
+
+
 	let notice = $state('');
+
 	let noticeEl = $state<HTMLElement>();
 	let updatingEl = $state<HTMLElement>();
 
@@ -317,6 +347,17 @@
 					</span>
 				</dd>
 			</div>
+			{#if reliefNote !== ''}
+			<div>
+				<dt>Relief at the bank</dt>
+				<dd>
+					{reliefNote}
+					{#if reliefCounsel}
+						<span class="sub">The agency’s own contact page: <a href={reliefCounsel.contactUrl}>{reliefCounsel.agencyName}</a>.</span>
+					{/if}
+				</dd>
+			</div>
+			{/if}
 			{#if l.secured}
 				<div>
 					<dt>Security</dt>
