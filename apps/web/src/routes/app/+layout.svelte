@@ -14,6 +14,7 @@
 		{ href: '/app/board', label: 'Board' },
 		{ href: '/app/loans', label: 'Loans' },
 		{ href: '/app/invite', label: 'Invites' },
+		{ href: '/app/cover', label: 'Cover' },
 		...(canReview ? [{ href: '/app/review', label: 'Review' }] : [])
 	]);
 
