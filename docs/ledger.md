@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — The member's dues card names the published formula that priced their figure
+
+- **Why show the formula at all**: `subscription_formulas` keeps old versions "so every subscription can say which formula priced it", but until now the member saw only their own figure. A dues number with no rule beside it is one of the things a member can most easily misread ("is my dues too high?"), and the fairness audit needs the same rule visible.
+- **Published figures only**: the floor, rate and cap come straight off the published version the subscription references — the card never re-prices dues and never shows earnings, only the earnings check it was priced from (already on the card).
+- **A missing version reads honestly**: if a subscription references a version that isn't published, the card says so rather than showing the figure as if unpriced.
+- **Reversal:** if dues should keep showing bare figures, delete `formulaOf` and the `formula` state in `#lib/dashboard/membership.ts`, the `subscription_formulas` read in `loadHome`, and the card row in `/app`; the dues doors and the schema are untouched either way.
+
 ## 2026-11-02 — The transparency page publishes every version of the needs formula, not just the current one
 
 - **Why publish weights at all**: `design.md` says applicants for Fund help are chosen by a *published* needs formula, and the fairness audit has to re-derive any place in the queue. A score nobody can re-derive cannot be defended at the panel, so the weights cross to the public page.

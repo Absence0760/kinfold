@@ -61,6 +61,7 @@ describe('loadHome', () => {
 			'my_giving_record',
 			'my_reliability',
 			'requests',
+			'subscription_formulas',
 			'subscription_payments',
 			'subscriptions'
 		]);
@@ -71,10 +72,13 @@ describe('loadHome', () => {
 		const charge = { data: [{ period: '2026-10-01', amount_cents: 4000, status: 'captured' }], error: null };		const income = { data: [{ method: 'bank_link', monthly_income_cents: 400000, verified_at: '2026-03-01T00:00:00Z', expires_at: '2027-03-01T00:00:00Z' }], error: null };
 		const claims = { data: [{ request_id: 'r1', gross_cents: 40000, member_share_cents: 1000, paid_cents: 39000, status: 'paid' }], error: null };
 		const reqRow = { id: 'r1', title: 'A door to pay', kind: 'car_damage' as never, status: 'open' as never, funding: 'pool' as never, amount_cents: 100000, created_at: '2026-10-01T00:00:00Z' };
-		const fixtures = { requests: { data: [reqRow], error: null }, subscriptions: dues, subscription_payments: charge, income_verifications: income, claims, my_giving_record: giving, my_reliability: reliability, members: { data: { status: 'active', joined_at: '2026-03-31' }, error: null } };
+		const pricing = { version: 1, floor_income_cents: 150000, rate_bps: 100, cap_cents: 6000 };
+		const fixtures = { requests: { data: [reqRow], error: null }, subscriptions: dues, subscription_payments: charge, income_verifications: income, claims, subscription_formulas: { data: [pricing], error: null }, my_giving_record: giving, my_reliability: reliability, members: { data: { status: 'active', joined_at: '2026-03-31' }, error: null } };
 		const home = await loadHome(fakeDb(fixtures).db, 'maria', '2026-10-31');
 		expect(home.membership.dues.status).toBe('captured');
 		expect(home.membership.dues.monthlyCents).toBe(4000);
+		// The dues row names the published formula that priced it.
+		expect(home.membership.dues.formula).toEqual({ version: 1, floorIncomeCents: 150000, rateBps: 100, capCents: 6000 });
 		expect(home.membership.cover.claimsPaidCents).toBe(39000);
 		expect(home.membership.plan).toEqual([]);
 		expect(home.membership.income.method).toBe('bank_link');

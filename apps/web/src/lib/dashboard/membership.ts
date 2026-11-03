@@ -4,6 +4,8 @@ export interface SubscriptionRow {
 	id: string;
 	monthly_cents: number;
 	ends_on: string | null;
+	/** The published formula version that priced this subscription. */
+	formula_version: number;
 }
 
 export interface PaymentRow {
@@ -46,6 +48,22 @@ export interface DuesState {
 	/** The period shown: the month `today` sits in (yyyy-MM-01). */
 	period: string;
 	status: string;
+	/** The published formula that priced it, null while dues are not started. */
+	formula: PublishedFormula | null;
+}
+
+/**
+ * A published dues formula (design.md: old versions stay so every subscription
+ * can say which formula priced it). Numbers only: the page words them.
+ */
+export interface PublishedFormula {
+	version: number;
+	/** Nothing below this take-home pay gets dues (`floor_income_cents`). */
+	floorIncomeCents: number;
+	/** Share of what is above the floor, in hundredths of a percent. */
+	rateBps: number;
+	/** Never asked for more than this a month. */
+	capCents: number;
 }
 
 /** The earnings check the dues were priced from, and whether it is still live. */
@@ -97,6 +115,7 @@ export function summarizeMembership(
 	assets: AssetRow[],
 	premiumCents: number,
 	preferences: PreferenceRow[],
+	formulas: PublishedFormula[],
 	memberStatus: string | null,
 	memberJoinedAt: string | null,
 	today: string
@@ -105,12 +124,14 @@ export function summarizeMembership(
 	// member has none, dues are simply not started.
 	const active = subscriptions.find((s) => s.ends_on === null) ?? null;
 	const period = duesPeriodOf(today);
-	let dues: DuesState = { monthlyCents: 0, period, status: 'no dues yet' };
+	const formulaOf = new Map(formulas.map((f) => [f.version, f]));
+	let dues: DuesState = { monthlyCents: 0, period, status: 'no dues yet', formula: null };
 	if (active) {
 		dues = {
 			monthlyCents: active.monthly_cents,
 			period,
-			status: active.monthly_cents === 0 ? 'no dues to collect' : 'not started'
+			status: active.monthly_cents === 0 ? 'no dues to collect' : 'not started',
+			formula: formulaOf.get(active.formula_version) ?? null
 		};
 		if (active.monthly_cents > 0) {
 			const thisMonth = payments.find((p) => p.period === period);

@@ -377,6 +377,12 @@
 					<dt>The earnings it was priced from</dt>
 					<dd>{earnings.method ? incomeMethodWord(earnings.method) : 'No earnings check yet'}</dd>
 				</div>
+				<div>
+					<dt>The dues formula that priced it</dt>
+					<dd>{dues.formula
+						? `Formula ${dues.formula.version}: dues start only above ${formatCents(dues.formula.floorIncomeCents)} of take-home a month, cost ${dues.formula.rateBps / 100}% of what is above that, and never more than ${formatCents(dues.formula.capCents)} a month`
+						: 'The formula that priced it is not published here'}</dd>
+				</div>
 				{#if earnings.verifiedAt && earnings.expiresAt}
 				<div>
 					<dt>The check holds until</dt>

@@ -45,7 +45,7 @@ export function greeting(displayName: string | null | undefined): string {
  * service-role client. `today` is the member's local date (`YYYY-MM-DD`).
  */
 export async function loadHome(db: Db, uid: string, today: string): Promise<HomeData> {
-	const [requestsRes, loansRes, mineRes, givingRes, reliabilityRes, subsRes, paysRes, incomeRes, memberRes] = await Promise.all([
+	const [requestsRes, loansRes, mineRes, givingRes, reliabilityRes, subsRes, paysRes, incomeRes, memberRes, formulasRes] = await Promise.all([
 		db
 			.from('requests')
 			.select('id, title, kind, status, funding, amount_cents, created_at')
@@ -63,7 +63,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 			db.rpc('my_reliability'),
 		db
 			.from('subscriptions')
-			.select('id, monthly_cents, ends_on')
+			.select('id, monthly_cents, ends_on, formula_version')
 			.eq('member_id', uid),
 		db
 			.from('subscription_payments')
@@ -78,6 +78,8 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 			.select('status, joined_at')
 			.eq('id', uid)
 			.maybeSingle(),
+			// The published dues formulas (`fromNew` seam until the types regen).
+			fromNew(db, 'subscription_formulas').select('version, floor_income_cents, rate_bps, cap_cents'),
 		]);
 	const requests = must(requestsRes, 'your requests');
 	const loans = must(loansRes, 'your loans');
@@ -130,6 +132,14 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 	const memberRow = must(memberRes, 'your account');
 	const memberStatus = memberRow === null ? null : memberRow.status;
 	const memberJoinedAt = memberRow === null ? null : memberRow.joined_at;
+	// Every published dues formula version, so a member's dues row can name the
+	// formula that priced it.
+	const mustFormulas = must(formulasRes, 'the dues formula').map((f) => ({
+		version: Number(f['version']),
+		floorIncomeCents: Number(f['floor_income_cents']),
+		rateBps: Number(f['rate_bps']),
+		capCents: Number(f['cap_cents'])
+	}));
 	const membership = summarizeMembership(
 		must(subsRes, 'your dues'),
 		must(paysRes, 'your dues charges'),
@@ -138,6 +148,7 @@ export async function loadHome(db: Db, uid: string, today: string): Promise<Home
 		must(assetsRes, 'your covered vehicles'),
 		premiumCents,
 		must(prefsRes, 'your plan'),
+		mustFormulas,
 		memberStatus,
 		memberJoinedAt,
 		today
