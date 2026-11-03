@@ -106,7 +106,14 @@ export interface AuditRow {
 export async function loadAuditTail(db: Db, limit = 40): Promise<AuditRow[]> {
 	const { data, error } = await rpcNew(db, 'review_audit_tail', { p_limit: limit });
 	fail(error);
-	return (data ?? []) as AuditRow[];
+	const rows = (data ?? []) as unknown as Array<{
+		action: string;
+		target: string;
+		target_id?: string | null;
+		at: string;
+	}>;
+	// Only these fields cross: the door already omits `detail` and the actor.
+	return rows.map((r) => ({ action: r.action, target: r.target, target_id: r.target_id ?? null, at: r.at }));
 }
 
 /**

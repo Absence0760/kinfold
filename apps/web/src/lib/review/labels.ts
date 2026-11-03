@@ -55,7 +55,7 @@ export function auditWord(action: string): string {
 		'cover_choices.set': 'A cover plan was chosen',
 		'audit_log.read': 'The trail was read',
 	};
-	return words[action] ?? action.replaceAll('[._]', ' ');
+	return words[action] ?? action.replaceAll('.', ' ').replaceAll('_', ' ');
 }
 
 export function needsDecisionLabel(decision: NeedsDecision): string {
