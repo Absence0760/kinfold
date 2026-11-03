@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Contrast is measured in the dark scheme, where the promise could hide
+
+- **The decision**: a `test.describe('in dark mode')` block (Playwright's `colorScheme: “dark”` context) runs the contrast rule on all public surfaces hydrated and on the prerendered no-JS copy - twelve more audits per run.
+- **Why dark gets its own pass**: the design ships two schemes via `prefers-color-scheme` tokens, and contrast is the promise that depends on the colors the page paints - every other accessibility rule reads structure, which one document serves both ways. Measuring only the light scheme could leave a reader on a dark preference under a bar the audit never checked.
+- **The browser setting, not a class swap**: Playwright sets the real preference, so the media query that picks the tokens runs the way the reader's browser does, and the rule reads what the page paints, not what a test assumed.
+- **What it found**: nothing to fix, both ways - dark's tightest text sits at 5.12:1 (status labels, grant-report lines), above WCAG's 4.5:1. Teeth were proven on this surface before shipping: forcing the threshold to 6.0:1 named the real dark-mode text by ratio and content (`Months 0 to 9` at 5.12:1, `We move on when` at 5.30:1, `Design preview` at 5.65:1), so the pass reads rather than reports silence.
+- **Reversal:** if the dark palette ever drops text below the bar, this is the pass that names it by element and ratio; if a page ever ships a per-site theme toggle instead of the browser preference, the pass keeps its context and gains a matching toggle path rather than a second rule.
+
 ## 2026-11-03 — Reduced motion is a rule, and green needed two traps cleared before it could ship
 
 - **The decision**: `a11y.spec.ts` grew a motion rule under Playwright's `reducedMotion: “reduce”` context - no element on a public surface may run an animation (computed `animationName` other than none with nonzero duration), and `html` may not smooth-scroll, because a skip-link jump that glides is motion a reduced-motion reader asked to drop. The rule runs on both passes (hydrated and the prerendered no-JS copy), keeping the shared rule list.
