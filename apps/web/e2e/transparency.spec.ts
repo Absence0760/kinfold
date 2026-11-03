@@ -23,3 +23,17 @@ test('every section is present and the unconfigured notice is visible', async ({
 	// `p.problem` for the books plus three `p.empty`s with the same wording.
 	await expect(notices.nth(0)).toContainText('need the database to be configured');
 });
+test('the share-rule section reads like a share rule, not like the books', async ({ page }) => {
+	await gotoHydrated(page, '/transparency');
+	// Without the stack the page shows no figures, but the section still says
+	// what it would publish: part of a repair a member carries themselves.
+	await expect(page.locator('#share')).toBeVisible();
+	const headings = page.getByRole('heading', { level: 2 });
+	await expect(headings.nth(2)).toHaveText('The share rule: what a member carries themselves');
+	// The intro names all three published figures so a reader knows where the
+	// share rule sits on the page.
+	await expect(page.locator('p', { hasText: 'The share rule says' })).toBeVisible();
+	// The share section's own line, not the books': it answers about the rule.
+	const shareNote = page.locator('#share ~ p');
+	await expect(shareNote.first()).toContainText('need the database to be configured');
+});
