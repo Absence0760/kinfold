@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-02 — A feed claim over the filed caps is refused, never silently truncated
+
+- **A bad feed entry must not bend the books**: the partner's claims feed can carry an amount the filed terms would not pay (wrong plan, wrong class, or a claim above the vehicle's own value). `record_claim` now checks the limit — the filed deductible cap for the member's plan and the vehicle's rating-law class, and the vehicle's value — and raises rather than clamping, so a silent truncation can never invent a paid-in-full claim that isn't lawful.
+- **No car cap for requests without a classed covered vehicle**: home repairs and down payments carry no car cap; the cap follows the asset the request names, not a global figure.
+- **The cap applied is written onto the audit trail** with each recorded claim, so the trail can be reconciled against the filed rates at review time.
+- **Reversal:** if the partner's feed should be trusted absolutely, delete the limit check and its pgTAP `claims_capped_test`; the claims table's own checks (share ≤ gross, paid = gross − share) keep the arithmetic either way.
+
 ## 2026-11-02 — The member's cover console offers only the two doors a member truly owns
 
 - **The dues/premium schema had no member surface**: filed rates, classes and plan choices landed in SQL (pgTAP-pinned) but nothing let a member see or change what they own, so premiums read as an invisible deduction. A new route `/app/cover` reads their own vehicles, the filed rates that apply, and the annual premium figure, and offers exactly two writes: `set_my_plan` (which filed set applies) and `set_vehicle_class` (the rating-law class on their own vehicle).

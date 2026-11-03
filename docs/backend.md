@@ -189,6 +189,7 @@ Member-facing functions: `my_reliability()` (the record that replaces a credit s
 | A Fund loan borrower pauses and resumes by agreement | `pause_fund_loan` inside the allowance (append-only pause rows, unpaid installments pushed back); `resume_fund_loan` early by the borrower, `resume_ended_fund_pauses` service-only; a paused loan still collects | fund loan pauses, roadmap 3a |
 | A Fund loan borrower asks the lending Fund to restructure | `restructure_fund_loan` stages one pending ask (monthly only, never a past start); `apply_fund_loan_restructure` (service-only) re-spreads unpaid installments, outstanding unchanged; restructure rows are read by the borrower only | fund loan restructures, roadmap 3a |
 | Member-side cover console | `/app/cover` reads their own vehicles, the filed rates and the premium figure, and calls only `set_my_plan` (their plan) and `set_vehicle_class` (their own vehicle); filed rates are written by the service only | cover console, dues/premium, roadmap 2a/2b |
+| Claim caps | A feed claim over the filed cap for the member's plan and the vehicle's class — or over the vehicle's own value — is refused, not truncated; the cap is written onto the audit trail; requests with no classed covered vehicle carry no car cap | claims capped, roadmap 2b/2c |
 | Fraud findings | A reviewer/admin (or service) calls `review_fraud_signals(request)` and gets kind + severity, high first, unresolved only; the match `detail` jsonb never crosses; every read audit-logged. Members get nothing. |
 
 ## Access model
