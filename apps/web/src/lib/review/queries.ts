@@ -257,3 +257,42 @@ export async function recordNeedsDecision(
 	});
 	fail(error);
 }
+
+/** One recorded reconcile difference, as the console shows it. */
+export interface LedgerDifference {
+	fund: string;
+	/** The fund-level account the difference sits on (an account code, never a member). */
+	code: string;
+	/** What the partner's statement says, cents. */
+	statementCents: number;
+	/** What the ledger's own books say, cents. */
+	ledgerCents: number;
+	at: string;
+}
+
+/**
+ * The recorded reconcile differences for the console, newest first (roadmap 1e's
+ * reconciliation panel). The door answers fund, account and the two figures only -
+ * fund-level books, the same class of aggregate open_books publishes - and refuses a
+ * caller without console standing. Money is never moved from here.
+ */
+export async function loadLedgerDifferences(db: Db, limit = 20): Promise<LedgerDifference[]> {
+	// `review_ledger_differences` is newer than the generated types; see rpcNew.
+	const { data, error } = await rpcNew(db, 'review_ledger_differences', { p_limit: limit });
+	fail(error);
+	const rows = (data ?? []) as unknown as Array<{
+		fund: string;
+		code: string;
+		statement_cents: number;
+		ledger_cents: number;
+		recorded_at: string;
+	}>;
+	// Only these fields cross; the door already omits everything else.
+	return rows.map((r) => ({
+		fund: r.fund,
+		code: r.code,
+		statementCents: r.statement_cents,
+		ledgerCents: r.ledger_cents,
+		at: r.recorded_at
+	}));
+}

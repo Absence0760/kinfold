@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { Constants } from '../../../../backend/supabase/database.types';
 import {
 	auditWord,
+	accountWord,
+	fundWord,
 	REVIEW_DECISIONS,
 	decidedLabel,
 	decisionLabel,
@@ -98,5 +100,29 @@ describe('formatDay', () => {
 		expect(formatDay('2026-10-22T12:00:00Z')).toMatch(/Oct 2[12], 2026/);
 		expect(formatDay(null)).toBe('');
 		expect(formatDay('not a date')).toBe('');
+	});
+});
+
+describe('accountWord', () => {
+	it('names the fund-level accounts the ledger alerts can sit on', () => {
+		expect(accountWord('available')).toBe('the pool\u2019s money');
+		expect(accountWord('partner_cash')).toBe('money from the payment partner');
+		expect(accountWord('reserve')).toBe('the reserve held back for the next run');
+		expect(accountWord('committed')).toBe('money committed to funded requests');
+		expect(accountWord('paid_out')).toBe('money paid out to payees');
+		expect(accountWord('dues')).toBe('dues money');
+		expect(accountWord('premiums')).toBe('premiums the cooperative has paid');
+	});
+
+	it('an unknown account reads as its own name', () => {
+		expect(accountWord('some_new_account')).toBe('some new account');
+	});
+});
+
+describe('fundWord', () => {
+	it('names the funds a difference can be recorded against', () => {
+		expect(fundWord('protection')).toBe('the repair fund');
+		expect(fundWord('home_fund')).toBe('the Home Fund');
+		expect(fundWord('people')).toBe('the people fund');
 	});
 });

@@ -184,3 +184,27 @@ export function formatDay(value: string | null): string {
 	const d = new Date(value);
 	return Number.isNaN(d.getTime()) ? '' : dayLocal.format(d);
 }
+
+/** A ledger account code in console words; an unknown code reads as its own name. */
+export function accountWord(code: string): string {
+	const words: Record<string, string> = {
+		partner_cash: 'money from the payment partner',
+		available: 'the pool\u2019s money',
+		reserve: 'the reserve held back for the next run',
+		committed: 'money committed to funded requests',
+		paid_out: 'money paid out to payees',
+		dues: 'dues money',
+		premiums: 'premiums the cooperative has paid'
+	};
+	return words[code] ?? code.replaceAll('_', ' ');
+}
+
+/** A fund in console words. */
+export function fundWord(fund: string): string {
+	const words: Record<string, string> = {
+		protection: 'the repair fund',
+		home_fund: 'the Home Fund',
+		people: 'the people fund'
+	};
+	return words[fund] ?? fund.replaceAll('_', ' ');
+}

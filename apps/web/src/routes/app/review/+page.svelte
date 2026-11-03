@@ -3,12 +3,12 @@
 	import { supabase } from '#lib/supabase/client.ts';
 	import { define } from '#lib/board/terms.ts';
 	import { explainDbError } from '#lib/review/errors.ts';
-	import { loadAppeals, loadAuditTail, loadQueue, loadStandingClaims } from '#lib/review/queries.ts';
-	import { auditWord } from '#lib/review/labels.ts';
+	import { loadAppeals, loadAuditTail, loadLedgerDifferences, loadQueue, loadStandingClaims } from '#lib/review/queries.ts';
+	import { auditWord, formatCents, accountWord, fundWord } from '#lib/review/labels.ts';
 	import { formatDay } from '#lib/dashboard/format.ts';
 	import type { AppealItem, QueueItem } from '#lib/review/queue.ts';
 	import type { StandingClaim } from '#lib/review/queries.ts';
-	import type { AuditRow } from '#lib/review/queries.ts';
+	import type { AuditRow, LedgerDifference } from '#lib/review/queries.ts';
 	import QueueCard from './QueueCard.svelte';
 	import ClaimCard from './ClaimCard.svelte';
 	import AppealCard from './AppealCard.svelte';
@@ -26,6 +26,7 @@
 	let appeals = $state<Loaded<AppealItem>>({ state: 'loading' });
 	let claims = $state<Loaded<StandingClaim>>({ state: 'loading' });
 	let trail = $state<Loaded<AuditRow>>({ state: 'loading' });
+	let differences = $state<Loaded<LedgerDifference>>({ state: 'loading' });
 	let confirmation = $state('');
 	let confirmationEl = $state<HTMLParagraphElement | null>(null);
 
@@ -53,6 +54,14 @@
 		}
 	}
 
+	async function refreshDifferences() {
+		try {
+			differences = { state: 'ready', items: await loadLedgerDifferences(supabase()) };
+		} catch (err) {
+			differences = { state: 'error', message: explainDbError(err as { message?: string }) };
+		}
+	}
+
 	async function refreshClaims() {
 		try {
 			claims = { state: 'ready', items: await loadStandingClaims(supabase()) };
@@ -66,6 +75,7 @@
 		if (data.access.panel) refreshAppeals();
 		if (data.access.reviewer) refreshClaims();
 		if (data.access.reviewer) refreshTrail();
+		if (data.access.reviewer) refreshDifferences();
 	});
 
 	async function decided(message: string, refresh: () => Promise<void>) {
@@ -111,7 +121,8 @@
 			data.access.reviewer && queue.state === 'loading' ? 'Loading the queue…' : '',
 			data.access.panel && appeals.state === 'loading' ? 'Loading appeals…' : '',
 			data.access.reviewer && claims.state === 'loading' ? 'Loading claims…' : '',
-			data.access.reviewer && trail.state === 'loading' ? 'Reading the trail…' : ''
+			data.access.reviewer && trail.state === 'loading' ? 'Reading the trail…' : '',
+			data.access.reviewer && differences.state === 'loading' ? 'Reading the alerts…' : ''
 		]
 			.filter(Boolean)
 			.join(' ')
@@ -268,6 +279,37 @@
 				{/each}
 			</ul>
 		{/if}
+	</section>
+
+	<section class="block" aria-labelledby="diff-heading">
+		<h2 id="diff-heading">Differences on the books</h2>
+		<p class="muted">
+			Each line is a fund-level account where the partner's statement and the ledger's own books
+			disagree. Nothing here moves money; a difference waits for a person's eyes.
+		</p>
+		{#if differences.state === 'loading'}
+			<p class="muted">Reading the alerts…</p>
+		{:else if differences.state === 'error'}
+			<p class="muted">Couldn't load the alerts. {differences.message}</p>
+		{:else if differences.items.length === 0}
+			<p class="muted">Nothing to reconcile — every statement matched the books.</p>
+		{:else}
+			<!-- list-style:none removes list semantics in Safari; the role puts them back. -->
+			<!-- svelte-ignore a11y_no_redundant_roles -->
+			<ul class="cards" role="list">
+				{#each differences.items as alert}
+					<li>
+						<strong>{fundWord(alert.fund)} · {accountWord(alert.code)}</strong>
+						<span class="muted">
+							· statement {formatCents(alert.statementCents)}, books {formatCents(alert.ledgerCents)}
+							· {formatDay(alert.at)}
+						</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+		<!-- The reconciliation itself is the service's (functions/reconcile): the console
+		only shows the alert the schema recorded, never a client-side comparison. -->
 	</section>
 {/if}
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { decideClaim, loadAuditTail, loadFraudSignals, loadStandingClaims } from './queries.ts';
+import { decideClaim, loadAuditTail, loadFraudSignals, loadLedgerDifferences, loadStandingClaims } from './queries.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -127,5 +127,52 @@ describe('decideClaim', () => {
 			decide_claim: { data: null, error: { message: 'claim not found, or already decided', code: 'P0002' } }
 		});
 		await expect(decideClaim(db, 'c1', 'again')).rejects.toThrow(/already decided/);
+	});
+});
+
+describe('loadLedgerDifferences', () => {
+	it('the alerts read newest first, with both figures kept exactly as recorded', async () => {
+		const { db, asked } = fakeDb({
+			review_ledger_differences: {
+				data: [
+					{
+						fund: 'protection',
+						code: 'available',
+						statement_cents: 100000,
+						ledger_cents: 99000,
+						recorded_at: '2026-11-02T10:00:00Z',
+						// The door answers five fields only; anything else it might carry must not
+						// reach the console, so the mirror keeps the shape rather than the row.
+						detail: { partner_ref: 'p-9' }
+					},
+					{ fund: 'home_fund', code: 'dues', statement_cents: 50000, ledger_cents: 60000, recorded_at: '2026-11-01T09:00:00Z' }
+				],
+				error: null
+			}
+		});
+		const rows = await loadLedgerDifferences(db, 20);
+		expect(asked).toEqual(['review_ledger_differences']);
+		expect(rows).toEqual([
+			{ fund: 'protection', code: 'available', statementCents: 100000, ledgerCents: 99000, at: '2026-11-02T10:00:00Z' },
+			{ fund: 'home_fund', code: 'dues', statementCents: 50000, ledgerCents: 60000, at: '2026-11-01T09:00:00Z' }
+		]);
+		expect(JSON.stringify(rows)).not.toContain('p-9');
+		// The console never re-derives the comparison: the two figures cross as they
+		// were recorded, so a difference in the books can't be hidden client-side.
+		expect(rows[0].statementCents - rows[0].ledgerCents).toBe(1000);
+	});
+
+	it('a member without console standing gets a refusal', async () => {
+		const { db } = fakeDb({
+			review_ledger_differences: { data: null, error: { message: 'ledger differences are read by the operations console', code: '42501' } }
+		});
+		await expect(loadLedgerDifferences(db)).rejects.toThrow(/operations console/);
+	});
+
+	it('a clean reconciliation reads as nothing, not an error', async () => {
+		const { db, asked } = fakeDb({ review_ledger_differences: { data: [], error: null } });
+		const rows = await loadLedgerDifferences(db);
+		expect(asked).toEqual(['review_ledger_differences']);
+		expect(rows).toEqual([]);
 	});
 });
