@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The ledger checks its own conventions: every entry dated, reversible, newest first
+
+- **The decision**: `check_docs_hygiene.mjs` now reads `docs/ledger.md` as a ledger, not just as markdown - every `## ` entry must open with an ISO decision date, must contain a `**Reversal` bullet, and the dates must never step forward down the file.
+- **Why the ledger specifically**: it is the artifact whose purpose is to be reopened months later by someone deciding whether to undo a call. An entry without a Reversal bullet is a decision no one can undo and no reviewer will notice; an entry filed out of date order is invisible to the reader who scans the newest decisions. Both slips are silent in review, and both were being checked by eye at every docs change.
+- **Order is enforced on the dates alone, not on titles**: the file is a decision record, so "when did we decide this" is the sortable fact; a title that rewords a decision never moves its place.
+- **Reversal:** if the ledger grows sections beyond decisions (say a "later corrections" block), the date rule moves from `docs/ledger.md` wholesale to a narrower heading match - the check is one `if` on the filename, so narrowing it is a local edit and nothing else changes.
+
 ## 2026-11-03 — Markdown conformance is a gate, not a convention checked by eye
 
 - **The decision**: `scripts/check_docs_hygiene.mjs` (`pnpm test:docs`) now reads every tracked `.md` file and fails on a tab, a trailing space, three blank lines, a file not ended by exactly one newline, a table whose rows disagree on width, or a relative link whose file or heading anchor does not exist. It joined the root `test` chain, and it runs as its own CI job that is **not** gated on the code filter.
