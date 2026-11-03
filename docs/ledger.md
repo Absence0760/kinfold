@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — One name announces one destination, compared as resolved URLs
+
+- **The decision**: `a11y.spec.ts` grew the WCAG 2.4.4 link-purpose rule - two links that announce the same accessible name (aria-label or text) must resolve to one destination, because a screen reader can pull the page's links into a list read one name at a time and conflate anything that shares it. Runs hydrated on all public surfaces and on the prerendered no-JS copy like the structure rules.
+- **Resolved comparison, not attribute comparison**: the nav writes `#board` while a card could write `/#board`; the strings differ, the place a reader lands does not. The rule resolves through an anchor element before grouping, so a same-name pair landing the reader in one place is never accused for spelling alone.
+- **What it found**: nothing - every name on the public surfaces announces one destination today. Teeth proven on the site: renaming a nav section so two links shared the name `Roadmap` made the rule name the link with both destinations on all twelve link tests; restored, green.
+- **While shipping this, two comment faults in the audit got fixed**: the contrast-promise comment had drifted above the reduced-motion helper (an insertion anchored on the function line left it stranded) so a reader of the file thought it described motion, and the reflow comment carried a stray `200%%`.
+- **Reversal:** if a page ever names two genuinely different destinations the same way by design (a generic "Learn more" pair), the honest fix is distinct names at the source, not a weaker rule - the link-list conflation is real for the reader either way; when the consoles join the audit they inherit the rule and get the same treatment for their duplicate action verbs.
+
 ## 2026-11-03 — The Tab walk must close its cycle, and stop identity is a probe id not a pixel
 
 - **The decision**: two focus-order rules. WCAG 2.1.2 (no keyboard trap): the audit presses Tab for every reachable stop plus the browser's own hop, and focus must land back on the FIRST stop; anything else is focus stuck in a trap or a count that disagrees with the walk. WCAG 2.4.3: no element carries a positive `tabindex`, which rewires the walk away from reading order.
