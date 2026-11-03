@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The language tag is validated, and icon SVGs get the alt rule they cannot inherit
+
+- **The decision**: two half-watched halves of the screen-reader audit were finished. (1) `html lang` only had to exist - any value passed, including garbage. It now has to be a usable tag: 2-3 letters with optional -region groups, and the reserved `und`/`zxx` are rejected, because the point of the attribute is that a reader's tools can switch languages. (2) Inline icon SVGs are pictures the img-alt rule cannot see, so each must be hidden from readers (`aria-hidden`, `role=presentation`) or name itself (`aria-label` or a direct `<title>` child).
+- **Why `:scope > title` and the hidden alternative**: an SVG's `<title>` child counts as a name only when it belongs to that svg, and a decorative icon is legal if it is explicitly hidden - the rule judges the binary promise (either announced or known-decorative), not whether icons should or should not carry names, which is a design call.
+- **Teeth**: `lang="english"` in app.html and removing `aria-hidden` from the nav chevron in SiteNav were both named by exact text (`html lang "english": not a usable language tag...`, `svg: no accessible name and not hidden from readers...`) on all public routes, hydrated and with JavaScript blocked; restored byte-exact, green.
+- **What it found**: nothing today - the shell ships `lang="en"` and the site's only inline SVG is the aria-hidden chevron; the rules guard the next icon added without a name, which is the common miss.
+- **Reversal:** a site that later ships real multi-language pages would replace the shape check with a whitelist of shipped locales; the decorative-SVG judgement stays binary, not a whitelist.
+
 ## 2026-11-03 — Focus order gets a second shape: the walk is compared against the page's rects
 
 - **The decision**: WCAG 2.4.3 watched from two sides. The positive-tabindex rule covers rewiring of SOURCE order; a CSS reorder (flex `order`, grid placement) leaves source order honest but breaks the VISUAL promise, so the audit now compares the rects of consecutive Tab stops: focus may not move left along a line (tops overlap within a line's height) and may not jump up the page.
