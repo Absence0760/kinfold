@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '#lib/supabase/client.ts';
-import { loadNeedsFormulas, loadOpenBooks, quarterlySummaries, shareWord, type QuarterlySummary } from './data.ts';
+import {
+	loadGrantReport,
+	loadNeedsFormulas,
+	loadOpenBooks,
+	quarterlySummaries,
+	shareWord,
+	type GrantRow,
+	type QuarterlySummary
+} from './data.ts';
 
 type Fixture = { data: unknown; error: { message: string; code?: string } | null; status?: number };
 
@@ -12,10 +20,10 @@ function fakeDb(fixtures: Record<string, Fixture>) {
 		const result = fixtures[name] ?? { data: [], error: null };
 		const chain: Record<string, unknown> = {};
 		for (const m of ['select', 'eq', 'or', 'order', 'in']) chain[m] = () => chain;
-		chain.then = (ok: (v: Fixture) => unknown) => Promise.resolve(result).then(ok);
+		chain.then = (ok: (v: Fixture) => unknown, bad: (e: unknown) => unknown) => Promise.resolve(result).then(ok, bad);
 		return chain;
 	};
-	const db = { from: query } as unknown as Db;
+	const db = { from: query, rpc: query } as unknown as Db;
 	return { db, asked };
 }
 
@@ -110,5 +118,35 @@ describe('loadNeedsFormulas', () => {
 	it('a refused read fails loudly rather than hiding the formula', async () => {
 		const { db } = fakeDb({ needs_formulas: { data: null, error: { message: 'permission denied for table needs_formulas' } } });
 		await expect(loadNeedsFormulas(db)).rejects.toThrow(/permission denied/);
+	});
+});
+
+describe('loadGrantReport', () => {
+	it('the grant report reads fund-level aggregates with labels', async () => {
+		const { db, asked } = fakeDb({
+			grant_report: {
+				data: [
+					{ fund: 'home_fund', source: 'foundation', federal: false, amount_cents: 250000, grants: 1 },
+					{ fund: 'home_fund', source: 'local_government', federal: true, amount_cents: 500000, grants: 1 }
+				],
+				error: null
+			}
+		});
+		const grants = await loadGrantReport(db);
+		expect(asked).toEqual(['grant_report']);
+		expect(grants.map((g) => g.source)).toEqual(['Foundations', 'Local government']);
+		expect(grants.map((g) => g.fundLabel)).toEqual(['Home help', 'Home help']);
+		expect(grants[1].federal).toBe(true);
+		expect(grants.map((g) => g.amountCents)).toEqual([250000, 500000]);
+	});
+
+	it('no grant money is an empty report, not zero money', async () => {
+		const { db } = fakeDb({ grant_report: { data: [], error: null } });
+		expect(await loadGrantReport(db)).toEqual([]);
+	});
+
+	it('a refused read fails loudly rather than hiding the funding', async () => {
+		const { db } = fakeDb({ grant_report: { data: null, error: { message: 'permission denied for function grant_report' } } });
+		await expect(loadGrantReport(db)).rejects.toThrow(/permission denied/);
 	});
 });

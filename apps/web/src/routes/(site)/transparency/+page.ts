@@ -1,5 +1,5 @@
 import { isConfigured, supabase } from '#lib/supabase/client.ts';
-import { loadNeedsFormulas, loadOpenBooks, quarterlySummaries } from '#lib/transparency/data.ts';
+import { loadGrantReport, loadNeedsFormulas, loadOpenBooks, quarterlySummaries } from '#lib/transparency/data.ts';
 import { classifyLoadError } from '#lib/auth/errors.ts';
 
 const MESSAGE: Record<string, string> = {
@@ -16,11 +16,11 @@ const MESSAGE: Record<string, string> = {
 export async function load() {
 	if (!isConfigured()) {
 		const problem = 'The published books need the database to be configured.';
-		return { books: [], quarters: [], problem, formulas: [], formulaProblem: problem };
+		return { books: [], quarters: [], problem, formulas: [], formulaProblem: problem, grants: [], grantProblem: problem };
 	}
 	// The weights are a separate read: if the table refuses, the published
 	// months still show, and the section explains itself.
-	const [booksResult, formulasResult] = await Promise.all([
+	const [booksResult, formulasResult, grantsResult] = await Promise.all([
 		loadOpenBooks(supabase()).then(
 			(books) => ({ books, quarters: quarterlySummaries(books), problem: null }),
 			(e) => ({ books: [], quarters: [], problem: MESSAGE[classifyLoadError(e)] })
@@ -28,7 +28,11 @@ export async function load() {
 		loadNeedsFormulas(supabase()).then(
 			(formulas) => ({ formulas, formulaProblem: null }),
 			(e) => ({ formulas: [], formulaProblem: MESSAGE[classifyLoadError(e)] })
+		),
+		loadGrantReport(supabase()).then(
+			(grants) => ({ grants, grantProblem: null }),
+			(e) => ({ grants: [], grantProblem: MESSAGE[classifyLoadError(e)] })
 		)
 	]);
-	return { ...booksResult, ...formulasResult };
+	return { ...booksResult, ...formulasResult, ...grantsResult };
 }

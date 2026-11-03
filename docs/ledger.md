@@ -9,6 +9,12 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **All four disclosures are one acknowledgement in the wrapper**: the schema takes four booleans (the law's four required disclosures); the console asks the borrower to check all four and passes one flag, so the UI can't drift out of sync with what the door needs.
 - **Reversal:** if the self-test should not be offered in-app, delete `apps/web/src/routes/app/loans/fund/[id]/FairLendingPanel.svelte`, its import and render in that page, and `offerFundLoanSelfTest`/`fundSelfTestProblem` in `#lib/loans/fund.ts`; the monitoring form is unaffected since it never crosses to clients.
 
+## 2026-11-02 — The grant report is a public aggregate door, and the transparency page renders it without re-adding
+
+- **Public by design**: design.md says the transparency dashboard IS the grant report — funders and agencies get the same aggregates the public sees — so `grant_report()` is granted to anon, authenticated and service alike. There is no member data in it; grant money is fund-level, so the small-numbers masking the open books need doesn't apply.
+- **The page renders, never re-adds**: `loadGrantReport` maps the door's jsonb rows to labels only; the aggregation lives in the schema so a front-end bug can't quietly change what funders see.
+- **Reversal:** if the grant report should go back to funders-only PDFs rather than the public dashboard, delete `20261102560000_grant_report.sql`, `grants_report_test.sql`, `loadGrantReport`/`GrantRow` in `#lib/transparency/data.ts`, and the "The grant report" section plus its `grants`/`grantProblem` plumbing in `/transparency`; the `grants` table and pots stay either way.
+
 ## 2026-11-02 — Grant money gets labelled pots of its own and never joins `available`
 
 - **Why not `available`**: design.md says grants fund the Fund, mitigation and dues — never the pool's eligibility or its payouts. Pool allocation draws only from `available`, so grant money landing there would let a grant buy a pool grant, which is neither lawful nor designed. Two new fund-level accounts (`grants`, and `federal_grants` for federally funded money per 2 CFR 200's "own pot") keep it out, and the protection fund's non-federal grants land in the `dues` pot, which the premiums door — not the pool — spends.

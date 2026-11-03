@@ -2,7 +2,7 @@
 	import { formatCents } from '#lib/dashboard/format.ts';
 	import { shareWord } from '#lib/transparency/data.ts';
 
-	let { books, quarters, problem, formulas, formulaProblem } = $props();
+	let { books, quarters, problem, formulas, formulaProblem, grants, grantProblem } = $props();
 </script>
 
 <svelte:head>
@@ -85,5 +85,26 @@
 		The weights are public and the score behind any place in the queue can be re-derived from them; the inputs
 		that feed them stay private to the member. Older versions stay listed so a member can ask which formula
 		priced their place.
+	</p>
+{/if}
+
+<h2 id="grants">The grant report</h2>
+{#if grantProblem}
+	<p class="empty">{grantProblem}</p>
+{:else if grants.length === 0}
+	<p class="empty">No grant money has been reported in yet.</p>
+{:else}
+	<ul>
+		{#each grants as g}
+			<li>
+				{g.fundLabel} from {g.source}{g.federal ? ' (federally funded)' : ''}: {formatCents(g.amountCents)} across
+				{g.grants} grant{g.grants === 1 ? '' : 's'}.
+			</li>
+		{/each}
+	</ul>
+	<p class="note">
+		Grant money funds the cooperative, never a list of chosen families: it reaches a fund's dues and premiums
+		pots and its own labelled grant pots, and it never joins the money the repair fund allocates from. Federally
+		funded money is kept as its own pot (2 CFR 200) and never enters insured cover.
 	</p>
 {/if}

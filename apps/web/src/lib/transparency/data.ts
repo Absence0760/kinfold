@@ -1,5 +1,5 @@
 import { LoadError } from '#lib/auth/errors.ts';
-import { fromNew, supabase, type Db } from '#lib/supabase/client.ts';
+import { fromNew, rpcNew, supabase, type Db } from '#lib/supabase/client.ts';
 
 export interface OpenBook {
 	fund: string;
@@ -102,6 +102,40 @@ export interface NeedsFormula {
 }
 
 /** A weight as a share of ten thousand, spelled for readers. */
+export interface GrantRow {
+	fund: string;
+	fundLabel: string;
+	/** "Foundations", "Employers", "Local government" for readers. */
+	source: string;
+	federal: boolean;
+	amountCents: number;
+	grants: number;
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+	foundation: 'Foundations', employer: 'Employers', local_government: 'Local government'
+};
+
+/**
+ * The grant report (roadmap 3d's other half): grant money aggregated by fund,
+ * source and federal flag, read through the schema's own door so the page never
+ * re-adds figures itself.
+ */
+export async function loadGrantReport(db: Db): Promise<GrantRow[]> {
+	const result = await rpcNew(db, 'grant_report', {});
+	if (result.error) throw new LoadError('the grant report', result.error, undefined);
+	const rows = result.data ?? [];
+	if (!Array.isArray(rows)) return [];
+	return rows.map((row) => ({
+		fund: String(row['fund']),
+		fundLabel: FUND_LABEL[String(row['fund'])] ?? String(row['fund']),
+		source: SOURCE_LABEL[String(row['source'])] ?? String(row['source']),
+		federal: row['federal'] === true,
+		amountCents: Number(row['amount_cents']),
+		grants: Number(row['grants'])
+	}));
+}
+
 export function shareWord(bps: number): string {
 	const pct = bps / 100;
 	return pct % 1 === 0 ? `${pct}%` : `${pct.toFixed(1)}%`;
