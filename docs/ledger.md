@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Forty-three migrations' grant blocks rewritten: the revoke class, once
+
+- **What CI kept finding**: three consecutive walks each stopped at the next migration with the same shape — revoke statements written as two sentences, ‘revoke all from function X’; ‘revoke all from function X to public, anon, authenticated’; — the on keyword missing and the losing roles introduced with to, which inverts the intent. 136 such statements across 43 migrations now read the canonical single statement the working migrations always had (revoke all on function X from the trio, then the explicit grant to service).
+- **Why one sweep, not a push-per-migration**: the walks pin the same defect each time; fixing one site at a time buys a slower tour of the same bug. A tree-wide grep finds every statement of the class, and the replacement reuses the repo's own accepted sentence with our function's name in it — no new grammar anywhere. Edits to stamped files stay correct while every stack is born at db reset, per the rule stated in the entries above.
+- **Reversal:** with a deployed database, a grant-block fix lands as a NEW migration (revoke from the trio, grant to service), never as an edit to a stamped file — the sweep above is only admissible pre-launch.
+
 ## 2026-11-03 — A revoke the parser couldn't read: one statement, the repo's from-form
 
 - **What CI said**: after the pinned-view fix the walk advanced one more migration and stopped inside payout_reporting's grant block — “syntax error at or near ‘from’” (SQLSTATE 42601) with the caret on the revoke line. Two statements had been written for one intent: a bare revoke with the `on` keyword missing, and a to-audience variant that appears nowhere else in the repo.
