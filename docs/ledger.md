@@ -2,6 +2,15 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-04 — The sticky bar's blur, not its box, is what Chromium counts in the page's scroll
+
+- **What the runners said after the hunt fix**: the same four `[desktop]` reflow checks answer `the page scrolls 9px sideways at 320px` plus exactly one hunt line — `carrier: hiding HEADER.nav svelte-nkp01n removes 9 of the 9px scroll`. The nav bar accounts for the whole sideways scroll; **no box line and no pseudo line** accompany it, so on the runners neither an element RECT nor a TEXT NODE crosses the viewport — the page scrolls to something the box walk and the ink walk cannot see.
+- **The property that does exactly that**: `backdrop-filter: blur(10px)` on the sticky `.nav`. A newer Chromium adds a filter's blur region (~10px) to the document's scrollable overflow — a region, not a box, invisible to both walks and to any element RECT — while this machine's Chromium build never counted it, which is why local stayed green throughout. Hiding the bar hides its filter region, so the hunt named the bar as the sole carrier: 9px of scroll, nothing else.
+- **The fix, at the CSS**: the `backdrop-filter` line is gone on both sticky bars (`.nav` here and `.app-nav` on the member area, stated in-rule): the 88% translucent `color-mix` background alone keeps each bar readable over the page it floats on. No blur, no filter region, nothing for the document to scroll past.
+- **The one earlier call this reverses nothing**: the `overflow-x: clip` on `.menu nav` from the previous entry stays — this machine's Chromium really does lay a closed `<details>`'s links out past the viewport (right edge ~360px of 320) and an invisible subtree must never be something a reader scrolls past. It was a real guard, just not the runners' carrier; the 9px was never the menu's boxes on the runners.
+- **The rule unchanged**: the assertion still demands an empty report at 320 CSS px (`toEqual([])`); the fix removes the source of the overflow instead of leaning on the check.
+- **Reversal:** if a future design needs the frosted bar over moving content, it re-declares the scroll answer itself — a filter region may not silently inflate the document, so such a bar must come with an answer to this audit, not without one.
+
 ## 2026-11-04 — The carrier was the closed menu laying its links out past the viewport; the audit names it and CSS contains it
 
 - **What the runners said**: the hunt fix landed and the four `[desktop]` reflow checks now name their own culprit — `the page scrolls 9px sideways at 320px` plus `carrier: hiding HEADER.nav svelte-nkp01n removes 9 of the 9px scroll`. The nav bar alone accounts for the page's whole sideways scroll; no box line and no pseudo line accompanies it, and the same pages pass in `[phone]` and in a full local run.

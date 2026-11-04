@@ -68,7 +68,12 @@
 		top: 0;
 		z-index: 10;
 		background: color-mix(in srgb, var(--bg) 88%, transparent);
-		backdrop-filter: blur(10px);
+		/* NO backdrop-filter here: a newer Chromium adds a blur's filter region
+		   (~10px) to the document's scrollable overflow even though no box and no
+		   ink crosses the viewport — the audit read that as the header carrying
+		   all 9px of a 320px page's sideways scroll with no box line and no
+		   pseudo line beside it. The 88% translucent background keeps the bar
+		   readable over the page without it. */
 		border-bottom: 1px solid var(--border);
 		/* The whole bar, border included, is --nav-h tall, so the page's
 		   scroll-padding-top (app.css) lands anchors exactly below it. */
