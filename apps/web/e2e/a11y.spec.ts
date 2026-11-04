@@ -83,7 +83,9 @@ async function overflowReports(page: Page) {
 		// menu - what the page answers with no JavaScript - keeps its links in the
 		// tree hidden as a UA display:none slot; neither can ever push the scroll.
 		if (scrolling) {
-			const walker = document.createTreeWalker(document.body, 3);
+			// NodeFilter 4 walks TEXT nodes only (3 walks elements, whose
+			// boundaries have no character offsets - a Range over one throws).
+			const walker = document.createTreeWalker(document.body, 4);
 			// client rects are viewport-relative, and a scrolled page sits inside
 			// them shifted; measure in document space the scrollWidth is in.
 			const scrollX = -document.documentElement.getBoundingClientRect().left;
@@ -93,17 +95,18 @@ async function overflowReports(page: Page) {
 				if (!raw || !raw.trim()) continue;
 				const host = node.parentElement;
 				if (!host) continue;
+				// What this text node's ink covers once laid out: the union of its
+				// line fragments, in the face the page renders with. lib.dom types
+				// Range.getBoundingClientRect; on text nodes it bounds the ink.
 				const range = document.createRange();
 				range.setStart(node, 0);
 				range.setEnd(node, raw.length);
-				// client rects: the laid-out ink of exactly this text node - the
-				// runner's own laid-out rects are what it scrolled on. lib.dom
-				// doesn't model the property, so name it structurally; the compiler
-				// erases it and the callback serializes as plain JS.
-				const rects = Array.from((range as unknown as { clientRects: DOMRectList }).clientRects);
-				// Nothing laid out at all: not rendered (a script tag's bootstrap
+				const rect = range.getBoundingClientRect();
+				// Nothing laid out at all - renders no ink (a script tag's bootstrap
 				// text, a closed details' contents, a visually-hidden subtree).
-				if (rects.length === 0) continue;
+				if (rect.width === 0 && rect.height === 0) continue;
+				// Ancestors that clip: an overflow-hidden ancestor keeps its box edge
+				// - the runner clipped these spans' ink too, so they never scrolled.
 				const clippers: HTMLElement[] = [];
 				let hidden = false;
 				for (let up: HTMLElement | null = host; up; up = up.parentElement) {
@@ -112,14 +115,10 @@ async function overflowReports(page: Page) {
 					if (s.overflowX !== 'visible') clippers.push(up);
 				}
 				if (hidden) continue;
-				let right = -1;
-				for (const rect of rects) {
-					let x1 = rect.right + scrollX;
-					for (const clipper of clippers) {
-						const cb = clipper.getBoundingClientRect();
-						if (cb.right + scrollX < x1) x1 = cb.right + scrollX;
-					}
-					if (x1 > right) right = x1;
+				let right = rect.right + scrollX;
+				for (const clipper of clippers) {
+					const cb = clipper.getBoundingClientRect();
+					if (cb.right + scrollX < right) right = cb.right + scrollX;
 				}
 				const over = Math.round(right - viewport);
 				if (over > 0) {
