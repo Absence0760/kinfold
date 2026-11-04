@@ -71,7 +71,7 @@
 	{#if recoveries.length}
 		<ul class="recorded" role="list">
 			{#each recoveries as row}
-				<li>{formatCents(row.amount_cents)} as {recoveryLabel(row.source)} on {row.on}</li>
+				<li>{formatCents(row.amount_cents)} as {recoveryLabel(row.source)} on {row.recovered_on}</li>
 			{/each}
 		</ul>
 		<p class="muted">Total for the same damage: {formatCents(recoveryTotalCents(recoveries))}. It is money that moved outside Kinfold; funding, payout caps and refunds still look only at pledges and payouts.</p>

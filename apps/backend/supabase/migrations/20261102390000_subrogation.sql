@@ -32,7 +32,7 @@ begin
     return null;
   end if;
   insert into public.request_recoveries
-    (request_id, source, amount_cents, on, note, partner_ref, verified_at)
+    (request_id, source, amount_cents, recovered_on, note, partner_ref, verified_at)
     values (p_request, p_source, p_amount_cents, p_on, p_note,
             p_partner_ref, now())
     returning id into v_id;

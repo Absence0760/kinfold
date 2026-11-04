@@ -27,7 +27,7 @@ create table public.request_recoveries (
   request_id   uuid not null references public.requests (id) on delete cascade,
   source       public.recovery_source not null,
   amount_cents bigint not null check (amount_cents > 0),
-  on           date not null,
+  recovered_on date not null,
   note         text check (note is null or length(note) <= 500),
   partner_ref  text unique,
   verified_at  timestamptz,
@@ -71,7 +71,7 @@ begin
       using errcode = '42501';
   end if;
   insert into public.request_recoveries
-    (request_id, source, amount_cents, on, note, recorded_by)
+    (request_id, source, amount_cents, recovered_on, note, recorded_by)
   values (p_request, p_source, p_amount_cents, p_on, p_note,
           case when private.is_service() then null else auth.uid() end)
   returning id into v_id;

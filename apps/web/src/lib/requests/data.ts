@@ -146,7 +146,7 @@ export async function loadRequest(db: Db, id: string): Promise<RequestDetail | n
 		// `claims` isn't in the committed generated types yet (`fromNew` seam).
 		fromNew(db, 'claims').select('*').eq('request_id', id).order('recorded_at', { ascending: false }),
 		// `request_recoveries` isn't in the committed generated types yet (`fromNew` seam).
-		fromNew(db, 'request_recoveries').select('*').eq('request_id', id).order('on'),
+		fromNew(db, 'request_recoveries').select('*').eq('request_id', id).order('recovered_on'),
 		// `inspections` and `needs_inspection` are newer than the committed types too.
 		fromNew(db, 'inspections').select('*').eq('request_id', id).order('inspected_at', { ascending: false }),
 		rpcNew(db, 'needs_inspection', { p_request: id })

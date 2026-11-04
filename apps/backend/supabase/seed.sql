@@ -250,7 +250,7 @@ select public.record_review('00000000-0000-0000-0000-0000000000b6', 'refuse',
   'The estimate is for a full rear panel, but the damage described is a scrape on the side.');
 -- maria also declared insurer money that covered part of the same scrape, so
 -- the request page can show what other money already paid for the damage.
-insert into public.request_recoveries (request_id, source, amount_cents, on, note, partner_ref, verified_at, recorded_by)
+insert into public.request_recoveries (request_id, source, amount_cents, recovered_on, note, partner_ref, verified_at, recorded_by)
   values ('00000000-0000-0000-0000-0000000000b6', 'insurance', 18000, current_date - 9,
           'the insurer confirmed the recovery letter', 'rf_dev_b6', now() - interval '6 days',
           '00000000-0000-0000-0000-0000000000a1');

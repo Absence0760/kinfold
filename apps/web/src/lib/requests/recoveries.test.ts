@@ -17,12 +17,12 @@ describe('recoveryLabel', () => {
 
 describe('recoveryText', () => {
 	it('an unconfirmed record says so', () => {
-		const row = { request_id: 'r1', source: 'insurance', amount_cents: 40000, on: '2026-09-04', note: null, verified_at: null, recorded_at: '2026-10-01T00:00:00Z' };
+		const row = { request_id: 'r1', source: 'insurance', amount_cents: 40000, recovered_on: '2026-09-04', note: null, verified_at: null, recorded_at: '2026-10-01T00:00:00Z' };
 		expect(recoveryText(row)).toBe('$400 as another insurer\u2019s claim on 2026-09-04 · not confirmed yet');
 	});
 
 	it('a confirmed record with a note reads as one line', () => {
-		const row = { request_id: 'r1', source: 'own_cover', amount_cents: 100000, on: '2026-08-01', note: 'The insurer paid it', verified_at: '2026-08-02T00:00:00Z', recorded_at: '2026-08-01T00:00:00Z' };
+		const row = { request_id: 'r1', source: 'own_cover', amount_cents: 100000, recovered_on: '2026-08-01', note: 'The insurer paid it', verified_at: '2026-08-02T00:00:00Z', recorded_at: '2026-08-01T00:00:00Z' };
 		expect(recoveryText(row)).toBe('$1,000 as your own deductible cover on 2026-08-01 · the partner confirmed it · The insurer paid it');
 	});
 });
@@ -30,8 +30,8 @@ describe('recoveryText', () => {
 describe('recoveryTotalCents', () => {
 	it('sums every record', () => {
 		const rows = [
-			{ request_id: 'r1', source: 'insurance', amount_cents: 40000, on: '2026-09-04', note: null, verified_at: null, recorded_at: '2026-10-01T00:00:00Z' },
-			{ request_id: 'r1', source: 'own_cover', amount_cents: 100000, on: '2026-08-01', note: null, verified_at: '2026-08-02T00:00:00Z', recorded_at: '2026-08-01T00:00:00Z' }
+			{ request_id: 'r1', source: 'insurance', amount_cents: 40000, recovered_on: '2026-09-04', note: null, verified_at: null, recorded_at: '2026-10-01T00:00:00Z' },
+			{ request_id: 'r1', source: 'own_cover', amount_cents: 100000, recovered_on: '2026-08-01', note: null, verified_at: '2026-08-02T00:00:00Z', recorded_at: '2026-08-01T00:00:00Z' }
 		];
 		expect(recoveryTotalCents(rows)).toBe(140000);
 	});
