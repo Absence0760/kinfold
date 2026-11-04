@@ -102,8 +102,6 @@ begin
   return v_id;
 end $$;
 
-revoke all from function public.record_inspection(uuid, public.inspection_result, text, text);
-revoke all from function public.record_inspection(uuid, public.inspection_result, text, text)
-  to public, anon, authenticated;
+revoke all on function public.record_inspection(uuid, public.inspection_result, text, text) from public, anon, authenticated;
 grant execute on function public.record_inspection(uuid, public.inspection_result, text, text)
   to service_role;

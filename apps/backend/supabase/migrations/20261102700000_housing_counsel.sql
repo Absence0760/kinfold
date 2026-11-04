@@ -59,6 +59,5 @@ grant select, insert on public.housing_counsel to service_role;
 -- schema which agency is standing rather than deciding it itself, so the same
 -- answer a member gets is the answer a fairness auditor gets. The door reads
 -- only version numbers - no row, no PII crosses it.
-revoke all from function public.housing_counsel_version();
-revoke all from function public.housing_counsel_version() to public, anon, authenticated;
+revoke all on function public.housing_counsel_version() from public, anon, authenticated;
 grant execute on function public.housing_counsel_version() to anon, authenticated, service_role;

@@ -112,11 +112,9 @@ end $$;
 alter table public.needs_records enable row level security;
 
 revoke all on public.needs_records from public, anon, authenticated;
-revoke all from function public.needs_formula_version();
-revoke all from function public.needs_formula_version() to public, anon;
+revoke all on function public.needs_formula_version() from public, anon;
 grant execute on function public.needs_formula_version() to authenticated, service_role;
-revoke all from function public.needs_score(uuid);
-revoke all from function public.needs_score(uuid) to public, anon;
+revoke all on function public.needs_score(uuid) from public, anon;
 grant execute on function public.needs_score(uuid) to authenticated, service_role;
 
 -- Requesters and the reviewers they may review read the ranking.

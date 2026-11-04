@@ -27,6 +27,5 @@ end $$;
 
 -- New relations carry Supabase's default grants: take them back, then the
 -- service alone may expire a request — a member withdraws their own instead.
-revoke all from function public.expire_request(uuid);
-revoke all from function public.expire_request(uuid) to public, anon, authenticated;
+revoke all on function public.expire_request(uuid) from public, anon, authenticated;
 grant execute on function public.expire_request(uuid) to service_role;

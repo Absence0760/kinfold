@@ -166,28 +166,20 @@ insert into public.cover_plans values
   ('van',       'basic',   18900,  50000, 'partner_insurer', '2026-01-01'::date),
   ('van',       'standard', 26900, 100000, 'partner_insurer', '2026-01-01'::date);
 
-revoke all from function public.premium_cents(public.vehicle_class, public.cover_plan);
-revoke all from function public.premium_cents(public.vehicle_class, public.cover_plan)
-  to public, anon, authenticated;
+revoke all on function public.premium_cents(public.vehicle_class, public.cover_plan) from public, anon, authenticated;
 grant execute on function public.premium_cents(public.vehicle_class, public.cover_plan)
   to authenticated, anon;
 
-revoke all from function public.member_plan(uuid);
-revoke all from function public.member_plan(uuid) to public, anon, authenticated;
+revoke all on function public.member_plan(uuid) from public, anon, authenticated;
 grant execute on function public.member_plan(uuid) to authenticated, anon;
 
-revoke all from function public.premium_for(uuid, public.vehicle_class);
-revoke all from function public.premium_for(uuid, public.vehicle_class)
-  to public, anon, authenticated;
+revoke all on function public.premium_for(uuid, public.vehicle_class) from public, anon, authenticated;
 grant execute on function public.premium_for(uuid, public.vehicle_class)
   to authenticated, anon;
 
-revoke all from function public.set_cover_plan(public.vehicle_class, public.cover_plan, bigint, bigint, text, date);
-revoke all from function public.set_cover_plan(public.vehicle_class, public.cover_plan, bigint, bigint, text, date)
-  to public, anon, authenticated;
+revoke all on function public.set_cover_plan(public.vehicle_class, public.cover_plan, bigint, bigint, text, date) from public, anon, authenticated;
 grant execute on function public.set_cover_plan(public.vehicle_class, public.cover_plan, bigint, bigint, text, date)
   to service_role;
 
-revoke all from function public.set_my_plan(public.cover_plan);
-revoke all from function public.set_my_plan(public.cover_plan) to public, anon, authenticated;
+revoke all on function public.set_my_plan(public.cover_plan) from public, anon, authenticated;
 grant execute on function public.set_my_plan(public.cover_plan) to authenticated;

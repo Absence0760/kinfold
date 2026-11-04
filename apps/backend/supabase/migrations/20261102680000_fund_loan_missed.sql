@@ -62,6 +62,5 @@ begin
   return 'defaulted'::public.loan_status;
 end $$;
 
-revoke all from function public.apply_fund_loan_default(uuid);
-revoke all from function public.apply_fund_loan_default(uuid) to public, anon, authenticated;
+revoke all on function public.apply_fund_loan_default(uuid) from public, anon, authenticated;
 grant execute on function public.apply_fund_loan_default(uuid) to service_role;

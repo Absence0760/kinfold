@@ -27,6 +27,5 @@ begin
 end $$;
 
 -- New relation: the console (reviewers only, enforced inside) denies claims.
-revoke all from function public.decide_claim(uuid, text);
-revoke all from function public.decide_claim(uuid, text) to public, anon, authenticated;
+revoke all on function public.decide_claim(uuid, text) from public, anon, authenticated;
 grant execute on function public.decide_claim(uuid, text) to authenticated;

@@ -109,14 +109,11 @@ create policy "borrowers read their fund loan pauses" on public.fund_loan_pauses
                  where l.id = loan_id and l.borrower_id = auth.uid()));
 grant select on public.fund_loan_pauses to authenticated;
 
-revoke all from function public.pause_fund_loan(uuid, integer, text);
-revoke all from function public.pause_fund_loan(uuid, integer, text) to public, anon;
+revoke all on function public.pause_fund_loan(uuid, integer, text) from public, anon;
 grant execute on function public.pause_fund_loan(uuid, integer, text) to authenticated;
 
-revoke all from function public.resume_fund_loan(uuid);
-revoke all from function public.resume_fund_loan(uuid) to public, anon;
+revoke all on function public.resume_fund_loan(uuid) from public, anon;
 grant execute on function public.resume_fund_loan(uuid) to authenticated, service_role;
 
-revoke all from function public.resume_ended_fund_pauses();
-revoke all from function public.resume_ended_fund_pauses() to public, anon, authenticated;
+revoke all on function public.resume_ended_fund_pauses() from public, anon, authenticated;
 grant execute on function public.resume_ended_fund_pauses() to service_role;

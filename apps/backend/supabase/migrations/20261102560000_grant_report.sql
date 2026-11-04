@@ -24,5 +24,5 @@ end $$;
 
 -- New function: hardening.sql's blanket client grants don't cover it. Public
 -- by design — funders are supposed to see what they funded.
-revoke all from function public.grant_report();
+revoke all on function public.grant_report() from public, anon, authenticated;
 grant execute on function public.grant_report() to anon, authenticated, service_role;

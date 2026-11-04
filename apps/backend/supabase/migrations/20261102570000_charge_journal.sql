@@ -46,6 +46,5 @@ end $$;
 
 -- New function: hardening.sql revokes all public functions from the client
 -- roles; this door is service-only, like every money-moving door.
-revoke all from function public.record_charge_confirmation(uuid, text);
-revoke all from function public.record_charge_confirmation(uuid, text) to public, anon, authenticated;
+revoke all on function public.record_charge_confirmation(uuid, text) from public, anon, authenticated;
 grant execute on function public.record_charge_confirmation(uuid, text) to service_role;

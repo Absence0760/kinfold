@@ -156,18 +156,14 @@ end $$;
 revoke all on private.fair_lending from public, anon, authenticated;
 grant select, insert on private.fair_lending to service_role;
 
-revoke all from function public.offer_fair_lending_self_test(uuid, boolean, boolean, boolean, boolean, text, text, text);
-revoke all from function public.offer_fair_lending_self_test(uuid, boolean, boolean, boolean, boolean, text, text, text) to public, anon;
+revoke all on function public.offer_fair_lending_self_test(uuid, boolean, boolean, boolean, boolean, text, text, text) from public, anon;
 grant execute on function public.offer_fair_lending_self_test(uuid, boolean, boolean, boolean, boolean, text, text, text) to authenticated;
 
-revoke all from function public.record_fair_lending_monitoring_form(uuid, text, text, text);
-revoke all from function public.record_fair_lending_monitoring_form(uuid, text, text, text) to public, anon, authenticated;
+revoke all on function public.record_fair_lending_monitoring_form(uuid, text, text, text) from public, anon, authenticated;
 grant execute on function public.record_fair_lending_monitoring_form(uuid, text, text, text) to service_role;
 
-revoke all from function public.fair_lending_rows(uuid);
-revoke all from function public.fair_lending_rows(uuid) to public, anon, authenticated;
+revoke all on function public.fair_lending_rows(uuid) from public, anon, authenticated;
 grant execute on function public.fair_lending_rows(uuid) to service_role;
 
-revoke all from function public.cdfi_loan_fair_lending(uuid);
-revoke all from function public.cdfi_loan_fair_lending(uuid) to public, anon, authenticated;
+revoke all on function public.cdfi_loan_fair_lending(uuid) from public, anon, authenticated;
 grant execute on function public.cdfi_loan_fair_lending(uuid) to service_role;

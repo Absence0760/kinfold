@@ -59,10 +59,8 @@ begin
   perform public.deny_claim(p_claim, p_reason);
 end $$;
 
-revoke all from function public.deny_claim(uuid, text);
-revoke all from function public.deny_claim(uuid, text) to public, anon;
+revoke all on function public.deny_claim(uuid, text) from public, anon;
 grant execute on function public.deny_claim(uuid, text) to authenticated, service_role;
 
-revoke all from function public.decide_claim(uuid, text);
-revoke all from function public.decide_claim(uuid, text) to public, anon, authenticated;
+revoke all on function public.decide_claim(uuid, text) from public, anon, authenticated;
 grant execute on function public.decide_claim(uuid, text) to authenticated;

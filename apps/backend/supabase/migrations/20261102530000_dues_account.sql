@@ -49,6 +49,5 @@ begin
   return v_id;
 end $$;
 
-revoke all from function public.pay_cover_premium(uuid, text);
-revoke all from function public.pay_cover_premium(uuid, text) to public, anon, authenticated;
+revoke all on function public.pay_cover_premium(uuid, text) from public, anon, authenticated;
 grant execute on function public.pay_cover_premium(uuid, text) to service_role;

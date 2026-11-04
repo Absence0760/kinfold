@@ -113,10 +113,8 @@ create policy "borrowers read their fund loan restructures" on public.fund_loan_
                  where l.id = loan_id and l.borrower_id = auth.uid()));
 grant select on public.fund_loan_restructures to authenticated;
 
-revoke all from function public.restructure_fund_loan(uuid, integer, date);
-revoke all from function public.restructure_fund_loan(uuid, integer, date) to public, anon;
+revoke all on function public.restructure_fund_loan(uuid, integer, date) from public, anon;
 grant execute on function public.restructure_fund_loan(uuid, integer, date) to authenticated;
 
-revoke all from function public.apply_fund_loan_restructure(uuid);
-revoke all from function public.apply_fund_loan_restructure(uuid) to public, anon, authenticated;
+revoke all on function public.apply_fund_loan_restructure(uuid) from public, anon, authenticated;
 grant execute on function public.apply_fund_loan_restructure(uuid) to service_role;

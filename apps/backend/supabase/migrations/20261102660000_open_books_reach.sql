@@ -125,6 +125,5 @@ begin
   end loop;
 end $$;
 
-revoke all from function public.publish_open_books(date);
-revoke all from function public.publish_open_books(date) to public, anon, authenticated;
+revoke all on function public.publish_open_books(date) from public, anon, authenticated;
 grant execute on function public.publish_open_books(date) to service_role;

@@ -63,7 +63,6 @@ create policy "reviewers read needs decisions" on public.needs_reviews for selec
                  and (r.member_id = auth.uid() or private.may_review(request_id, auth.uid()))));
 grant select on public.needs_reviews to authenticated;
 
-revoke all from function public.record_needs_decision(uuid, public.needs_decision, text);
-revoke all from function public.record_needs_decision(uuid, public.needs_decision, text) to public, anon;
+revoke all on function public.record_needs_decision(uuid, public.needs_decision, text) from public, anon;
 grant execute on function public.record_needs_decision(uuid, public.needs_decision, text)
   to authenticated;

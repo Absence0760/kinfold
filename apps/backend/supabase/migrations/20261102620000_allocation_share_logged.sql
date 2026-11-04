@@ -92,6 +92,5 @@ begin
   return v_run;
 end $$;
 
-revoke all from function public.run_pool_allocation(public.fund, bigint);
-revoke all from function public.run_pool_allocation(public.fund, bigint) to public, anon, authenticated;
+revoke all on function public.run_pool_allocation(public.fund, bigint) from public, anon, authenticated;
 grant execute on function public.run_pool_allocation(public.fund, bigint) to service_role;

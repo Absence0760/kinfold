@@ -35,8 +35,6 @@ begin
   return v_id;
 end $$;
 
-revoke all from function public.record_income_verification(uuid, public.income_method, bigint, text);
-revoke all from function public.record_income_verification(uuid, public.income_method, bigint, text)
-  to public, anon, authenticated;
+revoke all on function public.record_income_verification(uuid, public.income_method, bigint, text) from public, anon, authenticated;
 grant execute on function public.record_income_verification(uuid, public.income_method, bigint, text)
   to service_role;

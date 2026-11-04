@@ -43,12 +43,10 @@ language sql stable security definer set search_path = '' as $$
     0);
 $$;
 
-revoke all from function public.share_rule_version();
-revoke all from function public.share_rule_version() to public, anon, authenticated;
+revoke all on function public.share_rule_version() from public, anon, authenticated;
 grant execute on function public.share_rule_version() to authenticated, service_role;
 
-revoke all from function public.member_share_bps(uuid);
-revoke all from function public.member_share_bps(uuid) to public, anon, authenticated;
+revoke all on function public.member_share_bps(uuid) from public, anon, authenticated;
 grant execute on function public.member_share_bps(uuid) to authenticated, service_role;
 
 -- The allocation now subtracts the member's own share from the need line
@@ -135,6 +133,5 @@ begin
   return v_run;
 end $$;
 
-revoke all from function public.run_pool_allocation(public.fund, bigint);
-revoke all from function public.run_pool_allocation(public.fund, bigint) to public, anon, authenticated;
+revoke all on function public.run_pool_allocation(public.fund, bigint) from public, anon, authenticated;
 grant execute on function public.run_pool_allocation(public.fund, bigint) to service_role;

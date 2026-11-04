@@ -75,10 +75,8 @@ begin
 end $$;
 
 -- New relations: claim ownership, service only.
-revoke all from function public.enqueue_dues(uuid, date);
-revoke all from function public.enqueue_dues(uuid, date) to public, anon, authenticated;
+revoke all on function public.enqueue_dues(uuid, date) from public, anon, authenticated;
 grant execute on function public.enqueue_dues(uuid, date) to service_role;
 
-revoke all from function public.capture_dues(uuid, text);
-revoke all from function public.capture_dues(uuid, text) to public, anon, authenticated;
+revoke all on function public.capture_dues(uuid, text) from public, anon, authenticated;
 grant execute on function public.capture_dues(uuid, text) to service_role;

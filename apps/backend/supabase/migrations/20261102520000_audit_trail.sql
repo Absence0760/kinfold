@@ -32,6 +32,5 @@ begin
   return v_found;
 end $$;
 
-revoke all from function public.review_audit_tail(integer);
-revoke all from function public.review_audit_tail(integer) to public, anon;
+revoke all on function public.review_audit_tail(integer) from public, anon;
 grant execute on function public.review_audit_tail(integer) to authenticated, service_role;

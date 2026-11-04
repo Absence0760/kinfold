@@ -91,10 +91,8 @@ begin
   return v_count;
 end $$;
 
-revoke all from function public.finalize_loan_agreement(uuid);
-revoke all from function public.finalize_loan_agreement(uuid) to public, anon, authenticated;
+revoke all on function public.finalize_loan_agreement(uuid) from public, anon, authenticated;
 grant execute on function public.finalize_loan_agreement(uuid) to service_role;
 
-revoke all from function public.finalize_signed_loan_agreements();
-revoke all from function public.finalize_signed_loan_agreements() to public, anon, authenticated;
+revoke all on function public.finalize_signed_loan_agreements() from public, anon, authenticated;
 grant execute on function public.finalize_signed_loan_agreements() to service_role;

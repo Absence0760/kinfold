@@ -92,6 +92,5 @@ grant select on public.grants to authenticated;
 -- New table: hardening.sql's blanket service grants don't cover it; state them.
 grant select, insert on public.grants to service_role;
 
-revoke all from function public.record_grant(public.fund, public.grant_source, text, boolean, bigint, text);
-revoke all from function public.record_grant(public.fund, public.grant_source, text, boolean, bigint, text) to public, anon, authenticated;
+revoke all on function public.record_grant(public.fund, public.grant_source, text, boolean, bigint, text) from public, anon, authenticated;
 grant execute on function public.record_grant(public.fund, public.grant_source, text, boolean, bigint, text) to service_role;

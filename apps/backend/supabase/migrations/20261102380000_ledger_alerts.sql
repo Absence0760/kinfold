@@ -42,9 +42,7 @@ begin
   return v_id;
 end $$;
 
-revoke all from function public.record_ledger_difference(public.fund, text, bigint, bigint);
-revoke all from function public.record_ledger_difference(public.fund, text, bigint, bigint)
-  to public, anon, authenticated;
+revoke all on function public.record_ledger_difference(public.fund, text, bigint, bigint) from public, anon, authenticated;
 grant execute on function public.record_ledger_difference(public.fund, text, bigint, bigint)
   to service_role;
 

@@ -36,6 +36,5 @@ begin
   return v_cents;
 end $$;
 
-revoke all from function public.mark_refunded(uuid, text);
-revoke all from function public.mark_refunded(uuid, text) to public, anon, authenticated;
+revoke all on function public.mark_refunded(uuid, text) from public, anon, authenticated;
 grant execute on function public.mark_refunded(uuid, text) to service_role;

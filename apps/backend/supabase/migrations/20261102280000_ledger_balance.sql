@@ -14,6 +14,5 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- New relation: claim ownership, service only.
-revoke all from function public.ledger_balance(public.fund, text);
-revoke all from function public.ledger_balance(public.fund, text) to public, anon, authenticated;
+revoke all on function public.ledger_balance(public.fund, text) from public, anon, authenticated;
 grant execute on function public.ledger_balance(public.fund, text) to service_role;

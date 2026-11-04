@@ -26,6 +26,5 @@ begin
 end $$;
 
 -- New relation: claim ownership, service only.
-revoke all from function public.record_evidence_url(uuid, text);
-revoke all from function public.record_evidence_url(uuid, text) to public, anon, authenticated;
+revoke all on function public.record_evidence_url(uuid, text) from public, anon, authenticated;
 grant execute on function public.record_evidence_url(uuid, text) to service_role;

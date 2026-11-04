@@ -31,6 +31,5 @@ begin
 end $$;
 
 -- New relation: claim ownership.
-revoke all from function public.appeal_claim(uuid, text);
-revoke all from function public.appeal_claim(uuid, text) to public, anon;
+revoke all on function public.appeal_claim(uuid, text) from public, anon;
 grant execute on function public.appeal_claim(uuid, text) to authenticated;

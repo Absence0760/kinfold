@@ -293,32 +293,24 @@ begin
   return public.fund_loan_outstanding_cents(p_loan);
 end $$;
 
-revoke all from function public.create_fund_loan(uuid, bigint, boolean, integer, integer, integer, public.fund_loan_schedule, integer, text);
-revoke all from function public.create_fund_loan(uuid, bigint, boolean, integer, integer, integer, public.fund_loan_schedule, integer, text)
-  to public, anon, authenticated;
+revoke all on function public.create_fund_loan(uuid, bigint, boolean, integer, integer, integer, public.fund_loan_schedule, integer, text) from public, anon, authenticated;
 grant execute on function public.create_fund_loan(uuid, bigint, boolean, integer, integer, integer, public.fund_loan_schedule, integer, text)
   to service_role;
 
-revoke all from function public.set_fund_loan_schedule(uuid, integer, date);
-revoke all from function public.set_fund_loan_schedule(uuid, integer, date) to public, anon;
+revoke all on function public.set_fund_loan_schedule(uuid, integer, date) from public, anon;
 grant execute on function public.set_fund_loan_schedule(uuid, integer, date) to authenticated;
 
-revoke all from function public.sign_fund_loan(uuid);
-revoke all from function public.sign_fund_loan(uuid) to public, anon;
+revoke all on function public.sign_fund_loan(uuid) from public, anon;
 grant execute on function public.sign_fund_loan(uuid) to authenticated;
 
-revoke all from function public.activate_fund_loan(uuid);
-revoke all from function public.activate_fund_loan(uuid) to public, anon, authenticated;
+revoke all on function public.activate_fund_loan(uuid) from public, anon, authenticated;
 grant execute on function public.activate_fund_loan(uuid) to service_role;
 
-revoke all from function public.record_fund_loan_payment(uuid, integer, bigint);
-revoke all from function public.record_fund_loan_payment(uuid, integer, bigint) to public, anon, authenticated;
+revoke all on function public.record_fund_loan_payment(uuid, integer, bigint) from public, anon, authenticated;
 grant execute on function public.record_fund_loan_payment(uuid, integer, bigint) to service_role;
 
-revoke all from function public.fund_loan_income_due_cents(uuid);
-revoke all from function public.fund_loan_income_due_cents(uuid) to public, anon, authenticated;
+revoke all on function public.fund_loan_income_due_cents(uuid) from public, anon, authenticated;
 grant execute on function public.fund_loan_income_due_cents(uuid) to authenticated, anon;
 
-revoke all from function public.fund_loan_outstanding_cents(uuid);
-revoke all from function public.fund_loan_outstanding_cents(uuid) to public, anon, authenticated;
+revoke all on function public.fund_loan_outstanding_cents(uuid) from public, anon, authenticated;
 grant execute on function public.fund_loan_outstanding_cents(uuid) to authenticated, anon;

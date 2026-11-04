@@ -47,8 +47,6 @@ begin
                        'annual_deductible_cents', p_annual));
 end $$;
 
-revoke all from function public.set_annual_deductible(public.vehicle_class, public.cover_plan, bigint, text, date);
-revoke all from function public.set_annual_deductible(public.vehicle_class, public.cover_plan, bigint, text, date)
-  to public, anon, authenticated;
+revoke all on function public.set_annual_deductible(public.vehicle_class, public.cover_plan, bigint, text, date) from public, anon, authenticated;
 grant execute on function public.set_annual_deductible(public.vehicle_class, public.cover_plan, bigint, text, date)
   to service_role;

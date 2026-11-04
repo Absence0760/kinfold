@@ -42,6 +42,5 @@ end $$;
 
 -- New relations carry Supabase's default grants: take them back, then the
 -- service alone moves loan money — the borrower's side is the partner.
-revoke all from function public.record_loan_payment(uuid, integer, bigint);
-revoke all from function public.record_loan_payment(uuid, integer, bigint) to public, anon, authenticated;
+revoke all on function public.record_loan_payment(uuid, integer, bigint) from public, anon, authenticated;
 grant execute on function public.record_loan_payment(uuid, integer, bigint) to service_role;

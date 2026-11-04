@@ -17,8 +17,7 @@ $$;
 
 -- Both relations re-claimed after this migration: the grant below is the
 -- only door the new relation gets.
-revoke all from function public.insured_cover_cents(uuid);
-revoke all from function public.insured_cover_cents(uuid) to public, anon, authenticated;
+revoke all on function public.insured_cover_cents(uuid) from public, anon, authenticated;
 grant execute on function public.insured_cover_cents(uuid) to authenticated, service_role;
 
 -- The need line now subtracts insured cover, stacked before pledges.
@@ -94,6 +93,5 @@ begin
   return v_run;
 end $$;
 
-revoke all from function public.run_pool_allocation(public.fund, bigint);
-revoke all from function public.run_pool_allocation(public.fund, bigint) to public, anon, authenticated;
+revoke all on function public.run_pool_allocation(public.fund, bigint) from public, anon, authenticated;
 grant execute on function public.run_pool_allocation(public.fund, bigint) to service_role;

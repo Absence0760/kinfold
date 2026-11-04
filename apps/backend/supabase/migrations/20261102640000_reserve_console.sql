@@ -45,8 +45,6 @@ begin
   return v_found;
 end $$;
 
-revoke all from function public.review_pool_runs(integer);
-revoke all from function public.review_pool_runs(integer)
-  to public, anon, authenticated;
+revoke all on function public.review_pool_runs(integer) from public, anon, authenticated;
 grant execute on function public.review_pool_runs(integer)
   to authenticated, service_role;

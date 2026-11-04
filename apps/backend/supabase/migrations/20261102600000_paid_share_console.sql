@@ -13,6 +13,5 @@ create function public.my_share() returns table (
     public.share_rule_version();
 $$;
 
-revoke all from function public.my_share();
-revoke all from function public.my_share() to public, anon, authenticated;
+revoke all on function public.my_share() from public, anon, authenticated;
 grant execute on function public.my_share() to authenticated;

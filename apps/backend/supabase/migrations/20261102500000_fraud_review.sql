@@ -34,6 +34,5 @@ begin
   return v_found;
 end $$;
 
-revoke all from function public.review_fraud_signals(uuid);
-revoke all from function public.review_fraud_signals(uuid) to public, anon;
+revoke all on function public.review_fraud_signals(uuid) from public, anon;
 grant execute on function public.review_fraud_signals(uuid) to authenticated, service_role;

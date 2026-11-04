@@ -19,6 +19,5 @@ begin
                     and coalesce(p.sent_at, p.created_at) > now() - interval '3 years'));
 end $$;
 
-revoke all from function public.pool_requests_paid_3y(uuid);
-revoke all from function public.pool_requests_paid_3y(uuid) to public, anon, authenticated;
+revoke all on function public.pool_requests_paid_3y(uuid) from public, anon, authenticated;
 grant execute on function public.pool_requests_paid_3y(uuid) to authenticated;

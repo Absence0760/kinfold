@@ -115,10 +115,8 @@ create policy "both sides read loan restructures" on public.loan_restructures fo
                  where l.id = loan_id and auth.uid() in (l.borrower_id, l.lender_id)));
 grant select on public.loan_restructures to authenticated;
 
-revoke all from function public.restructure_loan(uuid, integer, date);
-revoke all from function public.restructure_loan(uuid, integer, date) to public, anon;
+revoke all on function public.restructure_loan(uuid, integer, date) from public, anon;
 grant execute on function public.restructure_loan(uuid, integer, date) to authenticated;
 
-revoke all from function public.sign_loan_restructure(uuid);
-revoke all from function public.sign_loan_restructure(uuid) to public, anon;
+revoke all on function public.sign_loan_restructure(uuid) from public, anon;
 grant execute on function public.sign_loan_restructure(uuid) to authenticated;

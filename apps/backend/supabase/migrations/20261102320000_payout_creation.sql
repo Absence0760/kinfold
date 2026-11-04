@@ -32,6 +32,5 @@ begin
 end $$;
 
 -- New relation: claim ownership, service only.
-revoke all from function public.create_payout(uuid, uuid, bigint, uuid, text);
-revoke all from function public.create_payout(uuid, uuid, bigint, uuid, text) to public, anon, authenticated;
+revoke all on function public.create_payout(uuid, uuid, bigint, uuid, text) from public, anon, authenticated;
 grant execute on function public.create_payout(uuid, uuid, bigint, uuid, text) to service_role;

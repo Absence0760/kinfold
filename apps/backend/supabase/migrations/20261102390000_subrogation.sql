@@ -42,8 +42,6 @@ begin
   return v_id;
 end $$;
 
-revoke all from function public.record_partner_recovery(uuid, public.recovery_source, bigint, date, text, text);
-revoke all from function public.record_partner_recovery(uuid, public.recovery_source, bigint, date, text, text)
-  to public, anon, authenticated;
+revoke all on function public.record_partner_recovery(uuid, public.recovery_source, bigint, date, text, text) from public, anon, authenticated;
 grant execute on function public.record_partner_recovery(uuid, public.recovery_source, bigint, date, text, text)
   to service_role;

@@ -38,8 +38,6 @@ begin
   return v_found;
 end $$;
 
-revoke all from function public.review_ledger_differences(integer);
-revoke all from function public.review_ledger_differences(integer)
-  to public, anon, authenticated;
+revoke all on function public.review_ledger_differences(integer) from public, anon, authenticated;
 grant execute on function public.review_ledger_differences(integer)
   to authenticated, service_role;

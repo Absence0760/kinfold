@@ -30,6 +30,5 @@ begin
 end $$;
 
 -- New relation: claim ownership, service only.
-revoke all from function public.mark_claim_paid(uuid, text);
-revoke all from function public.mark_claim_paid(uuid, text) to public, anon, authenticated;
+revoke all on function public.mark_claim_paid(uuid, text) from public, anon, authenticated;
 grant execute on function public.mark_claim_paid(uuid, text) to service_role;
