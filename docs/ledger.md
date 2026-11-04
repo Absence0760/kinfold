@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The SDK cache keys by week; the TTL half of the last entry was wrong
+
+- **What was wrong**: the entry before this one shipped the cache with a TTL option (restore-on-ttl) and recorded it as a decision. The action's own README says the TTL inputs belong to the legacy cache service, which GitHub sunset on 2026-02-01 — the input would be a silent no-op on the live service, and CI would run a per-push clone with a green job, which reads as done.
+- **The fix**: the documented shape for staleness is a date in the key (the README’s own “date or software version” example): a step writes the week bucket (%Y-%V) and the key becomes flutter-sdk-stable-<year-week>. One clone per week, a channel release at the next bucket, same guard, same pinned ref.
+- **Reversal:** if the SDK itself ever names a version for a build, the key grows it and the bucket retires (the entry before this one’s reversal, still true).
+
 ## 2026-11-03 — The CI mobile job caches the SDK across runs instead of cloning per push
 
 - **The decision**: the durable fix the mobile landing recorded against the per-push clone landed the same day: the stable-channel clone is wrapped in the same cache shape the e2e job already uses for Playwright's Chromium (the pinned actions/cache ref, a path, a key — here flutter-sdk-stable with a 7-day restore TTL). One clone serves a week of pushes; a channel release still lands at the next TTL window, which is what keeps the cached half from pinning the repo to an old SDK.
