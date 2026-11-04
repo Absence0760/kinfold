@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The seed aimed home money at a repair shop; it lacked a contractor
+
+- **What CI said**: with the schema's grammar all parsed, seeding tripped a semantic guard — “the payee does not fit this request” (SQLSTATE 23514) from submit_request. The data was the offender, not the schema: seeded b5 is home_repair and pointed at c1, a repair shop; the seed had no contractor payee at all, and the payee-fits rule (added the day the guard shipped) is exactly the mapping the form already enforces.
+- **The data now**: a fourth payee, a CA contractor stand-in (region kept matching the member, as every other seeded request/payee pair does), and b5 points at it. The three car requests' shops and the lender stay untouched — they already fit.
+- **Reversal:** none of this is schema; after launch a data fix would be a NEW migration (insert payee, update payee_id), never an edit to seed.sql's stamped rows.
+
 ## 2026-11-03 — A function that WRITES cannot be stable; the audit sink had lost that fact
 
 - **What CI said**: all 62 migrations applied, then seeding failed with a semantic rule — “INSERT is not allowed in a non-volatile function” (SQLSTATE 0A000). private.audit's body IS an insert, and while the day's grammar repairs normalized its modifier slot to `language sql stable`, a write-side function cannot carry stable or immutable: PostgreSQL checks the annotation of the function LEXICALLY CONTAINING the write, and the seed phase is where audit() first runs.

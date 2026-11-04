@@ -96,7 +96,8 @@ insert into public.allocation_preferences (member_id, target, weight_pct) values
 insert into public.payees (id, kind, legal_name, region, status, partner_account_ref, verified_at) values
   ('00000000-0000-0000-0000-0000000000c1', 'repair_shop', 'Eastside Auto Body (dev)',         'CA', 'verified', 'dev_acct_eastside', now() - interval '1 year'),
   ('00000000-0000-0000-0000-0000000000c2', 'lender',      'Golden State Credit Union (dev)',  'CA', 'verified', 'dev_acct_gscu',     now() - interval '1 year'),
-  ('00000000-0000-0000-0000-0000000000c3', 'repair_shop', 'Lone Star Collision (dev)',        'TX', 'verified', 'dev_acct_lonestar', now() - interval '1 year');
+  ('00000000-0000-0000-0000-0000000000c3', 'repair_shop', 'Lone Star Collision (dev)',        'TX', 'verified', 'dev_acct_lonestar', now() - interval '1 year'),
+  ('00000000-0000-0000-0000-0000000000c4', 'contractor',  'Golden Gate Contracting (dev)',    'CA', 'verified', 'dev_acct_goldengate', now() - interval '1 year');
 
 insert into public.covered_assets (id, member_id, kind, description, value_cents, registered_on, verified_at) values
   ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000a1', 'vehicle', '2016 Honda Fit',    850000,  current_date - 180, now() - interval '6 months'),
@@ -222,7 +223,7 @@ select public.post_journal('protection', 'payout', '00000000-0000-0000-0000-0000
 insert into public.requests (id, member_id, kind, funding, title, description, amount_cents, incident_on, payee_id) values
   ('00000000-0000-0000-0000-0000000000b5', '00000000-0000-0000-0000-0000000000a4', 'home_repair', 'people',
    'Burst pipe under the bathroom', 'Plumber came out; written quote still to come.', 120000, current_date - 5,
-   '00000000-0000-0000-0000-0000000000c1'),
+   '00000000-0000-0000-0000-0000000000c4'),
   ('00000000-0000-0000-0000-0000000000b6', '00000000-0000-0000-0000-0000000000a1', 'car_damage', 'people',
    'Scraped in a parking garage', 'Garage camera footage requested; shop estimate attached.', 65000, current_date - 12,
    '00000000-0000-0000-0000-0000000000c1');
