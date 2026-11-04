@@ -8,6 +8,9 @@
 --
 -- The view is dropped and re-created, so its grants are given again below.
 
+-- The storage policy on redacted evidence reads the view, so it is dropped and
+-- re-created with it: PostgreSQL refuses to drop a view a policy still holds.
+drop policy "redacted evidence on the board" on storage.objects;
 drop view public.board_requests;
 
 create view public.board_requests with (security_barrier) as
@@ -47,3 +50,13 @@ where public.on_board(r)
 -- A dropped view lost its grants: hand back what the last step granted.
 grant select on public.board_requests to authenticated;
 grant select on public.board_requests to service_role;
+
+-- A dropped policy lost its rules: hand back the one the last step had.
+create policy "redacted evidence on the board" on storage.objects for select to authenticated
+  using (bucket_id = 'evidence-redacted' and exists (
+    select 1 from public.evidence e
+    join public.requests r on r.id = e.request_id
+    where e.redacted_path = storage.objects.name
+      and (r.member_id = auth.uid()
+           or (e.redaction_status = 'confirmed' and r.id in (select id from public.board_requests)))
+  ));
