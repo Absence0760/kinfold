@@ -22,10 +22,14 @@ const publicRoutes = ['/', '/transparency', '/signin', '/no-such-page-anywhere']
 async function overflowReports(page: Page) {
 	const overflows = await page.evaluate(() => {
 		const wide = [];
+		// Suspects named only when the page ALREADY scrolls (see below), so
+		// a green run never grows (the callback is plain JS: no annotations).
+		const suspects = [];
 		const viewport = window.innerWidth;
 		// The promise itself, in the words WCAG states it: the document must
 		// not scroll sideways to be read.
-		if (document.documentElement.scrollWidth > viewport + 1) {
+		const scrolling = document.documentElement.scrollWidth > viewport + 1;
+		if (scrolling) {
 			wide.push(`the page scrolls ${document.documentElement.scrollWidth - viewport}px sideways at ${viewport}px`);
 		}
 		// Named culprits, but only real ones: an element inside a container
@@ -36,6 +40,12 @@ async function overflowReports(page: Page) {
 			const holder = el.closest('details');
 			if (holder && !holder.hasAttribute('open')) continue;
 			const right = el.getBoundingClientRect().right;
+			// When the page already scrolls, name the suspects too: an
+			// element that a container clips (or a closed menu keeps hidden)
+			// cannot cause the scroll by itself, but when a scroll IS
+			// happening one of them is worth pointing at in the report —
+			// the audit must never accuse a page that does not scroll, so
+			// these lines exist only inside the failing message.
 			if (right > viewport + 1) {
 				let clipped = false;
 				for (let p = el.parentElement; p; p = p.parentElement) {
@@ -52,9 +62,15 @@ async function overflowReports(page: Page) {
 				if (!clipped) {
 					wide.push(`${el.tagName}.${(el.getAttribute('class') || '')} sticks ${Math.round(right - viewport)}px past the edge`);
 				}
+				if (scrolling) {
+					suspects.push(`${el.tagName}.${(el.getAttribute('class') || '')} ${Math.round(right - viewport)}px past the edge (clipped or hidden)`);
+				}
 			}
 		}
-		return wide;
+		// Suspects join only when the page already scrolls, where their lines
+		// sit inside the failing message; a green page's suspect list stayed
+		// empty, so a passing run's report never grows.
+		return [...wide, ...suspects];
 	});
 	return overflows;
 }
