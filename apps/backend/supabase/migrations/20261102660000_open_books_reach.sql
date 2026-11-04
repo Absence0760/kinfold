@@ -15,10 +15,10 @@
 -- reaching it because there was nobody to lend.
 
 alter table public.open_books
-  add pool_requests integer
+  add pool_requests integer,
   add constraint pool_requests_suppressed check (pool_requests is null
-                                                 or pool_requests = 0 or pool_requests >= 11)
-  add no_lender_cents bigint
+                                                 or pool_requests = 0 or pool_requests >= 11),
+  add no_lender_cents bigint,
   add constraint no_lender_rounded check (no_lender_cents is null
                                           or (no_lender_cents >= 0
                                               and no_lender_cents % 100000 = 0));

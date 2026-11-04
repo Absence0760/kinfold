@@ -11,7 +11,7 @@
 -- every other number on this table, the seeded annuals are local stand-ins.
 
 alter table public.cover_plans
-  add annual_deductible_cents bigint
+  add annual_deductible_cents bigint,
   add constraint annual_deductible_positive check (annual_deductible_cents is null
                                                    or annual_deductible_cents > 0);
 
