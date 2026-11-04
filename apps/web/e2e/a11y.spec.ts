@@ -89,6 +89,7 @@ async function overflowReports(page: Page) {
 			// client rects are viewport-relative, and a scrolled page sits inside
 			// them shifted; measure in document space the scrollWidth is in.
 			const scrollX = -document.documentElement.getBoundingClientRect().left;
+			const scrollWidthNow = document.documentElement.scrollWidth - viewport;
 			const seenInk = new Set();
 			for (let node = walker.nextNode(); node; node = walker.nextNode()) {
 				const raw = node.textContent;
@@ -115,6 +116,14 @@ async function overflowReports(page: Page) {
 					if (s.overflowX !== 'visible') clippers.push(up);
 				}
 				if (hidden) continue;
+				// A closed <details> renders nothing in its contents slot (Chromium
+				// keeps them laid out for measurement but never painted, and they
+				// never join the scroll) - skip that subtree's ink.
+				let closedDetails = false;
+				for (let up: HTMLElement | null = host.parentElement; up; up = up.parentElement) {
+					if (up.tagName === 'DETAILS' && !(up as HTMLDetailsElement).open) { closedDetails = true; break; }
+				}
+				if (closedDetails) continue;
 				let right = rect.right + scrollX;
 				for (const clipper of clippers) {
 					const cb = clipper.getBoundingClientRect();
@@ -127,6 +136,30 @@ async function overflowReports(page: Page) {
 					if (seenInk.has(key)) continue;
 					seenInk.add(key);
 					suspects.push(`ink: "${raw.trim().slice(0, 40)}" lays ${over}px past the edge on ${name}`);
+				}
+			}
+			if (scrollWidthNow > 0 && !suspects.length && !wide.length) {
+				// Nothing crossed and no box sticks out: find WHICH top-level subtree
+				// carries the scroll by hiding one at a time and watching the page's
+				// sideways scroll drop - a real bisect on the machine that scrolls, so
+				// the hunt names a section instead of staying silent. Restoring after.
+				const rootScroll = document.documentElement.scrollWidth;
+				const sections = Array.from(document.body.children);
+				for (const el of Array.from(document.body.children)) {
+					if (el.tagName === 'MAIN' || el.tagName === 'SECTION') {
+						sections.push(...Array.from(el.children));
+					}
+				}
+				for (const el of sections) {
+					if (getComputedStyle(el).display === 'none') continue;
+					const prevStyle = el.getAttribute('style');
+					el.setAttribute('style', (prevStyle ? prevStyle + ';' : '') + 'visibility: hidden');
+					const now = document.documentElement.scrollWidth;
+					if (prevStyle === null) el.removeAttribute('style');
+					else el.setAttribute('style', prevStyle);
+					if (now < rootScroll && now <= viewport) {
+						suspects.push(`carrier: hiding ${el.tagName}${el.className && !el.className.startsWith('svelte-') ? '.' + el.className : ''} removes the ${Math.round(rootScroll - viewport)}px scroll`);
+					}
 				}
 			}
 		}

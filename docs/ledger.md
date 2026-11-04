@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-04 — The hunt bisects subtrees when nothing crosses; closed menus stop being suspects
+
+- **What the runner said after the exact-ink pass**: the report named ONLY the six anchors in the closed `<details>` menu (39–66px past the edge). Those contents render nothing — Chromium keeps a closed details' slot laid out for measurement but never paints it, and it never joins the scroll — so every name was a false positive, and the 9px culprit still had no name.
+- **The two additions**: (1) ink from a closed `<details>` subtree is skipped, the same "contributes no ink" rule that skips hidden and clipped subtrees; (2) when the page scrolls but no box and no ink crosses, the pass hides each body-level section in turn and watches the page's sideways scroll drop, naming the subtree that carries it (`carrier: hiding X removes the 9px scroll`) and restoring it. That is a real bisect on the machine that scrolls, so it reports the section whose geometry carries the overflow without trusting any single metric.
+- **What stays exact**: the ASSERTION is untouched and the additions run only while the page already scrolls, so a green page's report stays empty; the restores happen right after each measure, so no page state leaks into later checks.
+- **Reversal:** none. The hunt steps are diagnostics on failing reports; if the carrier names a section, the fix is CSS at the source.
+
 ## 2026-11-04 — The 9px hunt: suspects come from the layout's own ink, not canvas guesses
 
 - **What the hunt has**: the runner reports a 9px sideways scroll at 320px with no element box past the edge. The ink pass previously *measured* words on a canvas and blamed anything wider than its host's content box — on the runner that blamed the closed `<details>` menu's links, a script tag's bootstrap text, and clipped `visually-hidden` spans: nodes that render no ink at all, so never possible culprits. The wrong model made the report untrustworthy.
