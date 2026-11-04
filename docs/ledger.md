@@ -2,10 +2,22 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The stack's parser names the token: our SQL's only `break` restructured into a guard
+
+- **What CI said**: after the loop-shape rewrite landed, the walk stopped in the same function with the caret on the break statement inside the loop (SQLSTATE 42601). A tree-wide grep shows this is the only break anywhere in our migrations and pgTAP plans; the repo's other 11 loops all run guarded, none exit mid-walk. The loop body now carries an `if v_left > 0` wrapper — once the forgiven money runs out, later installments are skipped rather than exited from. The same amount can only leave while v_left still holds cents, so the schedule ends identically.
+- **Why this is the shape, not a guess**: the guard form is the repo's own convention (every other loop uses it); the break token is the odd one out, and the parser has accepted everything else this stack has fed it.
+- **Reversal:** with a deployed database, the loop rewrite lands as a NEW migration (`create or replace function`), never as an edit to a stamped file — same rule as the modifier normalization above.
+
+## 2026-11-03 — The reflow audit names clipped suspects, but only inside a failing report
+
+- **The question**: CI fails four reflow checks (the page scrolls 9px at 320px) that pass locally — the local run could name the scroll but not a culprit, so the next session had nothing to hunt with. When the page DOES scroll, the audit now also lists elements past the edge that sit inside a clipping or hidden container: prime suspects for a runner-only layout difference.
+- **The teeth kept**: the assertion is unchanged, and on a non-scrolling page the suspect list stays empty — the extra lines exist only inside a failing message. A green run's report has exactly its old shape; the local 200-test suite stayed green with the change, so the diagnostic costs the passing side nothing.
+- **Reversal:** the suspect lines are diagnostic text inside a failing report, not an assertion — removing them changes nothing about what the rule demands; adding them to a green page would, and was refused.
+
 ## 2026-11-03 — The forgiveness loop now iterates a variable; the expression was the parser's snag
 
 - **The decision**: CI's walk of our SQL advanced two migrations past the modifier fix and stopped in `forgive_loan`. A cross-repo sweep found the discriminator without guessing: every other `foreach ... in array` in the repo — 11 sites across migrations and pgTAP plans — iterates a **plain variable**; this loop was the only one iterating an **expression** (`array coalesce(v_seqs, ‘{}’)`). The null-coalesce moved into its own `if`, and the loop now runs over the variable — the repo's proven shape, not a guess at what plpgsql allows.
-- **Open verdict**: the parser on this machine doesn't exist (no Docker daemon), so CI's next run is the arbiter: it either applies the migration and moves on, or it names the next snag — in which case this entry needs a correction and the sweep reopens.
+- **Correction, same day**: the sweep was wrong about the discriminator. With the rewrite in place, CI's walk stopped at the same statement with the caret on a different token — the break statement below the loop. The expression form was never the problem; the token was. The entry above stays as the record of the wrong guess (the sweep was real, its conclusion wasn't).
 - **Reversal:** with a deployed database, the loop rewrite lands as a NEW migration (`create or replace function`), never as an edit to a stamped file — same rule as the modifier normalization above.
 
 ## 2026-11-03 — SQL function modifiers: `view` and bare `security` were reserved; normalized to `stable`
