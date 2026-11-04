@@ -12,6 +12,11 @@
 //    they must be unique and strictly increasing (a collision or a step
 //    backwards ships the queue in the wrong order, which has shipped
 //    migrations depending on tables that do not exist yet).
+//
+// 3. Every roadmap step row carries its state: a step is either built
+//    ("landed"/"built" with a date) or deliberately not built ("Gate" — the
+//    row says why it waits, e.g. partner or loss-data gates). A row with
+//    neither is a step whose state nobody can read.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -150,6 +155,20 @@ for (const f of files) {
 		if (path === '' || !path.startsWith('/') || path.startsWith('//')) continue;
 		if (!servesPath(path)) {
 			problems.push(`${f}: ${m[0].split("=")[0]}="${path}" names no page (no +page.svelte serves it) and no static file: the link answers the error page, or the image never loads`);
+		}
+	}
+}
+
+// 3. Roadmap step rows carry their state: built ("landed"/"built" dated) or a
+//    Gate that names what waits. A row with neither leaves the roadmap's
+//    remaining work unreadable.
+{
+	const roadmap = readFileSync(join(root, 'docs/roadmap.md'), 'utf8');
+	for (const line of roadmap.split('\n')) {
+		const m = line.match(/^\| (\d[a-z]?) \|/);
+		if (!m) continue;
+		if (!/landed|built|Gate/i.test(line)) {
+			problems.push(`docs/roadmap.md ${m[1]}: step row with no landed annotation and no Gate note - its state cannot be read`);
 		}
 	}
 }
