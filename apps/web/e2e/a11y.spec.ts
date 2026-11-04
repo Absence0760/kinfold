@@ -391,6 +391,30 @@ for (const route of publicRoutes) {
 	});
 }
 
+// Slack, not just no-scroll: the audit above only forbids a sideways scroll,
+// but the pill a reader lands on must be READABLE without one too - a nav
+// row that reaches the viewport edge on a build with wider font metrics
+// answers the audit only after the words wrap (the hunt named the badge and
+// the brand mark as the whole carrier of a 9px scroll at 320px), and a check
+// that only watches scrollWidth would let the row keep leaning on the edge.
+// The landing badge sits inside the bar's own width at the narrowest layout.
+for (const route of ['/', '/transparency']) {
+	test(`${route} keeps the design-preview pill inside the bar at 320 CSS px`, async ({ page }) => {
+		await page.setViewportSize({ width: 320, height: 640 });
+		await gotoHydrated(page, route);
+		const badge = page.getByText('Design preview', { exact: true });
+		await expect(badge).toBeVisible();
+		// Bounding edges in document space: the bar's last flex item must stop
+		// short of the viewport, which is the slack that keeps the row from
+		// pushing the page sideways on builds with wider font metrics.
+		const rights = await page.evaluate(() => Array.from(
+			document.body.querySelectorAll('.badge, details.menu')
+		).map((el) => Math.round(el.getBoundingClientRect().right)));
+		expect(rights.length).toEqual(2);
+		for (const right of rights) expect(right).toBeLessThanOrEqual(320);
+	});
+}
+
 for (const route of publicRoutes) {
 	// The evaluate callback is plain JS: Playwright serializes it into the page,
 	// so no TypeScript annotations may appear inside it.
