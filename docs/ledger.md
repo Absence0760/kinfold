@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The loopback guard declines a garbage URL; the audit proved the host case is safe
+
+- **The decision**: the third cross-language audit this week (after sign-in's words, then its classification order) read the loopback guard's URL logic: the web wraps its URL parse in try/catch and declines (false) when the grammar rejects a value, while the Dart guard let Uri.parse throw — the phone app crashing on a malformed SUPABASE_URL where the web half simply does not offer the demo people. The guard moved to the web's totality: unparseable means false, pinned by a new expectation in the guard's own test.
+- **What else the audit proved**: no host-case drift — Dart's Uri.parse lowercases the host the way new URL does, so a dev stack written in caps answers on both surfaces without a toLowerCase of our own (adding one would be dead code).
+- **Teeth**: deleting the guard made the pinned expectation fail with the exception ([E], exit 1); restored, 30 flutter tests green, analyze clean.
+- **Reversal:** when the app grows a settings screen that validates the stack URL at save time, the parse's error becomes visible there (naming the malformed value), and the decline-silently rule retires for that surface.
+
 ## 2026-11-03 — An answer the stack gave is never retryable: sign-in's order now holds in Dart
 
 - **The decision**: an audit of the Dart classifier against the web's (not the words, the logic) found a real drift. The web checks the network class BEFORE the generic status ≥ 500, so a 503 whose body words name a network problem reads “Can’t reach Kinfold. Check your connection…”; the flow had marked every 5xx answer retryable (status ≥ 500), forcing server words. Retryable mirrors supabase-js's AuthRetryableFetchError — the transport's OWN request failed — a property no refusal's status can imply; an answer the stack gave is never retryable, so faultFrom's flag is false and the order does the rest.
