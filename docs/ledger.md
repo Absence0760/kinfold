@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The aggregate's FROM had landed inside the call's arguments: one close was missing
+
+- **What CI said**: the same migration one statement deeper — a syntax error pinned on the FROM token. The first fix had moved the aggregate's grouping into the right clause chain but left jsonb_agg's argument paren open at that point, so the source read as a second function argument rather than the select's clause chain.
+- **The shape now**: select agg(build_object(…, count(*))) from public.grants g group by keys order by keys — the argument paren closes before the chain starts, and the function body's parens balance to zero (checked, not counted). The two fixes to this migration are one decision, recorded twice because CI named two tokens; the entry above keeps the first half.
+- **Reversal:** with a deployed database this lands as a NEW migration (create or replace grant_report), never an edit to a stamped file.
+
 ## 2026-11-03 — The grant report's aggregate had its FROM at the tail; SQL puts it before GROUP BY
 
 - **What CI said**: the walk covered twenty-seven more migrations before stopping at grant_report — the ‘group by’ token arrived while the parser still expected the aggregate's source. The subquery had been written select-agg… group by… order by… FROM last; SQL reads them select, from, group by, order by.
