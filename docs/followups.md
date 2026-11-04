@@ -2,7 +2,7 @@
 
 Open items that aren't part of a roadmap stage yet. Each says what's wrong, the fix, and when to do it. Tick an item off by deleting it in the change that fixes it. Stage work lives in [roadmap.md](roadmap.md).
 
-Last updated 2026-11-03.
+Last updated 2026-11-04.
 
 ## Do next
 
@@ -11,7 +11,7 @@ Last updated 2026-11-03.
 - [ ] **One Scorecard vulnerability can't be fixed here:** `deepmerge` (GHSA-gcqx-w48m-w2h4, low) has no patched release and `@sveltejs/vite-plugin-svelte` still depends on it, at build time only. **Fix:** bump vite-plugin-svelte once it drops or patches deepmerge. **When:** on the next Dependabot bump of it.
 - [x] **The original vision is now on `main` as [docs/vision.md](vision.md)**, kept verbatim from the `origin/dev` branch (`c17fa00`) with a note that `design.md` wins where they disagree. Decided over just deleting the branch: the wording is the origin of `design.md`'s rules, and losing it makes the reversals in the ledger unreadable. **Still open (network):** deleting the `origin/dev` branch itself, which needs push rights.
 - [ ] **`apps/mobile` (roadmap 1a) is open at its phone halves**: the shell's Dart layers are built and tested headless, but the Android toolchain (SDK, Java) is not on the machine, so no code compiles to a phone, and the screens beyond the profile read wait on that. CI caches the SDK keyed by the week, so one clone serves a week of pushes. **Fix:** install the Android toolchain, then the phone build and screens. **When:** before Stage 1's phone-first evidence capture.
-- [ ] **CI still runs red on the runners, in two real ways.** e2e: four desktop-context reflow checks fail only on GitHub's runners - the page scrolls 9px sideways at 320px yet no element sticks past the edge, so the culprit hides behind the closed menu or a font metric the runner draws wider; hunt it with the named-element report, never by loosening the rule. backend: the quota is intermittent — the 2026-11-04 push's run DID reach pgTAP and the 14 `permission denied for schema private` plan failures it hit are fixed in-repo (ledger 2026-11-04: audit counts cross to the bare owner per the `audit_trail_test` precedent, and `review_access_test` now writes only the `storage.objects` columns both bucket schemas share). **Fix:** e2e reproduce each on a runner-class machine and fix at the source (CSS); the backend half waits on whichever quota round comes next. **When:** next session with runner access.
+- [ ] **CI still runs red on the runners, in two real ways.** e2e: four desktop-context reflow checks fail only on GitHub's runners - the page scrolls 9px sideways at 320px yet no element sticks past the edge, so the culprit hides behind the closed menu or a font metric the runner draws wider; hunt it with the named-element report, never by loosening the rule. backend: the remote's quota is intermittent — the 2026-11-04 push's run DID reach pgTAP and its whole 66-plan round failed 170 assertions, all fixed in-repo (ledger 2026-11-04: `revoke usage on schema private` in `hardening.sql`, the schema's own door refusals, and the fixture fixes that cross reads to the bare owner). The plans now run clean on a full local rebuild, so the backend half only waits on the NEXT remote round confirming the same 66. **Fix:** e2e reproduce each on a runner-class machine and fix at the source (CSS); backend: read the next pgTAP section rather than guess from the local stack. **When:** next session with runner access.
 
 ## Backend gaps
 

@@ -15,11 +15,20 @@ begin
     raise exception 'expiry is run by the service' using errcode = '42501';
   end if;
   select * into r from public.requests where id = p_request for update;
-  if r.id is null or r.status not in ('open', 'needs_evidence') then
+  if r.id is null then
     raise exception 'request not found, or not open or still needing evidence' using errcode = 'P0002';
   end if;
-  -- Money with the payee stops the write with the guard's own exception
-  -- (…120500): the job skips such requests, a person decides.
+  -- Money with the payee is answered first, in its own words: the status door
+  -- would call a funded-but-paid-out request "not stale", while the payout
+  -- guard's own rule says a person owns it until the money returns. The
+  -- update path still leans on …120500's guard for every other close.
+  if private.has_live_payout(r.id) then
+    raise exception 'a payout to the payee is pending or sent; a person handles this request until it is returned'
+      using errcode = '23514';
+  end if;
+  if r.status not in ('open', 'needs_evidence') then
+    raise exception 'request not found, or not open or still needing evidence' using errcode = 'P0002';
+  end if;
   update public.requests set status = 'expired' where id = p_request;
   perform private.audit('request.expired', 'requests', p_request,
                         jsonb_build_object('was', r.status));

@@ -97,14 +97,14 @@ set local role service_role;
 select pg_temp.as_service();
 select throws_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a3'::uuid, 'prem_3')$$,
-  '23514', 'an unclassed member has no premiums to pay');
+  '23514', 'a member without classed covered vehicles has no premiums to pay');
 reset role;
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0021-0000000000a1'::uuid);
 select throws_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a2'::uuid, 'prem_2')$$,
-  '42501', 'a member cannot pay premiums');
+  '42501', 'permission denied for function pay_cover_premium');
 reset role;
 
 -- --- stating the class on their own vehicle --------------------------------------
@@ -122,7 +122,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0021-0000000000a2'::uuid);
 select throws_ok(
   $$select public.set_vehicle_class('00000000-0000-0000-0021-0000000000c4'::uuid, 'suv')$$,
-  'P0002', 'a member cannot state the class on someone else''s vehicle');
+  'P0002', 'asset not found, not yours, already removed, or not a vehicle');
 reset role;
 
 rollback;

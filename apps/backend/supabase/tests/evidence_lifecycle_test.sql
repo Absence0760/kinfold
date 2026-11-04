@@ -182,6 +182,9 @@ select throws_ok($$select public.pledge('00000000-0000-0000-000b-0000000000b1', 
   'the pledge cap subtracts the declared insurance and disaster money');
 select ok((public.pledge('00000000-0000-0000-000b-0000000000b1', 65000, 'gift')) IS NOT NULL,
   'pledges up to the ask minus other money fit');
+-- The supporter's own read of a not-yet-on-the-board request is closed by its
+-- request-side rules, so the status check reads as the owner.
+reset role;
 select is((select status from public.requests where id = '00000000-0000-0000-000b-0000000000b1'),
   'open'::public.request_status, 'other money never funds a request by itself');
 
@@ -194,7 +197,9 @@ set local role service_role;
 select pg_temp.as_service();
 select ok((public.record_recovery('00000000-0000-0000-000b-0000000000b2', 'insurance', 30000,
   current_date - 4)) IS NOT NULL, 'the service records money the insurer already moved');
-select ok((public.run_pool_allocation('protection', 200000)) IS NOT NULL, 'the pool runs');
+-- Plenty available, so no band is squeezed: the row shows the run's own need,
+-- insurance money taken out, at full.
+select ok((public.run_pool_allocation('protection', 10000000)) IS NOT NULL, 'the pool runs');
 select results_eq(
   $$select need_cents, grant_cents from public.pool_allocations
     where request_id = '00000000-0000-0000-000b-0000000000b2'$$,

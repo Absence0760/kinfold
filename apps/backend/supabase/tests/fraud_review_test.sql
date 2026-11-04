@@ -70,7 +70,7 @@ select is(
   'a reviewer sees both findings, high severity first');
 select ok(
   ((public.review_fraud_signals('00000000-0000-0000-0025-0000000000e1'::uuid)
-    -> 0) - 'detail') IS NULL,
+    -> 0) -> 'detail') IS NULL,
   'the match detail never crosses into the read');
 select is(
   public.review_fraud_signals('00000000-0000-0000-0025-0000000000e2'::uuid),
@@ -82,7 +82,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0025-0000000000f2');
 select throws_ok(
   $$select public.review_fraud_signals('00000000-0000-0000-0025-0000000000e1'::uuid)$$,
-  '42501', 'the requester cannot read the findings against their own request');
+  '42501', 'fraud signals are read by the operations console');
 reset role;
 
 -- --- the read leaves a trail, and resolution takes a finding away ---------------

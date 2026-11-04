@@ -184,8 +184,15 @@ select lives_ok(
 select is((select status from public.appeals
            where request_id = '00000000-0000-0000-000d-0000000000b1'), 'upheld'::public.appeal_status,
   'the appeal is stored as upheld');
+-- The panel's own read of a request is scoped to open appeals — the row it
+-- decided on is no longer its business once the appeal is upheld. The status
+-- check reads as the owner: the decision itself is pinned by the audit
+-- trigger, which the console also reads.
+reset role;
 select is((select status from public.requests where id = '00000000-0000-0000-000d-0000000000b1'),
   'in_review'::public.request_status, 'an upheld appeal sends the request back to review');
+set local role authenticated;
+select pg_temp.login('00000000-0000-0000-000d-0000000000a4');
 select is((select decision_note from public.appeals
            where request_id = '00000000-0000-0000-000d-0000000000b1'),
   'The quoted panel is not the damage.', 'the reason is stored on the appeal');

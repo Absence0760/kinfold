@@ -72,7 +72,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0065-0000000000b1');
 select throws_ok($$select public.set_annual_deductible('sedan', 'basic', 200000::bigint,
   'partner_insurer', '2026-01-01'::date)$$,
-  '42501', 'filed annual deductibles are written by the service',
+  '42501', 'permission denied for function set_annual_deductible',
   'a member cannot file the annual deductible at all');
 
 set local role service_role;

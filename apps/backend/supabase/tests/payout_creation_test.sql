@@ -9,7 +9,7 @@
 --   * an empty reference, an over-capture amount, and a member are refused;
 --   * the guard audits the opening.
 begin;
-select plan(8);
+select plan(9);
 
 -- --- fixtures ------------------------------------------------------------------
 
@@ -67,14 +67,18 @@ values ('00000000-0000-0000-0014-0000000000c3', '00000000-0000-0000-0014-0000000
 
 set local role service_role;
 select pg_temp.as_service();
+select lives_ok($$select public.create_payout('00000000-0000-0000-0014-0000000000b1',
+  '00000000-0000-0000-0014-0000000000c9', 30000::bigint,
+  '00000000-0000-0000-0014-0000000000e1', 'pi_pc_1')$$,
+  'the service opens a payout against the funded request');
 select is((select amount_cents from public.payouts where partner_ref = 'pi_pc_1'),
   30000::bigint, 'the payout opens with the partner''s figure');
 select is((select status from public.payouts where partner_ref = 'pi_pc_1'),
   'pending'::public.payout_status, 'a payout starts pending: money moves when it is sent');
-select is((select public.create_payout('00000000-0000-0000-0014-0000000000b1',
-        '00000000-0000-0000-0014-0000000000c9', 30000::bigint,
-        '00000000-0000-0000-0014-0000000000e1', 'pi_pc_1')),
-  (select id from public.payouts where partner_ref = 'pi_pc_1'),
+select is(public.create_payout('00000000-0000-0000-0014-0000000000b1'::uuid,
+  '00000000-0000-0000-0014-0000000000c9'::uuid, 30000::bigint,
+  '00000000-0000-0000-0014-0000000000e1'::uuid, 'pi_pc_1'),
+  (select id from public.payouts where partner_ref = 'pi_pc_1')::uuid,
   'the same payout reference replayed is a no-op answering with the payout it made');
 select is((select count(*) from public.payouts where partner_ref = 'pi_pc_1'),
   1::bigint, 'the replay added no second payout');
@@ -104,4 +108,4 @@ select pg_temp.login('00000000-0000-0000-0014-0000000000a1');
 select throws_ok($$select public.create_payout('00000000-0000-0000-0014-0000000000b1',
   '00000000-0000-0000-0014-0000000000c9', 100::bigint, '00000000-0000-0000-0014-0000000000e1',
   'pi_pc_3')$$,
-  '42501', 'payouts are opened by the service', 'a member cannot open a payout');
+  '42501', 'permission denied for function create_payout', 'a member cannot open a payout');

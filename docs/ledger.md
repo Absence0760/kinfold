@@ -2,6 +2,61 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-04 — Money fixtures state the money their own guards read
+
+- **What the plans hit**: `payout_creation_test` read payout rows before the call that makes them (the read answered nothing); `payout_reporting_test`'s fixture opened a payout with no captured contributions, so the payout cap guard ("payouts cannot exceed captured contributions", `…120500`) answered on the first report instead of the transition under test.
+- **The fix**: `payout_creation_test` now calls `create_payout` first and reads after; `payout_reporting_test`'s helper inserts a captured contribution of the payout's own figure — money the payout was opened against is money the request captured, and the guard reads it on every payout write, reporting included.
+- **The pool rows**: `paid_share_test` and `evidence_lifecycle_test` ran the allocation over the seed board too, so a band got squeezed and grants came back scaled (`need × band_left / total`): both files now run the pool with an available balance big enough that no band is squeezed, so each row shows its need-minus-share figure whole, which is what those files pin. `paid_share_test`'s reserve assertion moves to the same available (140000 of 700000, still 20%).
+- **Reversal:** none. A fixture that owes money its guard reads is a fixture bug; opening the guard is the never-route. A test that pins a scaled grant pins the seed board's money, not the rule.
+
+## 2026-11-04 — A payout's send date is the partner's, so the history fixture pins it
+
+- **What the plan asked**: `repayment_test` counts pool requests paid in the last three years, and its fixture stands in for payout sends months and years back. The `payouts_stamp_sent` trigger writes `now()` on every insert that lands `sent`, so the fixture's four-year payout arrived at this run's clock and counted — 3 where the rule wants 2.
+- **The call**: the fixture is the partner's confirmation, not a live webhook — `pg_temp.paid_request` writes the payout with triggers off (`session_replication_role = replica` inside the helper, the same shape `payout_reporting_test`'s helper already uses) and states `sent_at` and `created_at` at the date the file means. The schema's stamping rule stays the only writer for real sends, untouched.
+- **Reversal:** none. If a future file wants the trigger's own clock, it leaves `sent_at` out; the trigger never guesses a partner date.
+
+## 2026-11-04 — Fixture reads cross to the principal that actually holds the fact
+
+- **What the plans saw**: after an upheld appeal, `review_access_test` read the request's status as the panel member and got nothing — the panel's read policy is scoped to requests with an OPEN appeal, and the appeal it just decided is no longer open. Same shape elsewhere: `denial_reason_test` and `fund_loan_missed_test` read claims/rows a called function had just written through a narrower read door than the owner's (an FK read on a fund loan answered `permission denied for function …` and hid the 23503 the plan named), and `audit_trail_test`'s recent-decisions count was answered by the seed's own audit rows.
+- **The pattern kept** (the fleet's own precedent, `audit_trail_test`): a read that must see the whole table or a just-written row crosses to the bare owner with `reset role;` before and a re-login after; counts over tables the seed writes baseline or scope to the fixture's own rows — `cover_plans_test` now carries a `pg_temp.history_base` baseline and asserts deltas (the blanket cover_plans update at build time writes history rows), `audit_trail_test` names the fixture's action/target pairs.
+- **Reversal:** none. Widening a client's read door to satisfy a fixture inverts the repo's whole privacy discipline; a fixture crossing to the owner states the fact at the principal that owns it, the same call the console makes.
+
+## 2026-11-04 — Monthly arithmetic: a pause slides by months, so the schedule fixture is month-aligned
+
+- **What the plan caught**: `fund_loan_pauses_test` set its first installment at `current_date + 1` (one day), paused two months, and expected a slid date mixed grids — the schema slides unpaid installments with `make_interval(months => …)`, so the fixture's day-offset start was never a schedule the schema can build.
+- **The fix**: the fixture's first due date moves to `current_date + interval '1 month'` and the expectation follows the slide on the same grid. Fund loan schedules are monthly by design, so a day-offset fixture stated a terms grid the Fund never offers.
+- **Reversal:** none. Per-year pause allowances are counted in months; any day-grained pause arithmetic would be a different rule.
+
+## 2026-11-04 — A reviewer's reach for CLAIMS follows the door that records refusals
+
+- **What the plans demanded**: after `decide_claim`, the console re-reads the claim it denied, and `denial_reason_test` read it back after a recorded refusal — both answered P0002 through the claims read policy. That policy keyed the row to `private.may_review`, the QUEUE's set (only requests awaiting a review), so a claim standing beside money that already moved — on a request the queue no longer shows — vanished from the reader's reach, and the denial's own write couldn't see it either.
+- **The rule kept**: the claims door mirrors `record_review`'s reviewable set (`in_review`, `needs_evidence`, `open`, `funded`, `refused`) in a named function beside the policy (`private.may_review_claims`, `…237000_claim_decision.sql`). The queue stays `may_review`'s narrower set — what may be reviewed for the board and what a reviewer may speak about claims are two rules, and the console needs the wider one.
+- **Reversal:** none. A claims read scoped to open-review requests would hide the claim a reviewer must be able to deny.
+
+## 2026-11-04 — Money with the payee is answered before the expiry door's own words
+
+- **What the plan asked**: `expire_requests_test` demands a funded-but-paid-out request answers "a payout to the payee is pending or sent; a person handles this request until it is returned". The expiry door checked the status first, so a request `mark_funded` had already flipped away from `open` answered "request not found, or not open or still needing evidence" and never reached the payout guard.
+- **The rule kept**: expiry's own body reads the payout guard's rule (`private.has_live_payout`) before its status door, in the same words and code (23514) as `…120500_service_paths.sql`; the status door keeps its P0002 for what is genuinely not stale. Every other close still leans on the table's guard for this rule.
+- **Why it isn't just rewording**: the payout guard is a `deferrable initially deferred` constraint trigger — its exception surfaces at COMMIT, which never reaches an API caller (the ledger's "A deferred constraint refuses at COMMIT" entry). Any message a caller hears for this rule has to come from the door itself.
+- **Reversal:** none. If expiry's message were only reworded, the plan would still fail — the deferred trigger's raise never crosses the statement boundary.
+
+## 2026-11-04 — The private schema's own name stops crossing to clients; a recovery's stamp is the service's
+
+- **What CI said**: fourteen plans answered `permission denied for schema private` from the remote's pgTAP round. `hardening.sql` closed private's tables and functions to the client roles but never the schema's USAGE, so Postgres named the table instead — telling a client more than the design allows. The revoke (`revoke usage on schema private from public, anon, authenticated`) makes the refusal name only the schema.
+- **The service carve**: `request_recoveries` is append-only for clients, but `verify_recovery` stamps a row the partner confirmed — a write on an append-only table. The trigger's function was the generic `forbid_change`, which stopped the service too; it now raises only when the caller is not the service (`private.forbid_client_recovery_change`), and the table gets its own row-level-security line plus a requester-scoped read policy, so the client door closes even with grants. The rule stays enforced twice: the door still requires the service's JWT context, and the trigger still forbids every client edit.
+- **Reversal:** none. `session_replication_role = replica` inside a function (which would skip guards entirely) is never a fix route. A recovery annotated without the service's own door is a recovery the partner never confirmed.
+
+## 2026-11-04 — Needs decisions state their own refusals, and Home Fund money is a kind's fund
+
+- **What the plan caught**: `needs_review_test` asked for the console's own words on two rules the table only backstopped — the reason length (raw `23514` CHECK) and the one-answer-per-reviewer duplicate (raw `23505`). Both now raise in the door, in the reviewer's words, with the reason check ordered FIRST so a short-reason attempt on a request that already has an answer reads the reason rule. Separately, the door asked `req.fund = 'home_fund'` — a column `requests` does not have; the fund comes from the kind (`public.fund_for_kind(req.kind)`), the same function the pledge cap and pool run use.
+- **The rule kept**: a named rule gets the client-recognizable refusal at the door and the table's CHECK stays as the backstop, never the reverse.
+- **Reversal:** none. If the door stops naming the rule, the table's CHECK still refuses, but the console would show a bare CHECK code — the reason floor is never less than the table's.
+
+## 2026-11-04 — The demo payout's money goes where it actually came from
+
+- **What the books showed**: the seeded payout journal left `protection.available` carrying +72000 of money the payout had moved out — the demo's ledger wouldn't balance. The journal entry now pairs `available −72000` with `paid_out +72000`, matching what the seeded pool grant committed.
+- **Reversal:** none. The seed's figures stay consistent with the pool grant above it.
+
 ## 2026-11-04 — The hunt bisects subtrees when nothing crosses; closed menus stop being suspects
 
 - **What the runner said after the exact-ink pass**: the report named ONLY the six anchors in the closed `<details>` menu (39–66px past the edge). Those contents render nothing — Chromium keeps a closed details' slot laid out for measurement but never paints it, and it never joins the scroll — so every name was a false positive, and the 9px culprit still had no name.

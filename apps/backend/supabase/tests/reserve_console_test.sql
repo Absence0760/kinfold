@@ -81,7 +81,7 @@ select ok((
   from (select public.review_pool_runs(10) as d)
 ), 'the money line the door hands out still adds up');
 
-select ok(((public.review_pool_runs(10) -> 0) - 'member_id') IS NULL,
+select ok(((public.review_pool_runs(10) -> 0) -> 'member_id') IS NULL,
   'no member-level key crosses the door');
 reset role;
 
@@ -106,7 +106,7 @@ reset role;
 set local role anon;
 select throws_ok(
   $$select public.review_pool_runs(10)$$,
-  '42501', 'pool runs are read by the operations console',
+  '42501', 'permission denied for function review_pool_runs',
   'the public cannot read the runs at all');
 reset role;
 

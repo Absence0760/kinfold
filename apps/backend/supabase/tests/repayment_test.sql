@@ -105,17 +105,28 @@ create function pg_temp.login(p_id uuid) returns void language sql as $$
 $$;
 
 -- A request taken all the way to paid, its payout sent at `p_paid_at`.
+-- The payout is inserted with triggers off (the …210000 reporting file's
+-- fixture helper does the same): the sent-at stamping trigger writes
+-- `now()`, and this file's history asks for payout sends months and years
+-- back — the partner's confirmation date, not this test run's.
 create function pg_temp.paid_request(p_id uuid, p_member uuid, p_funding public.funding_mode, p_paid_at timestamptz)
-returns uuid language sql as $$
-  select pg_temp.request(p_id, p_member, p_funding, 50000, 'car_damage', '00000000-0000-0000-0008-0000000000c1');
-  select pg_temp.move(p_id, 'scoring', 'open');
+returns uuid language plpgsql as $$
+begin
+  perform pg_temp.request(p_id, p_member, p_funding, 50000, 'car_damage',
+                          '00000000-0000-0000-0008-0000000000c1');
+  perform pg_temp.move(p_id, 'scoring', 'open');
   insert into public.contributions (request_id, contributor_id, source, amount_cents, status)
   values (p_id, '00000000-0000-0000-0008-0000000000a3', 'gift', 50000, 'captured');
-  insert into public.payouts (request_id, payee_id, amount_cents, invoice_evidence_id, status, created_at)
-  values (p_id, '00000000-0000-0000-0008-0000000000c1', 50000, pg_temp.evidence(p_id, 'invoice'), 'sent', p_paid_at);
-  select pg_temp.move(p_id, 'paid');
-  select p_id;
-$$;
+  set local session_replication_role = replica;
+  insert into public.payouts (request_id, payee_id, amount_cents, invoice_evidence_id,
+                              status, created_at, sent_at, partner_ref)
+  values (p_id, '00000000-0000-0000-0008-0000000000c1', 50000,
+          pg_temp.evidence(p_id, 'invoice'), 'sent', p_paid_at, p_paid_at,
+          'pc_' || right(p_id::text, 4));
+  set local session_replication_role = origin;
+  perform pg_temp.move(p_id, 'paid');
+  return p_id;
+end $$;
 
 select pg_temp.member('00000000-0000-0000-0008-0000000000a1', 'CA');  -- bea, borrower
 select pg_temp.member('00000000-0000-0000-0008-0000000000a2', 'CA');  -- len, lender

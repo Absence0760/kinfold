@@ -9,7 +9,7 @@
 --     replay keeps the figure;
 --   * a period that isn't a month start is refused; members can't collect.
 begin;
-select plan(8);
+select plan(9);
 
 -- --- fixtures ------------------------------------------------------------------
 
@@ -60,9 +60,12 @@ select pg_temp.subscribe('00000000-0000-0000-0016-0000000000a2', 0::bigint);
 
 set local role service_role;
 select pg_temp.as_service();
+select lives_ok($$select public.enqueue_dues('00000000-0000-0000-0016-0000000000a1',
+  (date_trunc('month', now() - interval '20 days'))::date)$$,
+  'the service asks the member''s dues for the month');
 select is((select amount_cents from public.subscription_payments
-           where id = public.enqueue_dues('00000000-0000-0000-0016-0000000000a1',
-                                          (date_trunc('month', now() - interval '20 days'))::date)) ,
+           where member_id = '00000000-0000-0000-0016-0000000000a1'
+             and period = (date_trunc('month', now() - interval '20 days'))::date),
   4000::bigint, 'the dues ask carries the member''s own figure');
 select is(public.enqueue_dues('00000000-0000-0000-0016-0000000000a1',
                               (date_trunc('month', now() - interval '20 days'))::date),
@@ -88,7 +91,7 @@ select is(public.capture_dues((select id from public.subscription_payments
 -- --- refusals ------------------------------------------------------------------
 
 select throws_ok($$select public.enqueue_dues('00000000-0000-0000-0016-0000000000a2',
-  (now() - interval '10 days')::date)$$,
+  (date_trunc('month', now()))::date)$$,
   '23514', 'a $0 dues subscription has nothing to collect',
   'a $0 subscription has no dues to ask for');
 select throws_ok($$select public.enqueue_dues('00000000-0000-0000-0016-0000000000a1',

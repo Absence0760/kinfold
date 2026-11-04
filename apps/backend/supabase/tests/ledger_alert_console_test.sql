@@ -74,7 +74,7 @@ select ok((
          and ((d -> 0 -> 'ledger_cents'))::int = 99000
   from (select public.review_ledger_differences(10) as d)
 ), 'a reviewer reads both alerts newest first, with the figures exactly as recorded');
-select ok(((public.review_ledger_differences(10) -> 0) - 'member_id') IS NULL,
+select ok(((public.review_ledger_differences(10) -> 0) -> 'member_id') IS NULL,
   'no member-level key crosses the door');
 reset role;
 
@@ -91,7 +91,7 @@ reset role;
 set local role anon;
 select throws_ok(
   $$select public.review_ledger_differences(10)$$,
-  '42501', 'ledger differences are read by the operations console',
+  '42501', 'permission denied for function review_ledger_differences',
   'the public cannot read the alerts at all');
 reset role;
 

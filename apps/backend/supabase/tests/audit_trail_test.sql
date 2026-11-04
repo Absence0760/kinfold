@@ -60,9 +60,19 @@ reset role;
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0032-0000000000c1');
-select ok(jsonb_array_length(public.review_audit_tail(10)) = 2,
+-- The seed's own demo decisions live on the trail too, so the read is scoped
+-- to THIS file's fixture: both decisions this transaction made must be in the
+-- tail, whatever else the trail carries.
+select ok(
+  (select count(*)
+     from jsonb_array_elements(public.review_audit_tail(10)) as row
+     where (row ->> 'action', row ->> 'target_id') in (
+       ('fraud_signal.recorded', '00000000-0000-0000-0032-0000000000e1'::text),
+       ('claim.recorded', (select id::text from public.claims
+                           where partner_ref = 'trail_claim_1')))) = 2,
   'a reviewer reads both recent decisions');
-select ok(((public.review_audit_tail(1) -> 0) - 'detail') IS NULL,
+reset role;
+select ok(((public.review_audit_tail(1) -> 0) -> 'detail') IS NULL,
   'the raw detail never crosses the door');
 reset role;
 

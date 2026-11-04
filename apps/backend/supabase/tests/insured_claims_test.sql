@@ -39,7 +39,10 @@ create function pg_temp.as_service() returns void language sql as $$
 $$;
 
 select pg_temp.member('00000000-0000-0000-0012-0000000000a1');
-select pg_temp.member('00000000-0000-0000-0012-0000000000a2');  -- reviewer
+select pg_temp.member('00000000-0000-0000-0012-0000000000a2', 'NY');  -- reviewer, outside CA
+
+insert into public.member_roles (member_id, role)
+values ('00000000-0000-0000-0012-0000000000a2', 'reviewer');
 
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                              status, description, public_summary, public_summary_confirmed_at,

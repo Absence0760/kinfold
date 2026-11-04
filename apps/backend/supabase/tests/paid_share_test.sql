@@ -143,10 +143,13 @@ update public.requests set status = 'open' where id = '00000000-0000-0000-0059-0
 
 set local role service_role;
 select pg_temp.as_service();
-select set_config('test.run1', public.run_pool_allocation('protection', 400000)::text, true);
+-- The seed board keeps its own open pool requests, so the run gets an
+-- available balance big enough that no band is squeezed: the rows show each
+-- member's own need-minus-share figure whole, which is what this file pins.
+select set_config('test.run1', public.run_pool_allocation('protection', 700000)::text, true);
 select is((select reserve_cents from public.pool_runs
            where id = current_setting('test.run1')::uuid),
-  80000::bigint, 'the fund keeps its reserve as before');
+  140000::bigint, 'the fund keeps its reserve as before');
 select is(((select settings from public.pool_runs
             where id = current_setting('test.run1')::uuid) ->> 'share_version')::int,
   1::int, 'the run records which share rule version it read');

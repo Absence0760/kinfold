@@ -79,7 +79,8 @@ select throws_ok($$select public.record_needs_decision(
   '23514', 'one answer per reviewer per formula version');
 select throws_ok($$select public.record_needs_decision(
   '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'too short')$$,
-  '23514', 'a decision carries a written reason');
+  '23514', 'a needs decision needs a written reason (at least 10 characters)',
+  'a short reason is refused by the door, the constraint behind it');
 reset role;
 
 -- --- who cannot answer -------------------------------------------------------------
@@ -88,26 +89,26 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0027-0000000000a1'::uuid);
 select throws_ok($$select public.record_needs_decision(
   '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'their own applicant')$$,
-  '42501', 'the applicant is never answered by their own region');
+  '42501', 'only a reviewer from another state answers an edge case');
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0027-0000000000a3'::uuid);
 select throws_ok($$select public.record_needs_decision(
   '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'no relation to this one')$$,
-  '42501', 'a member with no relation answers nothing');
+  '42501', 'only a reviewer from another state answers an edge case');
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0027-0000000000a2'::uuid);
 select throws_ok($$select public.record_needs_decision(
   '00000000-0000-0000-0027-0000000000b2'::uuid, 'needs', 'nothing on the books yet')$$,
-  'P0002', 'an applicant the Fund has not ranked cannot be answered');
+  'P0002', 'only an applicant the Fund has ranked can be answered');
 reset role;
 
 set local role service_role;
 select pg_temp.as_service();
 select throws_ok($$select public.record_needs_decision(
   '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'the Fund ranks, a reviewer answers')$$,
-  '42501', 'the service role cannot answer edge cases');
+  '42501', 'only a reviewer from another state answers an edge case');
 reset role;
 
 -- --- decisions are history ----------------------------------------------------------

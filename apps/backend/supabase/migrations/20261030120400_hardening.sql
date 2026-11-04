@@ -759,6 +759,14 @@ revoke all on public.refunds_due from public, anon, authenticated;
 revoke all on all functions in schema private from public, anon, authenticated;
 revoke all on all functions in schema public from public, anon, authenticated;
 
+-- The private schema itself is out of reach for the client roles: Postgres
+-- then names the schema in the refusal ('permission denied for schema
+-- private') for anything inside it, table or function alike - a client
+-- cannot probe the private world even to learn what a table is called.
+-- Without this revoke the refusal names the table, which tells a client
+-- more than the design allows.
+revoke usage on schema private from public, anon, authenticated;
+
 -- The service role (edge functions) bypasses RLS but still needs privileges:
 -- the earlier blanket revokes from PUBLIC took away its execute, and tables
 -- created by postgres never granted it read or write. Append-only triggers,

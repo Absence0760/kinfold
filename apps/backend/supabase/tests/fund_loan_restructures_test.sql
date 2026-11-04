@@ -76,10 +76,10 @@ select is((select count(*) from public.fund_loan_restructures
              and applied_at is null), 1::bigint, 'the ask is pending on the loan');
 select throws_ok($$select public.restructure_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid, 10,
-  current_date + 3)$$, '23514', 'a second ask is refused while one is pending');
+  current_date + 3)$$, '23514', 'a restructure the partner has not answered yet is already pending');
 select throws_ok($$select public.apply_fund_loan_restructure(
   (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid)$$,
-  '42501', 'a member cannot answer the ask; the partner''s event does');
+  '42501', 'permission denied for function apply_fund_loan_restructure');
 
 -- --- the partner's event applies it -------------------------------------------------
 
@@ -112,7 +112,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0026-0000000000a1'::uuid);
 select throws_ok($$select public.restructure_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid, 1, current_date - 1)$$,
-  '23514', 'a schedule can''t start in the past');
+  '23514', 'a restructured schedule can''t start in the past');
 set local role service_role;
 select pg_temp.as_service();
 select lives_ok($$select public.create_fund_loan(
@@ -122,18 +122,18 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0026-0000000000a1'::uuid);
 select throws_ok($$select public.restructure_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_i2')::uuid, 6, current_date + 1)$$,
-  '23514', 'income payments are computed, not scheduled');
+  '23514', 'income payments are computed from income; nothing to reschedule');
 select lives_ok($$select public.pause_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid, 1)$$, 'the loan pauses');
 select lives_ok($$select public.restructure_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid, 8, current_date + 4)$$,
   'a paused loan can still ask to restructure');
-select throws_ok($$select public.restructure_fund_loan(
-  (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid, 6, current_date + 2)$$,
-  'P0002', 'another borrower''s loan answers with nothing');
-
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0026-0000000000a2'::uuid);
+select throws_ok($$select public.restructure_fund_loan(
+  (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid, 6, current_date + 2)$$,
+  'P0002', 'loan not found',
+  'another borrower''s loan answers with nothing');
 select is((select count(*) from public.fund_loan_restructures), 0::bigint,
   'another member sees no restructures');
 

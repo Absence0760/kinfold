@@ -8,8 +8,28 @@
 -- read the standing claims of what they may review, so the console can show
 -- the claim a denial would close.
 
+-- A reviewer's reach for CLAIMS follows `record_review`'s reviewable set
+-- (`may_review`'s narrower set drives the review QUEUE: only what awaits a
+-- review). A claim stands beside money that has already moved, so its denial
+-- lives on a request the queue would no longer show; the console still has
+-- to read the standing claim to deny it, so the claims door matches the
+-- door that records the refusal the denial leans on.
+create function private.may_review_claims(p_request uuid, p_reviewer uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.requests r
+    join public.members m on m.id = r.member_id
+    where r.id = p_request
+      and r.member_id <> p_reviewer
+      and r.status in ('in_review', 'needs_evidence', 'open', 'funded', 'refused')
+      and exists (select 1 from public.member_roles mr
+                  where mr.member_id = p_reviewer and mr.role = 'reviewer')
+      and (select mm.region from public.members mm where mm.id = p_reviewer) <> m.region
+  );
+$$;
+
 create policy "reviewers read standing claims of reviewable requests" on public.claims for select to authenticated
-  using (status = 'recorded' and private.may_review(request_id, auth.uid()));
+  using (status = 'recorded' and private.may_review_claims(request_id, auth.uid()));
 
 create function public.decide_claim(p_claim uuid, p_reason text) returns void
 language plpgsql security definer set search_path = '' as $$

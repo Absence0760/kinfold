@@ -61,7 +61,7 @@ select pg_temp.login('00000000-0000-0000-0026-0000000000a1'::uuid);
 select throws_ok($$select public.offer_fair_lending_self_test(
   (select id from public.fund_loans where partner_ref = 'loan_h2')::uuid,
   true, true, true, true, 'Black', 'Not Hispanic or Latino', 'Female')$$,
-  '23514', 'a secured fund loan answers on the monitoring form instead');
+  '23514', 'a Fund loan secured by the home answers on the government monitoring form, not a self-test');
 select throws_ok($$select public.offer_fair_lending_self_test(
   (select id from public.fund_loans where partner_ref = 'loan_h1')::uuid,
   true, false, true, true, 'Black', 'Not Hispanic or Latino', 'Female')$$,
@@ -73,19 +73,19 @@ select lives_ok($$select public.offer_fair_lending_self_test(
 select throws_ok($$select public.offer_fair_lending_self_test(
   (select id from public.fund_loans where partner_ref = 'loan_h1')::uuid,
   true, true, true, true, 'Black', 'Not Hispanic or Latino', 'Female')$$,
-  '23514', 'the self-test is recorded once per loan');
+  '23514', 'this loan''s self-test data is already recorded');
 
 -- --- the borrower can't reach the other route or the reads -----------------------
 
 select throws_ok($$select public.record_fair_lending_monitoring_form(
   (select id from public.fund_loans where partner_ref = 'loan_h2')::uuid,
   'White', 'Not Hispanic or Latino', 'Male')$$,
-  '42501', 'a member cannot collect the government monitoring form');
+  '42501', 'permission denied for function record_fair_lending_monitoring_form');
 select throws_ok($$select public.fair_lending_rows(
   (select id from public.fund_loans where partner_ref = 'loan_h1')::uuid)$$,
-  '42501', 'a member cannot read fair-lending rows');
+  '42501', 'permission denied for function fair_lending_rows');
 select throws_ok('select count(*) from private.fair_lending', '42501',
-  'permission denied for table fair_lending',
+  'permission denied for schema private',
   'a member reads no demographics at all, not even their own');
 
 -- --- the partner collects the monitoring form -------------------------------------

@@ -63,28 +63,38 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0018-0000000000a2'::uuid);
 select throws_ok($$select public.set_cover_plan('sedan', 'standard', 20000::bigint,
   100000::bigint, 'partner_insurer', current_date)$$, '42501',
-  'a member cannot file a rate at all');
+  'permission denied for function set_cover_plan');
 reset role;
 
 -- --- the plan order inside a class survives a change -----------------------------
+
+-- The stack itself trails filed changes (the seeded annuals trail history rows),
+-- so the history counts below are DELTAS against a baseline taken here: the
+-- transaction's own refused/lawful changes must move the history by 0 and 1
+-- whatever the books already carry.
+create table pg_temp.history_base (baseline bigint);
+insert into pg_temp.history_base (baseline)
+values ((select count(*) from private.cover_plans_history));
 
 set local role service_role;
 select pg_temp.as_service();
 select throws_ok($$select public.set_cover_plan('sedan', 'standard', 10000::bigint,
   100000::bigint, 'partner_insurer', current_date)$$, '23514',
-  'Standard priced at or below Basic is refused');
+  'within a class the standard plan must pay more premium for at least as much cap');
 select is((select premium_cents from public.cover_plans
            where vehicle_class = 'sedan' and plan = 'standard'), 18900::bigint,
   'the refused change left the row alone');
 reset role;
-select is((select count(*) from private.cover_plans_history), 0::bigint,
+select is((select count(*) from private.cover_plans_history) -
+          (select baseline from pg_temp.history_base), 0::bigint,
   'a refused change wrote no history row');
 set local role service_role;
 select pg_temp.as_service();
 select lives_ok($$select public.set_cover_plan('sedan', 'basic', 12000::bigint,
   50000::bigint, 'partner_insurer', current_date)$$, 'a lawful Basic change goes through');
 reset role;
-select is((select count(*) from private.cover_plans_history), 1::bigint,
+select is((select count(*) from private.cover_plans_history) -
+          (select baseline from pg_temp.history_base), 1::bigint,
   'the lawful change logged exactly one history row');
 
 rollback;

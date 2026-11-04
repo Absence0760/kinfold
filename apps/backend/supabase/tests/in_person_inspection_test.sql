@@ -64,7 +64,7 @@ select is(public.needs_inspection('00000000-0000-0000-0019-0000000000b2'::uuid),
 
 select throws_ok($$update public.requests set status = 'funded'
   where id = '00000000-0000-0000-0019-0000000000b1'::uuid$$, '23514',
-  'a large request cannot be funded without a clear inspection');
+  'a large request needs a clear in-person inspection before money moves');
 select is((select status from public.requests
            where id = '00000000-0000-0000-0019-0000000000b1'::uuid), 'open',
   'the refused change left the request open');
@@ -77,7 +77,7 @@ select is((select result from public.inspections limit 1), 'issue_found',
   'what the inspector found is stored as they said it');
 select throws_ok($$update public.requests set status = 'funded'
   where id = '00000000-0000-0000-0019-0000000000b1'::uuid$$, '23514',
-  'an issue-found inspection still does not open the door');
+  'a large request needs a clear in-person inspection before money moves');
 select lives_ok($$select public.record_inspection('00000000-0000-0000-0019-0000000000b1'::uuid,
   'clear', 'insp_2')$$, 'the service records the clear visit');
 select lives_ok($$update public.requests set status = 'funded'
@@ -98,7 +98,7 @@ select is((select count(*) from public.inspections), 2::bigint,
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0019-0000000000a1'::uuid);
 select throws_ok($$select public.record_inspection('00000000-0000-0000-0019-0000000000b1'::uuid,
-  'clear', 'insp_3')$$, '42501', 'a member cannot record an inspection');
+  'clear', 'insp_3')$$, '42501', 'permission denied for function record_inspection');
 select is((select count(*) from public.inspections), 2::bigint,
   'the requester reads what was found on their request');
 reset role;

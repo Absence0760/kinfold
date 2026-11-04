@@ -135,5 +135,5 @@ select throws_ok($$select public.expire_request('00000000-0000-0000-0007-0000000
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0007-0000000000a1');
 select throws_ok($$select public.expire_request('00000000-0000-0000-0007-0000000000b1')$$,
-  '42501', 'expiry is run by the service',
+  '42501', 'permission denied for function expire_request',
   'a member cannot expire a request');

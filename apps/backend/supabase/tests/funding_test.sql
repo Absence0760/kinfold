@@ -149,7 +149,8 @@ select is(public.accept_invite(current_setting('test.token')), '00000000-0000-00
 select is((select relationship from public.request_supporters
            where request_id = '00000000-0000-0000-0004-0000000000b1' and member_id = '00000000-0000-0000-0004-0000000000a2'),
   'sister', 'accepting adds the supporter with the relationship');
-select is((select count(*) from public.requests where id = '00000000-0000-0000-0004-0000000000b1'), 1::bigint,
+select is((select count(*) from public.support_requests
+           where id = '00000000-0000-0000-0004-0000000000b1'), 1::bigint,
   'a supporter can read the request they back');
 
 select pg_temp.login('00000000-0000-0000-0004-0000000000a3');
@@ -195,7 +196,8 @@ select throws_ok($$select public.pledge('00000000-0000-0000-0004-0000000000b1', 
   '23514', 'pledge must be between 1 and 50000 cents', 'a pledge must be positive');
 select lives_ok($$select public.pledge('00000000-0000-0000-0004-0000000000b1', 50000, 'gift')$$,
   'the last pledge fills the request');
-select is((select status from public.requests where id = '00000000-0000-0000-0004-0000000000b1'),
+select is((select status from public.support_requests
+           where id = '00000000-0000-0000-0004-0000000000b1'),
   'funded'::public.request_status, 'a fully pledged request flips to funded');
 select is(public.request_raised_cents('00000000-0000-0000-0004-0000000000b1'), 100000::bigint,
   'raised equals the amount, never more');

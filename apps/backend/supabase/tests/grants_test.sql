@@ -73,7 +73,7 @@ select is(public.ledger_balance('home_fund'::public.fund, 'grants'), 250000::big
   'the replayed report counted no money again');
 select throws_ok($$insert into public.grants (fund, source, programme, federal, amount_cents, partner_ref)
   values ('home_fund'::public.fund, 'foundation'::public.grant_source, 'Zero money', false, 0::bigint, 'grant_r6')$$,
-  '23514', 'a grant row refuses a non-positive amount at the table too');
+  '23514', 'new row for relation "grants" violates check constraint "grants_amount_cents_check"');
 
 -- --- history and access -----------------------------------------------------------
 
@@ -85,7 +85,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0000-000000000001'::uuid);
 select throws_ok($$select public.record_grant('home_fund'::public.fund, 'foundation'::public.grant_source,
   'Member try', false, 250000::bigint, 'grant_r7')$$,
-  '42501', 'a member cannot report grant money');
+  '42501', 'permission denied for function record_grant');
 select throws_ok($$insert into public.grants (fund, source, programme, federal, amount_cents, partner_ref)
   values ('home_fund'::public.fund, 'foundation'::public.grant_source, 'Member write', false, 1::bigint, 'grant_r8')$$,
   '42501', 'permission denied for table grants', 'a member cannot write grant rows');

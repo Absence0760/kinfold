@@ -82,7 +82,7 @@ select is((select count(*) from public.fund_loan_pauses
 select is((select due_on from public.fund_loan_installments
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_p1')
              and seq = 2),
-  (current_date + interval '4 months')::date,
+  (current_date + 1 + interval '3 months')::date,
   'the unpaid installment slid two months out');
 select is(public.fund_loan_outstanding_cents(
   (select id from public.fund_loans where partner_ref = 'loan_p1')::uuid),
@@ -92,7 +92,7 @@ select is(public.fund_loan_outstanding_cents(
 
 select throws_ok($$select public.pause_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_p1')::uuid, 2)$$,
-  '23514', 'pausing over the allowance is refused (ask the lending Fund to restructure)');
+  '23514', 'this loan allows 3 pause months a year (2 used); ask the lending Fund to restructure');
 
 -- --- a paused loan still collects by agreement ------------------------------------
 
@@ -110,7 +110,7 @@ select is(public.resume_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_p1')::uuid), 'active',
   'the borrower resumes early at any time');
 select throws_ok($$select public.resume_ended_fund_pauses()$$, '42501',
-  'a member cannot run the loan-servicing job');
+  'permission denied for function resume_ended_fund_pauses');
 
 set local role service_role;
 select pg_temp.as_service();

@@ -38,8 +38,22 @@ create table public.request_recoveries (
 
 create index request_recoveries_request on public.request_recoveries (request_id);
 
+-- Verification is a service-side stamp beside a row appended at record time, so
+-- the append-only guard carves the service out: clients may only append, never
+-- edit or remove a recovery; the service alone annotates the money the partner
+-- confirmed moved (verify_recovery's door still requires its JWT context, and a
+-- webhook retry is a no-op there).
+create function private.forbid_client_recovery_change() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if not private.is_service() then
+    raise exception '% is append-only', tg_table_name using errcode = '42501';
+  end if;
+  return new;
+end $$;
+
 create trigger request_recoveries_append_only before update or delete
-  on public.request_recoveries for each row execute function private.forbid_change();
+  on public.request_recoveries for each row execute function private.forbid_client_recovery_change();
 
 -- What the pledge cap and the pool run subtract. Internal only: recovered money
 -- is money that moved outside Kinfold, so nothing else reads it as funding.
@@ -365,6 +379,7 @@ end $$;
 
 -- Supabase's default privileges hand the new relations to anon and authenticated;
 -- take them back, then grant only what each role needs.
+alter table public.request_recoveries enable row level security;
 revoke all on public.request_recoveries, private.evidence_deletions,
   public.pending_evidence_deletions from public, anon, authenticated;
 revoke all on function

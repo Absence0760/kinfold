@@ -43,9 +43,11 @@ create function pg_temp.as_service() returns void language sql as $$
   select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 $$;
 
--- A request in a given state with a payout and (optionally) a refunded
--- contribution, inserted with triggers off: this file is about what reporting
--- allows, not about how a request got there (service_paths_test pins that).
+-- A request in a given state with a payout and its captured money (plus,
+-- optionally, a refunded contribution), inserted with triggers off: this file
+-- is about what reporting allows, not about how a request got there
+-- (service_paths_test pins that). The captured money is part of the fixture:
+-- the payout cap guard reads it on every payout write, reporting included.
 create function pg_temp.request_with_payout(p_request uuid, p_member uuid, p_evidence uuid,
                                             p_payout uuid, p_payout_status public.payout_status,
                                             p_contribution uuid, p_refunded boolean)
@@ -58,14 +60,17 @@ begin
           'draft', 'Rear bumper after a parking-lot hit', now(), 87::smallint, now());
   insert into public.evidence (id, request_id, kind, original_path, redacted_path, sha256, redaction_status)
   values (p_evidence, p_request, 'invoice', 'x/' || p_request::text || '/original.pdf', 'x/' || p_request::text || '/redacted.pdf', repeat('a', 64), 'confirmed');
+  insert into public.contributions (id, request_id, contributor_id, source, amount_cents,
+                                    status, created_at)
+  values (p_contribution, p_request, p_member, 'gift', 100000, 'captured', now() - interval '6 days');
   insert into public.payouts (id, request_id, payee_id, amount_cents, invoice_evidence_id,
                               status, partner_ref)
   values (p_payout, p_request, '00000000-0000-0000-0006-0000000000c1', 100000, p_evidence,
           p_payout_status, 'acct_' || right(p_request::text, 4));
   if p_refunded then
-    insert into public.contributions (id, request_id, contributor_id, source, amount_cents,
+    insert into public.contributions (request_id, contributor_id, source, amount_cents,
                                       status, refunded_cents, refund_partner_ref, refunded_at)
-    values (p_contribution, p_request, p_member, 'gift', 23456,
+    values (p_request, p_member, 'gift', 23456,
             'refunded', 23456, 'acct_ref' || right(p_request::text, 4), now());
   end if;
   set local session_replication_role = origin;
@@ -122,7 +127,7 @@ select throws_ok($$select public.report_payout('00000000-0000-0000-0006-00000000
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0006-0000000000a1');
 select throws_ok($$select public.report_payout('00000000-0000-0000-0006-0000000000d1', 'sent')$$,
-  '42501', 'payout outcomes are reported by the service',
+  '42501', 'permission denied for function report_payout',
   'a member cannot report an outcome');
 
 -- --- a payout that doesn't exist ------------------------------------------------

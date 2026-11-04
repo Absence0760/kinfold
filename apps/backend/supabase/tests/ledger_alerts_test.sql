@@ -24,7 +24,7 @@ select is((select statement_cents from public.ledger_differences limit 1),
 
 select throws_ok($$select public.record_ledger_difference('protection', 'partner_cash',
   -800::bigint, -800::bigint)$$, '23514',
-  'a statement that matches the ledger is not an alert');
+  'a matching statement is not a difference');
 select is((select count(*) from public.ledger_differences), 1::bigint,
   'the refused match stored nothing');
 

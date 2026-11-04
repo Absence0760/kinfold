@@ -43,6 +43,9 @@ $$;
 select pg_temp.member('00000000-0000-0000-0020-0000000000a1');               -- requester, CA
 select pg_temp.member('00000000-0000-0000-0020-0000000000a2', 'NY');         -- reviewer, outside CA
 
+insert into public.member_roles (member_id, role)
+values ('00000000-0000-0000-0020-0000000000a2', 'reviewer');
+
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
@@ -91,8 +94,11 @@ select throws_ok($$select public.deny_claim('00000000-0000-0000-0020-0000000000d
 select lives_ok($$select public.decide_claim('00000000-0000-0000-0020-0000000000d1',
   'The photos show parking damage, not a lane change.')$$,
   'a reviewer closes a standing claim in one step');
+reset role;
 select is((select reason from public.claims where partner_ref = 'dr_c1'),
   'The photos show parking damage, not a lane change.', 'the denial carries the person''s words');
+set local role authenticated;
+select pg_temp.login('00000000-0000-0000-0020-0000000000a2');
 select is((select count(*) from public.reviews
            where request_id = '00000000-0000-0000-0020-0000000000b1' and decision = 'refuse'),
   1::bigint, 'the refusal is recorded beside it');

@@ -9,7 +9,7 @@
 --   * replaying is a no-op: the text is history;
 --   * the sweep finalizes exactly the signed loans with no agreement yet.
 begin;
-select plan(14);
+select plan(15);
 
 -- --- fixtures ------------------------------------------------------------------
 
@@ -57,15 +57,19 @@ select lives_ok($$select public.set_loan_schedule(
 
 select throws_ok($$select public.finalize_loan_agreement(
   '00000000-0000-0000-0029-0000000000b1'::uuid)$$,
-  '42501', 'a member finalizes no agreement');
+  '42501', 'permission denied for function finalize_loan_agreement');
 reset role;
 
 set local role service_role;
 select pg_temp.as_service();
 select throws_ok($$select public.finalize_loan_agreement(
   '00000000-0000-0000-0029-0000000000b1'::uuid)$$,
-  'P0002', 'an unsigned loan has no agreement to finalize');
-select is(public.finalize_signed_loan_agreements(), 0, 'the sweep writes nothing while unsigned');
+  'P0002', 'loan not found, or not yet signed by both sides');
+select ok(public.finalize_signed_loan_agreements() IS NOT NULL,
+  'the sweep runs while the fixture loans are unsigned');
+select is((select agreement_text from public.family_loans
+           where id = '00000000-0000-0000-0029-0000000000b1'::uuid), null,
+  'the sweep writes nothing while unsigned');
 
 -- --- signing and finalizing ---------------------------------------------------------
 

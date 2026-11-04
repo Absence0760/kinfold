@@ -37,12 +37,27 @@ begin
   end if;
   if not exists (select 1 from public.requests req
                  where req.id = p_request
-                 and req.fund = 'home_fund'
+                 and public.fund_for_kind(req.kind) = 'home_fund'
                  and req.status in ('in_review', 'needs_evidence')) then
     raise exception 'request not found, not a Home Fund applicant, or not awaiting review' using errcode = 'P0002';
   end if;
   if not private.may_review(p_request, auth.uid()) then
     raise exception 'only a reviewer from another state answers an edge case' using errcode = '42501';
+  end if;
+  -- A written reason is the input check the table's length constraint
+  -- backstops; the door runs it first so bad input is refused in the console's
+  -- words, and a duplicate attempt is refused in its own.
+  if p_reason is null or length(p_reason) < 10 or length(p_reason) > 1000 then
+    raise exception 'a needs decision needs a written reason (at least 10 characters)' using errcode = '23514';
+  end if;
+  -- The table's unique (request, reviewer, version) is the backstop, but the
+  -- door names the rule in the reviewer's words first, so a second answer in
+  -- the console reads as "one answer per reviewer per formula version" rather
+  -- than the raw constraint.
+  if exists (select 1 from public.needs_reviews
+             where request_id = p_request and reviewer_id = auth.uid()
+             and formula_version = r.formula_version) then
+    raise exception 'one answer per reviewer per formula version' using errcode = '23514';
   end if;
   insert into public.needs_reviews
     (request_id, reviewer_id, formula_version, decision, reason)

@@ -72,4 +72,4 @@ select throws_ok($$select public.record_evidence_url('00000000-0000-0000-0013-00
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0013-0000000000a1');
 select throws_ok($$select public.record_evidence_url('00000000-0000-0000-0013-0000000000b1', 'x/y.jpg')$$,
-  '42501', 'evidence URLs are issued by the service', 'a member cannot issue an evidence URL');
+  '42501', 'permission denied for function record_evidence_url', 'a member cannot issue an evidence URL');

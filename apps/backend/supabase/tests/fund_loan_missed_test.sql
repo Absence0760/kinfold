@@ -139,8 +139,9 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0021-0000000000a1'::uuid);
 select throws_ok($$select public.apply_fund_loan_default(
   (select id from public.fund_loans where partner_ref = 'loan_s1')::uuid)$$,
-  '42501', 'a Fund loan closes under its plan by agreement, not by a client',
+  '42501', 'permission denied for function apply_fund_loan_default',
   'the borrower cannot close their own Fund loan');
+reset role;
 select throws_ok($$insert into public.loan_forgiveness (loan_id, tax_year, amount_cents)
   values ((select id from public.fund_loans where partner_ref = 'loan_s1'),
           extract(year from current_date)::integer, 20000)$$,

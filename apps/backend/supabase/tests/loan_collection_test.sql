@@ -119,5 +119,5 @@ select is((select count(*) from private.audit_log where action = 'loan.payment')
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0008-0000000000a1');
 select throws_ok($$select public.record_loan_payment('00000000-0000-0000-0008-0000000000f1', 1, 100::bigint)$$,
-  '42501', 'loan payments are moved by the service',
+  '42501', 'permission denied for function record_loan_payment',
   'a member cannot record a payment: the partner moves money');

@@ -213,7 +213,7 @@ update public.requests set status = 'paid' where id = '00000000-0000-0000-0000-0
 select public.post_journal('protection', 'pool_grant', '00000000-0000-0000-0000-0000000000f2', null,
   '[{"code":"available","amount_cents":72000},{"code":"committed","amount_cents":-72000}]');
 select public.post_journal('protection', 'payout', '00000000-0000-0000-0000-0000000000b4', 'dev_transfer_b4',
-  '[{"code":"committed","amount_cents":72000},{"code":"paid_out","amount_cents":-72000}]');
+  '[{"code":"available","amount_cents":-72000},{"code":"paid_out","amount_cents":72000}]');
 
 
 -- --- work for the review console --------------------------------------------------------

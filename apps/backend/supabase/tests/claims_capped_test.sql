@@ -64,7 +64,7 @@ select lives_ok(
 select throws_ok(
   $$select public.record_claim('00000000-0000-0000-0031-0000000000e1'::uuid,
       'claim-over1', 60000, 1000)$$,
-  '23514', 'a claim over the filed cap is refused, not truncated');
+  '23514', 'a claim cannot exceed the filed cap for the member''s plan, or the vehicle''s value');
 select is((select count(*) from public.claims
            where partner_ref = 'claim-over1')::int, 0::int,
   'the refused feed entry stored nothing');
@@ -81,7 +81,7 @@ select is((select count(*) from public.claims
 select throws_ok(
   $$select public.record_claim('00000000-0000-0000-0031-0000000000e2'::uuid,
       'claim-value', 40000, 0)$$,
-  '23514', 'a claim over the vehicle''s own value is refused');
+  '23514', 'a claim cannot exceed the filed cap for the member''s plan, or the vehicle''s value');
 
 -- --- a home request carries no car cap ------------------------------------------
 

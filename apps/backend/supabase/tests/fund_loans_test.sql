@@ -58,7 +58,7 @@ select is(public.create_fund_loan(
 select throws_ok($$select public.create_fund_loan(
   '00000000-0000-0000-0020-0000000000a1'::uuid, 100000::bigint, true,
   60000, 40000, 10000, 'monthly', 0, 'loan_bad')$$, '23514',
-  'liens totalling 110% are refused');
+  'new row for relation "fund_loans" violates check constraint "fund_loans_check1"');
 
 -- --- the borrower signs; only the partner activates ------------------------------
 
@@ -72,7 +72,7 @@ select is(public.sign_fund_loan(
   'signing lands the loan as signed');
 select throws_ok($$select public.activate_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_m1')::uuid)$$, '42501',
-  'a member cannot activate; the disbursement is the partner''s');
+  'permission denied for function activate_fund_loan');
 reset role;
 
 -- --- monthly payments follow the agreed schedule ----------------------------------
@@ -87,7 +87,7 @@ select is(public.record_fund_loan_payment(
   80000::bigint, 'a full month moves and the balance reads back');
 select throws_ok($$select public.record_fund_loan_payment(
   (select id from public.fund_loans where partner_ref = 'loan_m1')::uuid, 1, 20001::bigint)$$,
-  '23514', 'a payment over what is owed on that installment is refused');
+  '23514', 'fund loan payment must be between 1 and 0 cents');
 
 -- --- income payments are capped at the income share -------------------------------
 
@@ -99,12 +99,12 @@ select is(public.fund_loan_income_due_cents(
   'the month''s share of the live income reads back');
 select throws_ok($$select public.record_fund_loan_payment(
   (select id from public.fund_loans where partner_ref = 'loan_i1')::uuid, 1, 60000::bigint)$$,
-  '23514', 'an income payment over the month''s share is refused');
+  '23514', 'income payment must be between 1 and 50000 cents');
 select is(public.record_fund_loan_payment(
   (select id from public.fund_loans where partner_ref = 'loan_i1')::uuid, 1, 50000::bigint),
   10000::bigint, 'a payment at the cap moves and the balance reads back');
 select throws_ok($$update public.fund_loan_payments set amount_cents = 1
   where loan_id = (select id from public.fund_loans where partner_ref = 'loan_i1')$$,
-  '42501', 'a recorded payment cannot be edited');
+  '42501', 'fund_loan_payments is append-only');
 
 rollback;

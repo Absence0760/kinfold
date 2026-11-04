@@ -100,11 +100,11 @@ select is((select count(*) from public.needs_records
 select throws_ok(
   $$select public.record_needs('00000000-0000-0000-0024-0000000000b2'::uuid,
                                80::smallint, 60::smallint, 90::smallint, encode(extensions.digest('a', 'sha256'), 'hex'))$$,
-  '23514', 'a protection request is ranked by the pool bands, not by needs');
+  '23514', 'only Home Fund applicants get a needs ranking');
 select throws_ok(
   $$select public.record_needs('00000000-0000-0000-0024-0000000000b3'::uuid,
                                80::smallint, 60::smallint, 90::smallint, encode(extensions.digest('b', 'sha256'), 'hex'))$$,
-  '23514', 'an unscored request waits for its evidence score first');
+  '23514', 'a score is needed before an applicant is ranked');
 
 reset role;
 set local role authenticated;
@@ -112,7 +112,7 @@ select pg_temp.login('00000000-0000-0000-0024-0000000000a1'::uuid);
 select throws_ok(
   $$select public.record_needs('00000000-0000-0000-0024-0000000000b1'::uuid,
                                80::smallint, 60::smallint, 90::smallint, encode(extensions.digest('c', 'sha256'), 'hex'))$$,
-  '42501', 'a member cannot rank applicants');
+  '42501', 'applicants are ranked by the Fund''s own service path');
 reset role;
 
 -- --- who reads the ranking ----------------------------------------------------------

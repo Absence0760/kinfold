@@ -45,31 +45,34 @@ select pg_temp.request('00000000-0000-0000-0015-000000000001'::uuid,
 set local role service_role;
 select pg_temp.as_service();
 select lives_ok($$select public.record_partner_recovery('00000000-0000-0000-0015-000000000001'::uuid,
-  'insurance', 30000::bigint, current_date - 5::date, 'pi_sub_1')$$,
+  'insurance', 30000::bigint, current_date - 5, 'pi_sub_1')$$,
   'the service records the partner insurer''s claim money');
-select is((select count(*) from public.request_recoveries), 1::bigint, 'the recovery landed once');
-select is((select partner_ref from public.request_recoveries limit 1), 'pi_sub_1',
+select is((select count(*) from public.request_recoveries
+  where request_id = '00000000-0000-0000-0015-000000000001'), 1::bigint, 'the recovery landed once');
+select is((select partner_ref from public.request_recoveries
+  where request_id = '00000000-0000-0000-0015-000000000001' limit 1), 'pi_sub_1',
   'the partner''s reference is stored, so the money is traceable');
 
 -- --- a retried webhook adds nothing --------------------------------------------
 
 select lives_ok($$select public.record_partner_recovery('00000000-0000-0000-0015-000000000001'::uuid,
-  'insurance', 30000::bigint, current_date - 5::date, 'pi_sub_1')$$,
+  'insurance', 30000::bigint, current_date - 5, 'pi_sub_1')$$,
   'the same partner reference is a no-op');
-select is((select count(*) from public.request_recoveries), 1::bigint,
+select is((select count(*) from public.request_recoveries
+  where request_id = '00000000-0000-0000-0015-000000000001'), 1::bigint,
   'the retry stored no second row');
 
 -- --- refusals --------------------------------------------------------------------
 
 select throws_ok($$select public.record_partner_recovery('00000000-0000-0000-0015-000000000001'::uuid,
-  'insurance', 30000::bigint, current_date - 5::date, '')$$, '23514',
-  'partner money with no reference is refused');
+  'insurance', 30000::bigint, current_date - 5, '')$$, '23514',
+  'partner money needs the partner''s reference');
 select throws_ok($$select public.record_partner_recovery('00000000-0000-0000-0015-000000000001'::uuid,
-  'insurance', 0::bigint, current_date - 5::date, 'pi_sub_2')$$, '23514',
-  'a non-positive amount is refused');
+  'insurance', 0::bigint, current_date - 5, 'pi_sub_2')$$, '23514',
+  'money covered must be positive');
 select throws_ok($$select public.record_partner_recovery('00000000-0000-0000-0015-000000000000'::uuid,
-  'insurance', 30000::bigint, current_date - 5::date, 'pi_sub_3')$$, 'P0002',
-  'an unknown request is refused');
+  'insurance', 30000::bigint, current_date - 5, 'pi_sub_3')$$, 'P0002',
+  'request not found');
 
 select ok(has_function_privilege('service_role',
     'record_partner_recovery(uuid, public.recovery_source, bigint, date, text, text)', 'execute')

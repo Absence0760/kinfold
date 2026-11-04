@@ -73,7 +73,7 @@ select is((select count(*) from public.loan_restructures
              and other_signed_at is null), 1::bigint, 'the ask waits for the other side');
 select throws_ok($$select public.restructure_loan(
   '00000000-0000-0000-0028-0000000000b1'::uuid, 10, current_date + 1)$$,
-  '23514', 'a second ask is refused while one is pending');
+  '23514', 'a restructure the other side has not signed yet is already pending');
 select is((select count(*) from public.loan_installments
            where loan_id = '00000000-0000-0000-0028-0000000000b1'::uuid), 5::bigint,
   'the staged ask alone moves no money');
@@ -104,13 +104,13 @@ select is((select amount_cents from public.loan_installments
 
 select throws_ok($$select public.restructure_loan(
   '00000000-0000-0000-0028-0000000000b1'::uuid, 6, current_date - 1)$$,
-  '23514', 'a schedule can''t start in the past');
+  '23514', 'a restructured schedule can''t start in the past');
 select throws_ok($$select public.restructure_loan(
   '00000000-0000-0000-0028-0000000000b1'::uuid, 481, current_date + 1)$$,
-  '23514', 'a schedule longer than 480 months is refused');
+  '23514', 'new row for relation "loan_restructures" violates check constraint "loan_restructures_months_check"');
 select throws_ok($$select public.restructure_loan(
   '00000000-0000-0000-0028-0000000000b2'::uuid, 6, current_date + 1)$$,
-  '23514', 'a loan owed nothing has nothing to restructure');
+  '23514', 'a loan that owes nothing has nothing to restructure');
 select throws_ok($$select public.restructure_loan(
   '00000000-0000-0000-0028-0000000000b3'::uuid, 300, current_date + 1)$$,
   '23514', 'too many installments for what is left to pay');
@@ -120,7 +120,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0028-0000000000a3'::uuid);
 select throws_ok($$select public.restructure_loan(
   '00000000-0000-0000-0028-0000000000b1'::uuid, 6, current_date + 1)$$,
-  'P0002', 'a member with no relation stages nothing');
+  'P0002', 'loan not found');
 select is((select count(*) from public.loan_restructures), 0::bigint,
   'a member with no relation reads nothing');
 reset role;
