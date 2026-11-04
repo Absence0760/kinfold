@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A policy is dropped by its name; the action clause was the parser's snag
+
+- **What CI said**: the walk reached support_view.sql and stopped at a bare ‘for’ — the drop policy statement carried a ‘for select to authenticated’ clause the parser couldn't read. Every other drop of a policy this stack has fed the parser names the policy bare; the policy's action and role are part of its identity, so the clause restates the name and adds nothing. This was the only drop carrying one, and it landed bare.
+- **Why the drop stays (no re-create)**: the migration's own point is that supporters no longer read whole rows — they read the new view granted below — so the policy is retired, not moved. The file grants the view to authenticated straight after, so no supporter loses a path they still need.
+- **Reversal:** with a deployed database this lands as a NEW migration (drop the policy, create the view, grant it), never an edit to a stamped file — same rule as every schema fix above.
+
 ## 2026-11-03 — Forty-three migrations' grant blocks rewritten: the revoke class, once
 
 - **What CI kept finding**: three consecutive walks each stopped at the next migration with the same shape — revoke statements written as two sentences, ‘revoke all from function X’; ‘revoke all from function X to public, anon, authenticated’; — the on keyword missing and the losing roles introduced with to, which inverts the intent. 136 such statements across 43 migrations now read the canonical single statement the working migrations always had (revoke all on function X from the trio, then the explicit grant to service).
