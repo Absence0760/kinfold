@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A view a policy reads cannot be dropped: the policy now travels with it
+
+- **What CI said**: with the loop guard in place, the walk advanced two more migrations and failed with a named dependent — “cannot drop view board_requests because other objects depend on it” (SQLSTATE 2BP01), “policy redacted evidence on the board on table storage.objects depends on view board_requests”. The storage policy's parsed expression holds the view, so dropping the view alone is refused.
+- **Why the shape is proven, not guessed**: our own board_privacy migration already carries the correct choreography — drop the policy first, drop the view, re-create both — and that migration has passed the same parser this stack has fed it. The new migration now does exactly that; the policy text is unchanged, only its placement around the drop.
+- **Standing fact**: this is the fourth reserved-word/parse problem CI found in our SQL in one day (the column named `on`, the `view`/`security` modifier slots, the `break` token, the pinned view). None of it was visible here: no Docker daemon means nothing on this machine parses these files, and CI's stack start is the only parser they have ever met. The class is ‘the runner is the schema’s validator’, and it stays worth repeating wherever the schema grows.
+- **Reversal:** with a deployed database, the same choreography lands as a NEW migration (drop policy, drop view, create both, re-grant), never as an edit to a stamped file.
+
 ## 2026-11-03 — The stack's parser names the token: our SQL's only `break` restructured into a guard
 
 - **What CI said**: after the loop-shape rewrite landed, the walk stopped in the same function with the caret on the break statement inside the loop (SQLSTATE 42601). A tree-wide grep shows this is the only break anywhere in our migrations and pgTAP plans; the repo's other 11 loops all run guarded, none exit mid-walk. The loop body now carries an `if v_left > 0` wrapper — once the forgiven money runs out, later installments are skipped rather than exited from. The same amount can only leave while v_left still holds cents, so the schedule ends identically.
