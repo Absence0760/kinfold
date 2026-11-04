@@ -70,6 +70,48 @@ async function overflowReports(page: Page) {
 		// Suspects join only when the page already scrolls, where their lines
 		// sit inside the failing message; a green page's suspect list stayed
 		// empty, so a passing run's report never grows.
+		//
+		// Ink, not just boxes: a word wider than the box it sits in pushes ink
+		// past the edge without any element RECT crossing the viewport (scrollable
+		// overflow counts text ink), so every pass above can stay silent while the
+		// page still scrolls. Measure each text node's longest unbreakable run
+		// against the content box it lives in, using the face the page itself
+		// renders: the runner's fallback font is not the local one, and the word
+		// gets measured where it actually gets rendered.
+		if (scrolling) {
+			const canvas = document.createElement('canvas');
+			const ctx = canvas.getContext('2d');
+			const walker = document.createTreeWalker(document.body, 3);
+			const seen = new Set();
+			for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+				const raw = node.textContent;
+				if (!raw || !raw.trim()) continue;
+				const host = node.parentElement;
+				if (!host) continue;
+				const style = getComputedStyle(host);
+				if (!ctx) continue;
+				if (style.display === 'none' || style.visibility === 'hidden') continue;
+				const budget = host.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0');
+				if (!(budget > 0)) continue;
+				ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+				let worst = 0;
+				let worstWord = '';
+				for (const word of raw.split(/[\s\u00a0]+/)) {
+					for (const piece of word.split(/(?<=-)/)) {
+						const w = ctx.measureText(piece).width;
+						if (w > worst) { worst = w; worstWord = piece; }
+					}
+				}
+				const over = Math.round(worst - budget);
+				if (over > 1) {
+					const name = host.tagName + (host.getAttribute('class') ? '.' + host.getAttribute('class') : '');
+					const key = name + '|' + worstWord;
+					if (seen.has(key)) continue;
+					seen.add(key);
+					suspects.push(`ink: "${worstWord}" measures ${Math.round(worst)}px but only ${Math.round(budget)}px of box is left on ${name}`);
+				}
+			}
+		}
 		return [...wide, ...suspects];
 	});
 	return overflows;
