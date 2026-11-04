@@ -22,7 +22,7 @@ select
   -- The payee's id only once they're verified; the supporter's page then
   -- reads the name under the payees policy, and an unverified payee is
   -- unnamed and unlinked — a boolean about the request, not about the payee.
-  case exists (select 1 from public.payees p where p.id = r.payee_id and p.status = 'verified')
+  case when exists (select 1 from public.payees p where p.id = r.payee_id and p.status = 'verified')
     then r.payee_id end as payee_id
 from public.requests r
 where public.is_supporter(r.id);
