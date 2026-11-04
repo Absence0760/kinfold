@@ -73,7 +73,7 @@ select lives_ok($$select public.restructure_fund_loan(
   current_date + 3)$$, 'the borrower asks for eight smaller payments');
 select is((select count(*) from public.fund_loan_restructures
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_r1')
-             and applied_at is null), 1::int, 'the ask is pending on the loan');
+             and applied_at is null), 1::bigint, 'the ask is pending on the loan');
 select throws_ok($$select public.restructure_fund_loan(
   (select id from public.fund_loans where partner_ref = 'loan_r1')::uuid, 10,
   current_date + 3)$$, '23514', 'a second ask is refused while one is pending');
@@ -90,10 +90,10 @@ select is(public.apply_fund_loan_restructure(
   'the servicing event applies the pending ask');
 select is((select count(*) from public.fund_loan_restructures
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_r1')
-             and applied_at is null), 0::int, 'the ask is no longer pending');
+             and applied_at is null), 0::bigint, 'the ask is no longer pending');
 select is((select count(*) from public.fund_loan_installments
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_r1')
-             and paid_cents < amount_cents), 8::int, 'the unpaid money re-spread over eight months');
+             and paid_cents < amount_cents), 8::bigint, 'the unpaid money re-spread over eight months');
 select is((select min(due_on) from public.fund_loan_installments
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_r1')
              and paid_cents < amount_cents),
@@ -134,7 +134,7 @@ select throws_ok($$select public.restructure_fund_loan(
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0026-0000000000a2'::uuid);
-select is((select count(*) from public.fund_loan_restructures), 0::int,
+select is((select count(*) from public.fund_loan_restructures), 0::bigint,
   'another member sees no restructures');
 
 rollback;

@@ -386,6 +386,7 @@ to authenticated;
 
 -- New tables and functions live in this migration, so hardening.sql's blanket
 -- service grants don't cover them; state them here.
+grant select on public.request_recoveries to authenticated;
 grant select, insert on public.request_recoveries to service_role;
 grant select, insert, update on private.evidence_deletions to service_role;
 grant select on public.pending_evidence_deletions to service_role;

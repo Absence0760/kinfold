@@ -89,7 +89,7 @@ select throws_ok($$select public.record_grant('home_fund'::public.fund, 'foundat
 select throws_ok($$insert into public.grants (fund, source, programme, federal, amount_cents, partner_ref)
   values ('home_fund'::public.fund, 'foundation'::public.grant_source, 'Member write', false, 1::bigint, 'grant_r8')$$,
   '42501', 'permission denied for table grants', 'a member cannot write grant rows');
-select is((select count(*) from public.grants where fund = 'home_fund'), 2::int,
+select is((select count(*) from public.grants where fund = 'home_fund'), 2::bigint,
   'members read who funded the cooperative');
 
 rollback;

@@ -39,17 +39,20 @@ $$;
 
 -- An open people-funded request with a payee in a given verification state.
 create function pg_temp.request_in(p_request uuid, p_member uuid, p_payee uuid,
-                                   p_payee_status public.payee_status)
-returns void language sql as $$
+                                   p_payee_status public.verification_status)
+returns void language plpgsql as $$
 begin
-  insert into public.payees (id, kind, legal_name, region, status, partner_account_ref)
-  values (p_payee, 'repair_shop', 'Shop', 'CA', p_payee_status, 'acct_' || right(p_payee::text, 2));
+  insert into public.payees (id, kind, legal_name, region, status, partner_account_ref, verified_at)
+  values (p_payee, 'repair_shop', 'Shop', 'CA', p_payee_status, 'acct_' || right(p_payee::text, 2),
+          case when p_payee_status = 'verified' then now() - interval '1 year' else null end);
   insert into public.requests (id, member_id, payee_id, kind, funding, title, amount_cents,
                                incident_on, status, description, public_summary,
                                public_summary_confirmed_at, current_score, submitted_at)
   values (p_request, p_member, p_payee, 'car_damage', 'people', 'Bumper needs fixing', 123456,
-          current_date - 3, 'open', 'A shopping trolley clipped my bumper last Tuesday.',
+          current_date - 3, 'draft', 'A shopping trolley clipped my bumper last Tuesday.',
           'Rear bumper after a parking-lot hit', now(), 87::smallint, now());
+update public.requests set status = 'scoring' where id = p_request;
+update public.requests set status = 'open' where id = p_request;
 end $$;
 
 -- A supporter standing in for someone who accepted an invite.
@@ -78,23 +81,23 @@ select is((select count(*) from public.support_requests), 2::bigint,
   'the supporter reads both requests they back, and nothing else');
 select is((select funding from public.support_requests
            where id = '00000000-0000-0000-0009-0000000000b1'),
-  'people', 'the view carries the fields the supporter's page uses');
+  'people', 'the view carries the fields the supporter''s page uses');
 select is((select count(*) from public.support_requests
     where id = '00000000-0000-0000-0009-0000000000b1'
       and amount_cents = 123456 and status = 'open'
       and incident_on = current_date - 3),
-  1, 'ask, status and incident date come through as they are');
-select isnull((select payee_id from public.support_requests
-               where id = '00000000-0000-0000-0009-0000000000b2'),
+  1::bigint, 'ask, status and incident date come through as they are');
+select ok(((select payee_id from public.support_requests
+               where id = '00000000-0000-0000-0009-0000000000b2')) IS NULL,
   'an unverified payee stays unlinked for a supporter');
-select isnot((select payee_id from public.support_requests
+select isnt((select payee_id from public.support_requests
               where id = '00000000-0000-0000-0009-0000000000b1'),
-  NULL, 'a verified payee's id comes through for the page to read the name');
+  NULL, 'a verified payee''s id comes through for the page to read the name');
 
 -- --- the whole row is no longer the supporter's -------------------------------
 
 select is((select count(*) from public.requests where id = '00000000-0000-0000-0009-0000000000b1'),
-  0::bigint, 'a supporter can't read the request row: the whole-row policy is gone');
+  0::bigint, 'a supporter can''t read the request row: the whole-row policy is gone');
 
 -- --- the owner still reads their own row --------------------------------------
 

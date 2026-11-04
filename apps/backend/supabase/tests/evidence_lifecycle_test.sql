@@ -125,11 +125,11 @@ select pg_temp.request('00000000-0000-0000-000b-0000000000b3', '00000000-0000-00
 -- --- recorded money for the same damage -----------------------------------------
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-000b-0000000000a1');
-select is_not_null(public.record_recovery('00000000-0000-0000-000b-0000000000b1', 'insurance', 20000,
-  current_date - 4, 'insurer confirmed the recovery letter'),
+select ok((public.record_recovery('00000000-0000-0000-000b-0000000000b1', 'insurance', 20000,
+  current_date - 4, 'insurer confirmed the recovery letter')) IS NOT NULL,
   'the requester declares money covered elsewhere');
-select is_not_null(public.record_recovery('00000000-0000-0000-000b-0000000000b1', 'fema', 15000,
-  current_date - 3), 'disaster money for the same damage is declared too');
+select ok((public.record_recovery('00000000-0000-0000-000b-0000000000b1', 'fema', 15000,
+  current_date - 3)) IS NOT NULL, 'disaster money for the same damage is declared too');
 select throws_ok($$select public.record_recovery('00000000-0000-0000-000b-0000000000b1', 'state', 0, current_date)$$,
   '23514', 'money covered must be positive', 'only positive amounts are declared');
 
@@ -175,12 +175,12 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-000b-0000000000a1');
 select set_config('seed.invite', public.create_invite('00000000-0000-0000-000b-0000000000b1', 'neighbour'), false);
 select pg_temp.login('00000000-0000-0000-000b-0000000000a2');
-select is_ok(public.accept_invite(current_setting('seed.invite')),
+select isnt(public.accept_invite(current_setting('seed.invite')), NULL,
   'the stranger accepts it and becomes a supporter');
 select throws_ok($$select public.pledge('00000000-0000-0000-000b-0000000000b1', 65001, 'gift')$$,
   '23514', 'pledge must be between 1 and 65000 cents',
   'the pledge cap subtracts the declared insurance and disaster money');
-select is_not_null(public.pledge('00000000-0000-0000-000b-0000000000b1', 65000, 'gift'),
+select ok((public.pledge('00000000-0000-0000-000b-0000000000b1', 65000, 'gift')) IS NOT NULL,
   'pledges up to the ask minus other money fit');
 select is((select status from public.requests where id = '00000000-0000-0000-000b-0000000000b1'),
   'open'::public.request_status, 'other money never funds a request by itself');
@@ -192,9 +192,9 @@ update public.requests set current_score = 80::smallint
   where id = '00000000-0000-0000-000b-0000000000b2';
 set local role service_role;
 select pg_temp.as_service();
-select is_not_null(public.record_recovery('00000000-0000-0000-000b-0000000000b2', 'insurance', 30000,
-  current_date - 4), 'the service records money the insurer already moved');
-select is_not_null(public.run_pool_allocation('protection', 200000), 'the pool runs');
+select ok((public.record_recovery('00000000-0000-0000-000b-0000000000b2', 'insurance', 30000,
+  current_date - 4)) IS NOT NULL, 'the service records money the insurer already moved');
+select ok((public.run_pool_allocation('protection', 200000)) IS NOT NULL, 'the pool runs');
 select results_eq(
   $$select need_cents, grant_cents from public.pool_allocations
     where request_id = '00000000-0000-0000-000b-0000000000b2'$$,
@@ -205,18 +205,18 @@ select is((select status from public.requests where id = '00000000-0000-0000-000
 
 -- --- redaction lifecycle ----------------------------------------------------------
 select set_config('seed.e1', pg_temp.evidence_at('00000000-0000-0000-000b-0000000000b3',
-  'a1/e1-original.jpg'), false);
+  'a1/e1-original.jpg')::text, false);
 set local role service_role;
 select pg_temp.as_service();
-select is_ok(public.set_redaction_done(current_setting('seed.e1')::uuid,
-  'a1/e1-redacted.jpg', 'ph-e1'), 'the service writes the redacted copy');
+select lives_ok($$select public.set_redaction_done(current_setting('seed.e1')::uuid,
+  'a1/e1-redacted.jpg', 'ph-e1')$$, 'the service writes the redacted copy');
 select is((select redaction_status from public.evidence
            where id::text = current_setting('seed.e1')), 'auto_done'::public.redaction_status,
   'a fresh redaction marks auto_done');
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-000b-0000000000a1');
-select is_ok(public.reject_redaction(current_setting('seed.e1')::uuid),
+select lives_ok($$select public.reject_redaction(current_setting('seed.e1')::uuid)$$,
   'the member rejects an auto_done copy');
 select is((select redaction_status from public.evidence
            where id::text = current_setting('seed.e1')), 'rejected'::public.redaction_status,
@@ -224,15 +224,15 @@ select is((select redaction_status from public.evidence
 
 set local role service_role;
 select pg_temp.as_service();
-select is_ok(public.set_redaction_done(current_setting('seed.e1')::uuid,
-  'a1/e1-redacted-v2.jpg', 'ph-e1-v2'), 'redaction re-runs over a rejected copy');
+select lives_ok($$select public.set_redaction_done(current_setting('seed.e1')::uuid,
+  'a1/e1-redacted-v2.jpg', 'ph-e1-v2')$$, 'redaction re-runs over a rejected copy');
 select is((select redaction_status from public.evidence
            where id::text = current_setting('seed.e1')), 'auto_done'::public.redaction_status,
   'the re-run marks auto_done again');
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-000b-0000000000a1');
-select is_ok(public.confirm_redaction(current_setting('seed.e1')::uuid),
+select lives_ok($$select public.confirm_redaction(current_setting('seed.e1')::uuid)$$,
   'the member confirms the re-run copy');
 select is((select redaction_status from public.evidence
            where id::text = current_setting('seed.e1')), 'confirmed'::public.redaction_status,
@@ -251,7 +251,7 @@ select throws_ok($$select public.set_redaction_done(current_setting('seed.e1')::
 reset role;
 -- Redaction refuses to touch evidence on a submitted request.
 select set_config('seed.e2', pg_temp.evidence_at('00000000-0000-0000-000b-0000000000b1',
-  'a1/e2-original.jpg'), false);
+  'a1/e2-original.jpg')::text, false);
 set local role service_role;
 select pg_temp.as_service();
 select throws_ok($$select public.set_redaction_done(current_setting('seed.e2')::uuid, 'x')$$,
@@ -279,8 +279,8 @@ set local role service_role;
 select pg_temp.as_service();
 select throws_ok($$select public.mark_evidence_deleted(999999999)$$,
   'P0002', 'deletion entry not found', 'marking only works for queued entries');
-select is_ok(public.mark_evidence_deleted(
-  (select id from public.pending_evidence_deletions where path = 'a1/e2-original.jpg')),
+select lives_ok($$select public.mark_evidence_deleted(
+  (select id from public.pending_evidence_deletions where path = 'a1/e2-original.jpg'))$$,
   'the service marks the queued file deleted');
 select is((select count(*) from public.pending_evidence_deletions), 0::bigint,
   'the queue empties once processed');
@@ -295,8 +295,8 @@ select throws_ok($$select public.mark_evidence_deleted(1)$$,
 reset role;
 set local role service_role;
 select pg_temp.as_service();
-select is_ok(public.set_public_summary('00000000-0000-0000-000b-0000000000b3',
-  'Roof leak over the kitchen.'), 'the service writes the public summary');
+select lives_ok($$select public.set_public_summary('00000000-0000-0000-000b-0000000000b3',
+  'Roof leak over the kitchen.')$$, 'the service writes the public summary');
 select is((select public_summary from public.requests
            where id = '00000000-0000-0000-000b-0000000000b3'),
   'Roof leak over the kitchen.', 'the summary is stored on the request');
@@ -309,8 +309,8 @@ select throws_ok($$select public.request_summary_change('00000000-0000-0000-000b
   'put it this way')$$,
   'P0002', 'request not found, has no summary yet, or is not yours',
   'no summary change possible before a summary exists');
-select is_ok(public.request_summary_change('00000000-0000-0000-000b-0000000000b3',
-  'It was the skylight, not the whole kitchen roof.'), 'the requester asks for a different summary');
+select lives_ok($$select public.request_summary_change('00000000-0000-0000-000b-0000000000b3',
+  'It was the skylight, not the whole kitchen roof.')$$, 'the requester asks for a different summary');
 select is((select summary_change_note from public.requests
            where id = '00000000-0000-0000-000b-0000000000b3'),
   'It was the skylight, not the whole kitchen roof.', 'the note is stored for the service');

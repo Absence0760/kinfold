@@ -16,10 +16,12 @@ create function pg_temp.as_service() returns void language sql as $$
   select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 $$;
 
-create function pg_temp.member(p_id uuid) returns void language sql as $$
+create function pg_temp.member(p_id uuid) returns void language plpgsql as $$
+begin
+  insert into auth.users (id) values (p_id);
   insert into public.members (id, display_name, region, status)
     values (p_id, 'Test member', 'CA', 'active');
-$$;
+end $$;
 
 create function pg_temp.request(p_id uuid, p_member uuid, p_amount bigint) returns void language sql as $$
   insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on)
@@ -28,8 +30,6 @@ $$;
 
 -- --- the fixtures -------------------------------------------------------------
 
-set local role service_role;
-select pg_temp.as_service();
 select pg_temp.member('00000000-0000-0000-0009-0000000000a1');
 select pg_temp.request('00000000-0000-0000-0009-0000000000b1', '00000000-0000-0000-0009-0000000000a1', 100000);
 update public.requests set status = 'scoring' where id = '00000000-0000-0000-0009-0000000000b1';
@@ -60,7 +60,7 @@ select is(public.ledger_balance('protection'::public.fund, 'available'), 55000::
 select is(public.ledger_balance('protection'::public.fund, 'partner_cash'), -55000::bigint,
   'and the journal records the side it left, so it balances');
 select is((select count(*) from public.contributions
-           where request_id = '00000000-0000-0000-0009-0000000000b1' and status = 'pledged'), 0::int,
+           where request_id = '00000000-0000-0000-0009-0000000000b1' and status = 'pledged'), 0::bigint,
   'every pledge on the request is captured');
 
 -- --- a replayed confirmation has nothing to capture ---------------------------

@@ -40,10 +40,12 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
 values ('00000000-0000-0000-0017-0000000000b1', '00000000-0000-0000-0017-0000000000a1',
-        'car_damage', 'pool', 'A denied claim', 100000, current_date - 5, 'open',
+        'car_damage', 'pool', 'A denied claim', 100000, current_date - 5, 'draft',
         'A request whose insurer claim was denied.',
         'Door panel after a slow scrape in a lot', now(), 85::smallint,
         now() - interval '9 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0017-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0017-0000000000b1';
 
 -- The fixtures run as postgres (the owner): a denied claim with its reason.
 insert into public.claims (id, request_id, partner_ref, gross_cents, member_share_cents,
@@ -62,8 +64,11 @@ select lives_ok($$select public.appeal_claim('00000000-0000-0000-0017-0000000000
   'the requester appeals their denied claim with a written reason');
 select is((select status from public.claims where partner_ref = 'pc_a1'),
   'recorded'::public.claim_status, 'the appeal re-opens the claim for a fresh decision');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.appealed'),
   1::bigint, 'the appeal is audit-logged with its reason');
+set local role authenticated;
+select pg_temp.login('00000000-0000-0000-0017-0000000000a1');
 select is(public.insured_cover_cents('00000000-0000-0000-0017-0000000000b1'),
   40000::bigint, 'the re-opened claim counts toward insured cover again');
 
@@ -74,6 +79,10 @@ select throws_ok($$select public.appeal_claim('00000000-0000-0000-0017-000000000
   'an appeal without a written reason is refused');
 
 -- Another member can't appeal someone else's claim.
+reset role;
+reset role;
+reset role;
+reset role;
 insert into public.claims (id, request_id, partner_ref, gross_cents, member_share_cents,
                            paid_cents, status, reason, decided_by, decided_at)
 values ('00000000-0000-0000-0017-0000000000d2', '00000000-0000-0000-0017-0000000000b1',

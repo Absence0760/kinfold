@@ -44,26 +44,26 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0029-0000000000a1'::uuid);
 insert into public.family_loans (id, borrower_id, lender_id, principal_cents,
                                  status)
-values ('00000000-0000-0000-0029-0000000000l1', '00000000-0000-0000-0029-0000000000a1',
+values ('00000000-0000-0000-0029-0000000000b1', '00000000-0000-0000-0029-0000000000a1',
         '00000000-0000-0000-0029-0000000000a2', 100000, 'proposed'),
-       ('00000000-0000-0000-0029-0000000000l2', '00000000-0000-0000-0029-0000000000a1',
+       ('00000000-0000-0000-0029-0000000000b2', '00000000-0000-0000-0029-0000000000a1',
         '00000000-0000-0000-0029-0000000000a2', 20000, 'proposed');
 select lives_ok($$select public.set_loan_schedule(
-  '00000000-0000-0000-0029-0000000000l1'::uuid, 4, current_date + 1)$$, 'four installments');
+  '00000000-0000-0000-0029-0000000000b1'::uuid, 4, current_date + 1)$$, 'four installments');
 select lives_ok($$select public.set_loan_schedule(
-  '00000000-0000-0000-0029-0000000000l2'::uuid, 2, current_date + 1)$$, 'two installments');
+  '00000000-0000-0000-0029-0000000000b2'::uuid, 2, current_date + 1)$$, 'two installments');
 
 -- --- who may write the agreement --------------------------------------------------
 
 select throws_ok($$select public.finalize_loan_agreement(
-  '00000000-0000-0000-0029-0000000000l1'::uuid)$$,
+  '00000000-0000-0000-0029-0000000000b1'::uuid)$$,
   '42501', 'a member finalizes no agreement');
 reset role;
 
 set local role service_role;
 select pg_temp.as_service();
 select throws_ok($$select public.finalize_loan_agreement(
-  '00000000-0000-0000-0029-0000000000l1'::uuid)$$,
+  '00000000-0000-0000-0029-0000000000b1'::uuid)$$,
   'P0002', 'an unsigned loan has no agreement to finalize');
 select is(public.finalize_signed_loan_agreements(), 0, 'the sweep writes nothing while unsigned');
 
@@ -72,38 +72,38 @@ select is(public.finalize_signed_loan_agreements(), 0, 'the sweep writes nothing
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0029-0000000000a1'::uuid);
 select lives_ok($$select public.sign_loan(
-  '00000000-0000-0000-0029-0000000000l1'::uuid)$$, 'the borrower signs');
+  '00000000-0000-0000-0029-0000000000b1'::uuid)$$, 'the borrower signs');
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0029-0000000000a2'::uuid);
-select is(public.sign_loan('00000000-0000-0000-0029-0000000000l1'::uuid), 'signed',
+select is(public.sign_loan('00000000-0000-0000-0029-0000000000b1'::uuid), 'signed',
   'the lender signing completes the agreement');
 
 set local role service_role;
 select pg_temp.as_service();
 select lives_ok($$select public.finalize_loan_agreement(
-  '00000000-0000-0000-0029-0000000000l1'::uuid)$$, 'the event writes the agreement');
-select is((select agreement_text from public.family_loans
-           where id = '00000000-0000-0000-0029-0000000000l1'::uuid), null, false,
-  'the loan now carries its written agreement');
+  '00000000-0000-0000-0029-0000000000b1'::uuid)$$, 'the event writes the agreement');
+select isnt((select agreement_text from public.family_loans
+           where id = '00000000-0000-0000-0029-0000000000b1'::uuid),
+  null, 'the loan now carries its written agreement');
 select ok((select agreement_text from public.family_loans
-           where id = '00000000-0000-0000-0029-0000000000l1'::uuid)
+           where id = '00000000-0000-0000-0029-0000000000b1'::uuid)
            ilike '%zero interest%'
            and (select agreement_finalized_at from public.family_loans
-                where id = '00000000-0000-0000-0029-0000000000l1'::uuid) is not null,
+                where id = '00000000-0000-0000-0029-0000000000b1'::uuid) is not null,
   'the text carries the no-interest promise and a finalization date');
 select lives_ok($$select public.finalize_loan_agreement(
-  '00000000-0000-0000-0029-0000000000l1'::uuid)$$, 'a replay is a no-op');
+  '00000000-0000-0000-0029-0000000000b1'::uuid)$$, 'a replay is a no-op');
 
 -- --- the sweep writes exactly what is missing --------------------------------------
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0029-0000000000a1'::uuid);
 select lives_ok($$select public.sign_loan(
-  '00000000-0000-0000-0029-0000000000l2'::uuid)$$, 'the borrower signs l2');
+  '00000000-0000-0000-0029-0000000000b2'::uuid)$$, 'the borrower signs l2');
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0029-0000000000a2'::uuid);
 select lives_ok($$select public.sign_loan(
-  '00000000-0000-0000-0029-0000000000l2'::uuid)$$, 'the lender signs l2');
+  '00000000-0000-0000-0029-0000000000b2'::uuid)$$, 'the lender signs l2');
 
 set local role service_role;
 select pg_temp.as_service();

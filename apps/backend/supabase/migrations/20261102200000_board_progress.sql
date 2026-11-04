@@ -51,6 +51,10 @@ where public.on_board(r)
 grant select on public.board_requests to authenticated;
 grant select on public.board_requests to service_role;
 
+-- The inlined raised-so-far column calls this private function under the
+-- calling role: hand it the figure it already had via request_raised_cents.
+grant execute on function private.raised_cents(uuid) to authenticated, service_role;
+
 -- A dropped policy lost its rules: hand back the one the last step had.
 create policy "redacted evidence on the board" on storage.objects for select to authenticated
   using (bucket_id = 'evidence-redacted' and exists (

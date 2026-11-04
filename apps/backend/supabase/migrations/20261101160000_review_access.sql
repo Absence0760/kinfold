@@ -80,10 +80,10 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 create policy "panel reads requests with an open appeal to decide" on public.requests for select to authenticated
-  using (public.has_role('panel') and private.has_open_appeal(id));
+  using (public.has_role('panel'::public.member_role) and private.has_open_appeal(id));
 
 create policy "panel reads scores of requests with an open appeal" on public.scores for select to authenticated
-  using (public.has_role('panel') and private.has_open_appeal(request_id));
+  using (public.has_role('panel'::public.member_role) and private.has_open_appeal(request_id));
 
 -- --- 4. appeal decisions carry a reason ------------------------------------------
 
@@ -100,7 +100,7 @@ returns void language plpgsql security definer set search_path = '' as $$
 declare
   a public.appeals;
 begin
-  if not public.has_role('panel') then
+  if not public.has_role('panel'::public.member_role) then
     raise exception 'appeal panel only' using errcode = '42501';
   end if;
   if p_reason is null or length(p_reason) < 10 then

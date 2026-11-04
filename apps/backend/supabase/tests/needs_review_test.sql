@@ -45,20 +45,20 @@ insert into public.member_roles (member_id, role)
 
 insert into public.requests (id, member_id, kind, funding, title, amount_cents,
                             incident_on)
-values ('00000000-0000-0000-0027-0000000000r1', '00000000-0000-0000-0027-0000000000a1',
+values ('00000000-0000-0000-0027-0000000000b1', '00000000-0000-0000-0027-0000000000a1',
         'home_repair', 'pool', 'A roof on a band boundary', 400000, current_date - 5),
-       ('00000000-0000-0000-0027-0000000000r2', '00000000-0000-0000-0027-0000000000a1',
+       ('00000000-0000-0000-0027-0000000000b2', '00000000-0000-0000-0027-0000000000a1',
         'down_payment', 'pool', 'An applicant the Fund has not ranked', 150000, current_date - 3);
 
 update public.requests set status = 'scoring'
-  where id = '00000000-0000-0000-0027-0000000000r1'
-     or id = '00000000-0000-0000-0027-0000000000r2';
+  where id = '00000000-0000-0000-0027-0000000000b1'
+     or id = '00000000-0000-0000-0027-0000000000b2';
 update public.requests set status = 'in_review'
-  where id = '00000000-0000-0000-0027-0000000000r1';
+  where id = '00000000-0000-0000-0027-0000000000b1';
 
 set local role service_role;
 select pg_temp.as_service();
-select is(public.record_needs('00000000-0000-0000-0027-0000000000r1'::uuid,
+select is(public.record_needs('00000000-0000-0000-0027-0000000000b1'::uuid,
                               80::smallint, 60::smallint, 90::smallint,
                               encode(extensions.digest('e', 'sha256'), 'hex')),
   78::smallint, 'the Fund ranks the applicant');
@@ -69,16 +69,16 @@ reset role;
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0027-0000000000a2'::uuid);
 select lives_ok($$select public.record_needs_decision(
-  '00000000-0000-0000-0027-0000000000r1'::uuid, 'needs', 'the home floods every storm')$$,
+  '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'the home floods every storm')$$,
   'a reviewer in another state answers the edge case');
-select is((select count(*) from public.needs_reviews), 1::int, 'one decision on the books');
+select is((select count(*) from public.needs_reviews), 1::bigint, 'one decision on the books');
 select is((select formula_version from public.needs_reviews), 1::int,
   'the decision names the formula version it was made against');
 select throws_ok($$select public.record_needs_decision(
-  '00000000-0000-0000-0027-0000000000r1'::uuid, 'not_needs', 'a second answer this month')$$,
+  '00000000-0000-0000-0027-0000000000b1'::uuid, 'not_needs', 'a second answer this month')$$,
   '23514', 'one answer per reviewer per formula version');
 select throws_ok($$select public.record_needs_decision(
-  '00000000-0000-0000-0027-0000000000r1'::uuid, 'needs', 'too short')$$,
+  '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'too short')$$,
   '23514', 'a decision carries a written reason');
 reset role;
 
@@ -87,26 +87,26 @@ reset role;
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0027-0000000000a1'::uuid);
 select throws_ok($$select public.record_needs_decision(
-  '00000000-0000-0000-0027-0000000000r1'::uuid, 'needs', 'their own applicant')$$,
+  '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'their own applicant')$$,
   '42501', 'the applicant is never answered by their own region');
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0027-0000000000a3'::uuid);
 select throws_ok($$select public.record_needs_decision(
-  '00000000-0000-0000-0027-0000000000r1'::uuid, 'needs', 'no relation to this one')$$,
+  '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'no relation to this one')$$,
   '42501', 'a member with no relation answers nothing');
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0027-0000000000a2'::uuid);
 select throws_ok($$select public.record_needs_decision(
-  '00000000-0000-0000-0027-0000000000r2'::uuid, 'needs', 'nothing on the books yet')$$,
+  '00000000-0000-0000-0027-0000000000b2'::uuid, 'needs', 'nothing on the books yet')$$,
   'P0002', 'an applicant the Fund has not ranked cannot be answered');
 reset role;
 
 set local role service_role;
 select pg_temp.as_service();
 select throws_ok($$select public.record_needs_decision(
-  '00000000-0000-0000-0027-0000000000r1'::uuid, 'needs', 'the Fund ranks, a reviewer answers')$$,
+  '00000000-0000-0000-0027-0000000000b1'::uuid, 'needs', 'the Fund ranks, a reviewer answers')$$,
   '42501', 'the service role cannot answer edge cases');
 reset role;
 

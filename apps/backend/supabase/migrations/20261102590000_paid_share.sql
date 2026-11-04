@@ -80,7 +80,7 @@ begin
 
   insert into public.pool_runs (fund, available_cents, reserve_cents, settings, algorithm_version)
   values (p_fund, p_available_cents, v_reserve,
-          to_jsonb(s) * jsonb_build_object('share_version', public.share_rule_version()),
+          jsonb_set(to_jsonb(s), '{share_version}', to_jsonb(public.share_rule_version())),
           'bands-v1')
   returning id into v_run;
 

@@ -18,14 +18,14 @@ set local role service_role;
 select pg_temp.as_service();
 select lives_ok($$select public.record_ledger_difference('protection', 'partner_cash',
   -800::bigint, -799::bigint)$$, 'the service records a one-cent difference');
-select is((select count(*) from public.ledger_differences), 1::int, 'the alert landed once');
+select is((select count(*) from public.ledger_differences), 1::bigint, 'the alert landed once');
 select is((select statement_cents from public.ledger_differences limit 1),
   -800::bigint, 'the statement figure is stored as the partner said it');
 
 select throws_ok($$select public.record_ledger_difference('protection', 'partner_cash',
   -800::bigint, -800::bigint)$$, '23514',
   'a statement that matches the ledger is not an alert');
-select is((select count(*) from public.ledger_differences), 1::int,
+select is((select count(*) from public.ledger_differences), 1::bigint,
   'the refused match stored nothing');
 
 -- --- the alert stays the service's ---------------------------------------------

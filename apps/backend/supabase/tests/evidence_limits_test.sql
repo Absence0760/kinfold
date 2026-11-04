@@ -12,8 +12,8 @@ select is((select file_size_limit from storage.buckets where name = 'evidence-or
 select ok((select count(*) from storage.buckets
            where name = 'evidence-original'
              and allowed_mime_types is not null
-             and 'image/jpeg' in allowed_mime_types
-             and 'application/pdf' in allowed_mime_types) = 1::bigint,
+             and 'image/jpeg' = any (allowed_mime_types)
+             and 'application/pdf' = any (allowed_mime_types)) = 1::bigint,
   'the originals bucket accepts only photos, clips and documents');
 select is((select file_size_limit from storage.buckets where name = 'evidence-redacted'),
   20971520::bigint, 'the redacted bucket caps uploads at 20 MB too');

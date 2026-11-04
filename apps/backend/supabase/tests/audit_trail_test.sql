@@ -40,7 +40,9 @@ insert into public.member_roles (member_id, role)
 
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on, status)
   values ('00000000-0000-0000-0032-0000000000e1', '00000000-0000-0000-0032-0000000000c1',
-          'car_damage', 'pool', 'A dented door', 100000, current_date - 3, 'in_review');
+          'car_damage', 'pool', 'A dented door', 100000, current_date - 3, 'draft');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0032-0000000000e1';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0032-0000000000e1';
 
 -- --- the decisions, then the reviewer's read ------------------------------------
 
@@ -58,7 +60,7 @@ reset role;
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0032-0000000000c1');
-select ok(jsonb_length(public.review_audit_tail(10)) = 2,
+select ok(jsonb_array_length(public.review_audit_tail(10)) = 2,
   'a reviewer reads both recent decisions');
 select ok(((public.review_audit_tail(1) -> 0) - 'detail') IS NULL,
   'the raw detail never crosses the door');

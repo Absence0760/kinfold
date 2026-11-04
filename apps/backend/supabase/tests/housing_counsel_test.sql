@@ -67,14 +67,14 @@ select throws_ok($$update public.housing_counsel set agency_name = 'Rewritten' w
 reset role;
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
-select is_ok((select count(*) from public.housing_counsel) >= 1,
+select ok((select count(*) from public.housing_counsel) >= 1,
   'a public page can name the agency without a signed-in member');
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims',
                   json_build_object('sub', '00000000-0000-0000-0000-000000000001',
                                     'role', 'authenticated')::text, true);
-select is_ok((select count(*) from public.housing_counsel) >= 1,
+select ok((select count(*) from public.housing_counsel) >= 1,
   'a member on a loan or a request reads the same agency');
 reset role;
 

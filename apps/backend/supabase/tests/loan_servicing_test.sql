@@ -189,7 +189,7 @@ set local role service_role;
 select pg_temp.as_service();
 select results_eq(
   $$select id, default_plan, missed_installments, pause_months_used from public.loan_default_due$$,
-  $$values ('00000000-0000-0000-000c-0000000000d8', 'forgive'::public.default_plan, 4, 0)$$,
+  $$values ('00000000-0000-0000-000c-0000000000d8'::uuid, 'forgive'::public.default_plan, 4, 0)$$,
   'only the loan that has used up its pause allowance and missed three installments is listed');
 select is(public.apply_default_plan('00000000-0000-0000-000c-0000000000d8'),
   'forgiven'::public.loan_status, 'applying the agreed plan forgives the loan');

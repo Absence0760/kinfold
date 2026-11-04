@@ -67,7 +67,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0064-0000000000c1');
 select ok((
   select d IS NOT NULL
-         and jsonb_length(d) = 2
+         and jsonb_array_length(d) = 2
          and (d -> 0 -> 'fund') = '"protection"'::jsonb
          and ((d -> 0 -> 'reserve_cents'))::int = 21000
          and ((d -> 0 -> 'allocated_cents'))::int = 30000
@@ -89,7 +89,7 @@ reset role;
 
 set local role service_role;
 select pg_temp.as_service();
-select is(jsonb_length(public.review_pool_runs(10))::int, 2::int,
+select is(jsonb_array_length(public.review_pool_runs(10))::int, 2::int,
   'the service reads the same two runs (the reconciliation job''s own view)');
 reset role;
 

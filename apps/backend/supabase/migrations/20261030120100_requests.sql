@@ -356,7 +356,7 @@ declare
   v_me    public.members;
   v_next  public.request_status;
 begin
-  if not public.has_role('reviewer') then
+  if not public.has_role('reviewer'::public.member_role) then
     raise exception 'reviewers only' using errcode = '42501';
   end if;
   select * into r from public.requests where id = p_request for update;
@@ -421,7 +421,7 @@ language plpgsql security definer set search_path = '' as $$
 declare
   a public.appeals;
 begin
-  if not public.has_role('panel') then
+  if not public.has_role('panel'::public.member_role) then
     raise exception 'appeal panel only' using errcode = '42501';
   end if;
   select * into a from public.appeals where id = p_appeal and status = 'open' for update;
@@ -503,7 +503,7 @@ grant select on public.request_transitions to authenticated;
 create policy "members read their requests" on public.requests for select to authenticated
   using (member_id = auth.uid());
 create policy "reviewers read requests needing a person" on public.requests for select to authenticated
-  using (public.has_role('reviewer') and member_id <> auth.uid()
+  using (public.has_role('reviewer'::public.member_role) and member_id <> auth.uid()
          and status in ('in_review', 'needs_evidence', 'refused'));
 create policy "members create drafts" on public.requests for insert to authenticated
   with check (member_id = auth.uid() and status = 'draft');
@@ -536,16 +536,16 @@ grant select, insert (request_id, kind, original_path, sha256, captured_in_app),
 
 create policy "members read scores on their requests" on public.scores for select to authenticated
   using (exists (select 1 from public.requests r where r.id = request_id and r.member_id = auth.uid())
-         or public.has_role('reviewer'));
+         or public.has_role('reviewer'::public.member_role));
 grant select on public.scores to authenticated;
 
 create policy "members read reviews of their requests" on public.reviews for select to authenticated
   using (exists (select 1 from public.requests r where r.id = request_id and r.member_id = auth.uid())
-         or public.has_role('panel'));
+         or public.has_role('panel'::public.member_role));
 grant select on public.reviews to authenticated;
 
 create policy "members read their appeals" on public.appeals for select to authenticated
-  using (member_id = auth.uid() or public.has_role('panel'));
+  using (member_id = auth.uid() or public.has_role('panel'::public.member_role));
 grant select on public.appeals to authenticated;
 
 grant select on public.board_requests to authenticated;

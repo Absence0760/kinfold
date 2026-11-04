@@ -114,7 +114,7 @@ select is((select race from private.fair_lending
 select is(public.cdfi_loan_fair_lending(
   (select id from public.fund_loans where partner_ref = 'loan_h2')::uuid) ->> 'race',
   'White', 'the monitoring form data is the row the federal report counts');
-select is((select count(*) from private.fair_lending), 2::int,
+select is((select count(*) from private.fair_lending), 2::bigint,
   'the auditor sees one row per route');
 
 -- --- history ---------------------------------------------------------------------

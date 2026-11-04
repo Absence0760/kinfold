@@ -49,7 +49,11 @@ begin
   insert into public.requests (id, member_id, kind, funding, title, amount_cents,
                                incident_on, status, current_score)
   values (p_id, p_member, 'car_damage', 'pool', 'Test request', 100000,
-          current_date - 5, 'paid', 92);
+          current_date - 5, 'draft', 92);
+update public.requests set status = 'scoring' where id = p_id;
+update public.requests set status = 'open' where id = p_id;
+update public.requests set status = 'funded' where id = p_id;
+update public.requests set status = 'paid' where id = p_id;
   set local session_replication_role = origin;
 end $$;
 
@@ -68,7 +72,7 @@ values ('00000000-0000-0000-0066-0000000000d1', '00000000-0000-0000-0066-0000000
 -- Twelve paid pool requests in the month that ended over a week ago: four for the
 -- member with no loans, four for the member whose only loans never carried money,
 -- four for the member with a carried family loan.
-select pg_temp.request_in(('00000000-0000-0000-0066-' || sprintf('%012d', i))::uuid,
+select pg_temp.request_in(('00000000-0000-0000-0066-' || right('00000000000' || (i)::text, 12))::uuid,
   case when i <= 4 then '00000000-0000-0000-0066-0000000000a1'::uuid
        when i <= 8 then '00000000-0000-0000-0066-0000000000a3'::uuid
        else '00000000-0000-0000-0066-0000000000a2'::uuid end)
@@ -76,7 +80,7 @@ from generate_series(1, 12) i;
 
 -- Three paid pool requests in an older small month: too small a
 -- month to publish any count or dollar figure.
-select pg_temp.request_in(('00000000-0000-0000-0066-' || sprintf('%012d', 20 + i))::uuid,
+select pg_temp.request_in(('00000000-0000-0000-0066-' || right('00000000000' || (20 + i)::text, 12))::uuid,
   '00000000-0000-0000-0066-0000000000a1'::uuid)
 from generate_series(1, 3) i;
 
@@ -90,12 +94,12 @@ values ('00000000-0000-0000-0066-0000000000f1', 'protection', 2000000, 300000, 1
 -- One grant of $1,000 per request, under a need of $1,500 so the run fell short.
 insert into public.pool_allocations (run_id, request_id, score, band, need_cents, grant_cents)
 select '00000000-0000-0000-0066-0000000000f1',
-       ('00000000-0000-0000-0066-' || sprintf('%012d', i))::uuid, 92, 90, 150000, 100000
+       ('00000000-0000-0000-0066-' || right('00000000000' || (i)::text, 12))::uuid, 92, 90, 150000, 100000
 from generate_series(1, 12) i;
 
 insert into public.pool_allocations (run_id, request_id, score, band, need_cents, grant_cents)
 select '00000000-0000-0000-0066-0000000000f2',
-       ('00000000-0000-0000-0066-' || sprintf('%012d', 20 + i))::uuid, 92, 90, 150000, 100000
+       ('00000000-0000-0000-0066-' || right('00000000000' || (20 + i)::text, 12))::uuid, 92, 90, 150000, 100000
 from generate_series(1, 3) i;
 
 -- --- publishing a big month --------------------------------------------------------
@@ -114,7 +118,7 @@ select lives_ok($$select public.publish_open_books(date_trunc('month', now() - i
 reset role;
 select is((select pool_requests from public.open_books
            where fund = 'protection' and month = date_trunc('month', now() - interval '2 months')::date),
-  12::bigint, 'the month publishes its pool-grant request count');
+  12::int, 'the month publishes its pool-grant request count');
 select is((select no_lender_cents from public.open_books
            where fund = 'protection' and month = date_trunc('month', now() - interval '2 months')::date),
   800000::bigint, 'the grants to the two households without a carried family loan are published');
@@ -126,7 +130,7 @@ select is(((select allocated_cents from public.open_books
           - (select no_lender_cents from public.open_books
              where fund = 'protection' and month = date_trunc('month', now() - interval '2 months')::date))::bigint,
   400000::bigint, 'only the grants to the member with a signed family loan stay off the no-lender figure');
-select is_ok((select no_lender_cents from public.open_books
+select ok((select no_lender_cents from public.open_books
               where fund = 'protection' and month = date_trunc('month', now() - interval '2 months')::date)
              <= (select allocated_cents from public.open_books
                  where fund = 'protection' and month = date_trunc('month', now() - interval '2 months')::date),
@@ -141,21 +145,21 @@ select is((select (requests_paid, paid_out_cents, reserve_cents, pool_runs, pool
 set local role service_role;
 select pg_temp.as_service();
 select lives_ok($$select public.publish_open_books(date_trunc('month', now() - interval '3 months')::date)$$,
-  'the service publishes the smaller month';
+  'the service publishes the smaller month');
 
 reset role;
-select isnull((select pool_requests from public.open_books
-               where fund = 'protection' and month = date_trunc('month', now() - interval '3 months')::date),
+select ok(((select pool_requests from public.open_books
+               where fund = 'protection' and month = date_trunc('month', now() - interval '3 months')::date)) IS NULL,
   'a month with three granted requests hides its pool-grant count');
-select isnull((select no_lender_cents from public.open_books
-               where fund = 'protection' and month = date_trunc('month', now() - interval '3 months')::date),
+select ok(((select no_lender_cents from public.open_books
+               where fund = 'protection' and month = date_trunc('month', now() - interval '3 months')::date)) IS NULL,
   'and the same month hides the no-lender money');
-select isnull((select allocated_cents from public.open_books
-               where fund = 'protection' and month = date_trunc('month', now() - interval '3 months')::date),
+select ok(((select allocated_cents from public.open_books
+               where fund = 'protection' and month = date_trunc('month', now() - interval '3 months')::date)) IS NULL,
   'and the all-grants money, so no share can be worked out by subtraction');
 select is((select pool_runs from public.open_books
            where fund = 'protection' and month = date_trunc('month', now() - interval '3 months')::date),
-  1::bigint, 'the run count still publishes, as it never identified anyone');
+  1::int, 'the run count still publishes, as it never identified anyone');
 
 -- --- a month is published once ------------------------------------------------------
 
@@ -170,7 +174,7 @@ select throws_ok($$select public.publish_open_books(date_trunc('month', now() - 
 reset role;
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
-select is_ok((select count(*) from public.open_books) >= 4,
+select ok((select count(*) from public.open_books) >= 4,
   'anon still reads every published month and fund');
 reset role;
 

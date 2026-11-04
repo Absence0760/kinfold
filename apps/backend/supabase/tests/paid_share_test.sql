@@ -50,18 +50,22 @@ declare
 begin
   set local session_replication_role = replica;
   for idx in p_from .. p_to loop
-    rid := ('00000000-0000-0000-0059-00000000' || format('%04d', idx))::uuid;
-    eid := ('00000000-0000-0000-0059-00000000' || format('%04d', 100 + idx))::uuid;
+    rid := ('00000000-0000-0000-0059-00000000' || right('0000' || (idx)::text, 4))::uuid;
+    eid := ('00000000-0000-0000-0059-00000000' || right('0000' || (100 + idx)::text, 4))::uuid;
     insert into public.requests (id, member_id, kind, funding, title, amount_cents,
                                  incident_on, status, public_summary, public_summary_confirmed_at,
                                  current_score, submitted_at, payee_id)
     values (rid, p_member, 'car_damage', 'pool', 'Prior request', 50000, current_date - 30,
-            'paid', 'Old fender after a slow corner clipping', now(), 85::smallint,
+            'draft', 'Old fender after a slow corner clipping', now(), 85::smallint,
             now() - interval '20 days',
             '00000000-0000-0000-0059-0000000000c1');
+update public.requests set status = 'scoring' where id = rid;
+update public.requests set status = 'open' where id = rid;
+update public.requests set status = 'funded' where id = rid;
+update public.requests set status = 'paid' where id = rid;
     insert into public.evidence (id, request_id, kind, original_path, redacted_path,
                                  sha256, redaction_status)
-    values (eid, rid, 'invoice', 'x/o.pdf', 'x/r.pdf', repeat('a', 64), 'confirmed');
+    values (eid, rid, 'invoice', 'x/' || rid::text || '/o.pdf', 'x/' || rid::text || '/r.pdf', repeat('a', 64), 'confirmed');
     insert into public.payouts (request_id, payee_id, amount_cents, invoice_evidence_id,
                                 status, created_at, sent_at)
     values (rid, '00000000-0000-0000-0059-0000000000c1', 50000, eid, 'sent', now(), now());
@@ -110,24 +114,32 @@ select is((select public.member_share_bps('00000000-0000-0000-0059-0000000000a3'
 
 -- --- the pool grants the need minus the member's own share ---------------------------
 
+reset role;
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at, payee_id)
 values ('00000000-0000-0000-0059-0000000000b1', '00000000-0000-0000-0059-0000000000a1',
-        'car_damage', 'pool', 'Fresh damage', 100000, current_date - 5, 'open',
+        'car_damage', 'pool', 'Fresh damage', 100000, current_date - 5, 'draft',
         'A door after a lane-change rub.', 'Door after a lane-change rub',
         now(), 85::smallint, now() - interval '9 days',
         '00000000-0000-0000-0059-0000000000c1'),
        ('00000000-0000-0000-0059-0000000000b2', '00000000-0000-0000-0059-0000000000a2',
-        'car_damage', 'pool', 'Frequent claimant', 100000, current_date - 5, 'open',
+        'car_damage', 'pool', 'Frequent claimant', 100000, current_date - 5, 'draft',
         'A fender from a slow corner clipping.', 'Fender after a slow corner',
         now(), 85::smallint, now() - interval '9 days',
         '00000000-0000-0000-0059-0000000000c1'),
        ('00000000-0000-0000-0059-0000000000b3', '00000000-0000-0000-0059-0000000000a3',
-        'car_damage', 'pool', 'Capped claimant', 100000, current_date - 5, 'open',
+        'car_damage', 'pool', 'Capped claimant', 100000, current_date - 5, 'draft',
         'A bumper after a yard misjudgement.', 'Bumper after a yard misjudgement',
         now(), 85::smallint, now() - interval '9 days',
         '00000000-0000-0000-0059-0000000000c1');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0059-0000000000b2';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0059-0000000000b2';
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0059-0000000000b3';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0059-0000000000b3';
+
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0059-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0059-0000000000b1';
 
 set local role service_role;
 select pg_temp.as_service();

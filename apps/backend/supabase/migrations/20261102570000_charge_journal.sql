@@ -21,13 +21,13 @@ begin
   if p_partner_ref is null or p_partner_ref = '' then
     raise exception 'a charge confirmation needs the partner''s reference' using errcode = '23514';
   end if;
-  select fund_for_kind(r.kind) into v_fund from public.requests where id = p_request;
+  select public.fund_for_kind(r.kind) into v_fund from public.requests r where r.id = p_request;
   if v_fund is null then
     raise exception 'request not found' using errcode = 'P0002';
   end if;
   -- The figure is the schema's own: what stands pledged on the request now.
-  select coalesce(sum(c.amount_cents), 0) from public.contributions
-    where request_id = p_request and status = 'pledged' into v_amount;
+  select coalesce(sum(c.amount_cents), 0) from public.contributions c
+    where c.request_id = p_request and c.status = 'pledged' into v_amount;
   if v_amount = 0 then
     raise exception 'a charge confirmation captures money' using errcode = '23514';
   end if;

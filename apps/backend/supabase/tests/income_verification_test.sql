@@ -38,13 +38,13 @@ create function pg_temp.as_service() returns void language sql as $$
 $$;
 
 select pg_temp.member('00000000-0000-0000-0011-0000000000a1');
-select pg_temp.member('00000000-0000-0000-0011-0000000000a2', 'pending');
+select pg_temp.member('00000000-0000-0000-0011-0000000000a2', 'pending_verification');
 
 -- --- recording a check ---------------------------------------------------------
 
 set local role service_role;
 select pg_temp.as_service();
-select isnot((select record_income_verification('00000000-0000-0000-0011-0000000000a1',
+select isnt((select record_income_verification('00000000-0000-0000-0011-0000000000a1',
                               'bank_link', 450000::bigint, 'bank-ref-1')), NULL::uuid,
   'the bank-linked check is recorded');
 select is((select count(*) from public.income_verifications
@@ -52,7 +52,7 @@ select is((select count(*) from public.income_verifications
              and method = 'bank_link' and monthly_income_cents = 450000
              and provider_ref = 'bank-ref-1'),
   1::bigint, 'the figure and the vendor reference land on the row');
-select isnot((select record_income_verification('00000000-0000-0000-0011-0000000000a1',
+select isnt((select record_income_verification('00000000-0000-0000-0011-0000000000a1',
                               'self_attested', 300000::bigint)), NULL::uuid,
   'a self-attested figure needs no vendor reference');
 select is((select count(*) from private.audit_log where action = 'income.verified'),

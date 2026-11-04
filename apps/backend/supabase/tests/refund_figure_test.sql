@@ -45,9 +45,9 @@ create function pg_temp.captured(p_contribution uuid, p_request uuid, p_member u
                                  p_amount bigint, p_seq integer)
 returns void language sql as $$
   insert into public.contributions (id, request_id, contributor_id, source, amount_cents,
-                                    status, captured_at, created_at)
+                                    status, created_at)
   values (p_contribution, p_request, p_member, 'gift', p_amount, 'captured',
-          now() - interval '3 days', now() - make_interval(days => 10 - p_seq));
+          now() - make_interval(days => 10 - p_seq));
 $$;
 
 select pg_temp.member('00000000-0000-0000-0010-0000000000a1');
@@ -57,9 +57,10 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
 values ('00000000-0000-0000-0010-0000000000b1', '00000000-0000-0000-0010-0000000000a1',
-        'car_damage', 'people', 'Old request', 60000, current_date - 20, 'withdrawn',
+        'car_damage', 'people', 'Old request', 60000, current_date - 20, 'draft',
         'An old request the owner withdrew.', 'Rear bumper after a slow backing-in', now(),
         87::smallint, now() - interval '12 days');
+update public.requests set status = 'withdrawn' where id = '00000000-0000-0000-0010-0000000000b1';
 
 select pg_temp.captured('00000000-0000-0000-0010-0000000000c1', '00000000-0000-0000-0010-0000000000b1',
                         '00000000-0000-0000-0010-0000000000a2', 40000, 1);
@@ -82,32 +83,41 @@ select is((select public.mark_refunded('00000000-0000-0000-0010-0000000000c2', '
 
 -- --- money that reached the payee is not refunded ------------------------------
 
-insert into public.payees (id, kind, legal_name, region, status, partner_account_ref)
-values ('00000000-0000-0000-0010-0000000000c9', 'repair_shop', 'Shop', 'CA', 'verified', 'acct_c9');
+insert into public.payees (id, kind, legal_name, region, status, partner_account_ref, verified_at)
+values ('00000000-0000-0000-0010-0000000000c9', 'repair_shop', 'Shop', 'CA', 'verified', 'acct_c9', now() - interval '1 year');
 insert into public.evidence (id, request_id, kind, original_path, redacted_path, sha256,
                              redaction_status)
 values ('00000000-0000-0000-0010-0000000000e1', '00000000-0000-0000-0010-0000000000b1',
-        'invoice', 'x/original.pdf', 'x/redacted.pdf', repeat('a', 64), 'confirmed');
+        'invoice', 'x/' || '00000000-0000-0000-0010-0000000000b1' || '/original.pdf',
+        'x/' || '00000000-0000-0000-0010-0000000000b1' || '/redacted.pdf', repeat('a', 64), 'confirmed');
 -- A live payout on a funded request: refunds_due skips the request entirely.
 insert into public.requests (id, member_id, payee_id, kind, funding, title, amount_cents,
                              incident_on, status, description, public_summary,
                              public_summary_confirmed_at, current_score, submitted_at)
 values ('00000000-0000-0000-0010-0000000000b2', '00000000-0000-0000-0010-0000000000a1',
         '00000000-0000-0000-0010-0000000000c9', 'car_damage', 'people', 'Funded request', 30000,
-        current_date - 20, 'funded', 'A funded request with money out to its payee.',
+        current_date - 20, 'draft', 'A funded request with money out to its payee.',
         'Fender after a shopping-cart denty', now(), 87::smallint, now() - interval '12 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0010-0000000000b2';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0010-0000000000b2';
+update public.requests set status = 'funded' where id = '00000000-0000-0000-0010-0000000000b2';
+insert into public.evidence (id, request_id, kind, original_path, redacted_path, sha256,
+                             redaction_status)
+values ('00000000-0000-0000-0010-0000000000e2', '00000000-0000-0000-0010-0000000000b2',
+        'invoice', 'x/' || '00000000-0000-0000-0010-0000000000b2' || '/original.pdf',
+        'x/' || '00000000-0000-0000-0010-0000000000b2' || '/redacted.pdf', repeat('b', 64), 'confirmed');
 insert into public.contributions (id, request_id, contributor_id, source, amount_cents, status,
-                                  captured_at)
+                                  created_at)
 values ('00000000-0000-0000-0010-0000000000c3', '00000000-0000-0000-0010-0000000000b2',
         '00000000-0000-0000-0010-0000000000a2', 'gift', 30000, 'captured', now() - interval '2 days');
 insert into public.payouts (id, request_id, payee_id, amount_cents, invoice_evidence_id,
                             status, partner_ref, sent_at)
 values ('00000000-0000-0000-0010-0000000000d1', '00000000-0000-0000-0010-0000000000b2',
-        '00000000-0000-0000-0010-0000000000c9', 30000, '00000000-0000-0000-0010-0000000000e1',
+        '00000000-0000-0000-0010-0000000000c9', 30000, '00000000-0000-0000-0010-0000000000e2',
         'sent', 'acct_d1', now() - interval '1 day');
 select throws_ok($$select public.mark_refunded('00000000-0000-0000-0010-0000000000c3', 'rf_c')$$,
   'P0002', 'contribution not found or not due a refund',
-  'money out with the payee is not the cron's to refund');
+  'money out with the payee is not the cron''s to refund');
 
 -- --- a member can't refund anything ------------------------------------------
 

@@ -189,15 +189,17 @@ select is((select status from public.requests where id = '00000000-0000-0000-000
 select is((select decision_note from public.appeals
            where request_id = '00000000-0000-0000-000d-0000000000b1'),
   'The quoted panel is not the damage.', 'the reason is stored on the appeal');
+reset role;
 select is((select count(*) from private.audit_log
            where actor = '00000000-0000-0000-000d-0000000000a4' and action = 'appeal.upheld'
              and target = 'appeals' and detail ->> 'reason' = 'The quoted panel is not the damage.'), 1::bigint,
   'the decision is audit-logged with its reason');
+set local role authenticated;
 
 -- --- opening an original for review is written down --------------------------------
 select pg_temp.login('00000000-0000-0000-000d-0000000000a2');
-select is_not_null(public.evidence_view(
-  (select id from public.evidence where request_id = '00000000-0000-0000-000d-0000000000b1')),
+select ok((public.evidence_view(
+  (select id from public.evidence where request_id = '00000000-0000-0000-000d-0000000000b1'))) IS NOT NULL,
   'the reviewer opens the evidence for viewing');
 select pg_temp.login('00000000-0000-0000-000d-0000000000a3');
 select throws_ok(
@@ -205,6 +207,7 @@ select throws_ok(
      where request_id = '00000000-0000-0000-000d-0000000000b1'))$$,
   'P0002', 'evidence not found or not reviewable by this member',
   'a same-region reviewer opens nothing');
+reset role;
 select is((select count(*) from private.audit_log
            where actor = '00000000-0000-0000-000d-0000000000a2' and action = 'evidence.view'
              and target = 'evidence'), 1::bigint,

@@ -41,9 +41,11 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
 values ('00000000-0000-0000-0018-0000000000b1', '00000000-0000-0000-0018-0000000000a1',
-        'car_damage', 'pool', 'A claim to pay', 100000, current_date - 5, 'open',
+        'car_damage', 'pool', 'A claim to pay', 100000, current_date - 5, 'draft',
         'A request the insurer will pay a claim on.',
         'Bumper after a slow backing-in', now(), 85::smallint, now() - interval '9 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0018-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0018-0000000000b1';
 
 insert into public.claims (id, request_id, partner_ref, gross_cents, member_share_cents,
                            paid_cents, status)

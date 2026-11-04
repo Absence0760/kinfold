@@ -48,7 +48,9 @@ select pg_temp.member('00000000-0000-0000-000f-0000000000a3');  -- stranger
 -- b1: the owner's request, open for help.
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on, status)
 values ('00000000-0000-0000-000f-0000000000b1', '00000000-0000-0000-000f-0000000000a1',
-        'car_damage', 'people', 'Rear bumper after a parking-lot hit', 100000, current_date - 5, 'open');
+        'car_damage', 'people', 'Rear bumper after a parking-lot hit', 100000, current_date - 5, 'draft');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-000f-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-000f-0000000000b1';
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-000f-0000000000a1');
@@ -72,13 +74,16 @@ select throws_ok(
   'P0002', 'invite not found', 'a stranger cannot cancel someone else''s link');
 
 select pg_temp.login('00000000-0000-0000-000f-0000000000a1');
-select is_ok(
+select lives_ok(
   $$select public.revoke_invite((select id from public.request_invites
                                  where request_id = '00000000-0000-0000-000f-0000000000b1'
                                    and relationship = 'sister'))$$,
   'the owner cancels the "sister" link');
+reset role;
 select is((select count(*) from private.audit_log where action = 'invite.revoked'),
   1::bigint, 'cancelling is written down in the audit log');
+set local role authenticated;
+select pg_temp.login('00000000-0000-0000-000f-0000000000a1');
 select throws_ok(
   $$select public.revoke_invite((select id from public.request_invites
                                  where request_id = '00000000-0000-0000-000f-0000000000b1'
@@ -115,8 +120,10 @@ select results_eq(
   $$values ('Member 00a1', 'cousin', 'Rear bumper after a parking-lot hit',
             'car_damage', 'people', 'open', 100000::bigint)$$,
   'before accepting, the invitee sees who invited them and what they are joining');
+reset role;
 select is((select count(*) from private.audit_log where action = 'invite.preview'),
   1::bigint, 'the preview is written down in the audit log');
+set local role authenticated;
 
 -- Accepting with an account that was never finished, not a foreign-key crash.
 select pg_temp.login('00000000-0000-0000-000f-0000000000a9');

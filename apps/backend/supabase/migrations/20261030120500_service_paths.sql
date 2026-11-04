@@ -126,7 +126,7 @@ declare
   v_me    public.members;
   v_next  public.request_status;
 begin
-  if not public.has_role('reviewer') then
+  if not public.has_role('reviewer'::public.member_role) then
     raise exception 'reviewers only' using errcode = '42501';
   end if;
   select * into r from public.requests where id = p_request for update;

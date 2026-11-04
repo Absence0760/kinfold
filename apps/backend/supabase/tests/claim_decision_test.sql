@@ -32,19 +32,21 @@ create function pg_temp.login(p_id uuid) returns void language sql as $$
                     json_build_object('sub', p_id, 'role', 'authenticated')::text, true);
 $$;
 
-insert into public.member_roles (member_id, role)
-values ('00000000-0000-0000-0017-0000000000a2', 'reviewer');
-
 select pg_temp.member('00000000-0000-0000-0017-0000000000a1');
 select pg_temp.member('00000000-0000-0000-0017-0000000000a2', 'NY');
+
+insert into public.member_roles (member_id, role)
+values ('00000000-0000-0000-0017-0000000000a2', 'reviewer');
 
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
 values ('00000000-0000-0000-0017-0000000000b1', '00000000-0000-0000-0017-0000000000a1',
-        'car_damage', 'pool', 'A claim to decide', 100000, current_date - 5, 'in_review',
+        'car_damage', 'pool', 'A claim to decide', 100000, current_date - 5, 'draft',
         'A request with a standing insured claim.',
         'Bumper after a slow backing-in', now(), 85::smallint, now() - interval '9 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0017-0000000000b1';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0017-0000000000b1';
 
 insert into public.claims (id, request_id, partner_ref, gross_cents, member_share_cents,
                            paid_cents, status)
@@ -85,4 +87,4 @@ select pg_temp.login('00000000-0000-0000-0017-0000000000a1');
 select throws_ok($$select public.decide_claim('00000000-0000-0000-0017-0000000000d2',
   'a member who is not a reviewer cannot decide')$$,
   '42501', 'reviewers only',
-  'only a reviewer's decision can deny a claim');
+  'only a reviewer''s decision can deny a claim');

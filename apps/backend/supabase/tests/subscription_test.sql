@@ -108,10 +108,10 @@ select is(public.subscription_amount(600000), 6000::bigint, 'reaches the cap at 
 select is(public.subscription_amount(10000000), 6000::bigint, 'capped at 60.00 however high the income');
 
 -- A future formula doesn't apply yet, but can be asked for by version.
-insert into public.subscription_formulas values (2, 200000, 150, 9000, 8000, current_date + 30);
+insert into public.subscription_formulas (version, floor_income_cents, rate_bps, cap_cents, core_share_bps, effective_from) values (3, 200000, 150, 9000, 8000, current_date + 30);
 select is(public.subscription_amount(300000), 3000::bigint, 'a formula not yet effective is not used');
-select is(public.subscription_amount(300000, 2), 4500::bigint, 'an explicit version prices with that version');
-select is(public.subscription_amount(190000, 2), 0::bigint, 'each version has its own floor');
+select is(public.subscription_amount(300000, 3), 4500::bigint, 'an explicit version prices with that version');
+select is(public.subscription_amount(190000, 3), 0::bigint, 'each version has its own floor');
 
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);

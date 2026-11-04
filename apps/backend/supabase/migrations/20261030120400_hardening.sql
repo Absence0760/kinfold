@@ -146,7 +146,7 @@ declare
   v_me    public.members;
   v_next  public.request_status;
 begin
-  if not public.has_role('reviewer') then
+  if not public.has_role('reviewer'::public.member_role) then
     raise exception 'reviewers only' using errcode = '42501';
   end if;
   select * into r from public.requests where id = p_request for update;
@@ -222,7 +222,7 @@ language plpgsql security definer set search_path = '' as $$
 declare
   a public.appeals;
 begin
-  if not public.has_role('panel') then
+  if not public.has_role('panel'::public.member_role) then
     raise exception 'appeal panel only' using errcode = '42501';
   end if;
   select * into a from public.appeals where id = p_appeal and status = 'open' for update;
@@ -255,7 +255,7 @@ end $$;
 drop policy "members read reviews of their requests" on public.reviews;
 create policy "panel and authors read reviews" on public.reviews for select to authenticated
   using (reviewer_id = auth.uid()
-         or (public.has_role('panel')
+         or (public.has_role('panel'::public.member_role)
              and not exists (select 1 from public.requests r where r.id = request_id and r.member_id = auth.uid())));
 
 create function public.my_request_reviews(p_request uuid)

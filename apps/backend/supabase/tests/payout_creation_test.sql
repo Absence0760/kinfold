@@ -41,21 +41,25 @@ $$;
 
 select pg_temp.member('00000000-0000-0000-0014-0000000000a1');
 
-insert into public.payees (id, kind, legal_name, region, status, partner_account_ref)
-values ('00000000-0000-0000-0014-0000000000c9', 'repair_shop', 'Shop', 'CA', 'verified', 'acct_c9');
-insert into public.evidence (id, request_id, kind, original_path, redacted_path, sha256,
-                             redaction_status)
-values ('00000000-0000-0000-0014-0000000000e1', '00000000-0000-0000-0014-0000000000b1',
-        'invoice', 'x/original.pdf', 'x/redacted.pdf', repeat('a', 64), 'confirmed');
+insert into public.payees (id, kind, legal_name, region, status, partner_account_ref, verified_at)
+values ('00000000-0000-0000-0014-0000000000c9', 'repair_shop', 'Shop', 'CA', 'verified', 'acct_c9', now() - interval '1 year');
 insert into public.requests (id, member_id, payee_id, kind, funding, title, amount_cents,
                              incident_on, status, description, public_summary,
                              public_summary_confirmed_at, current_score, submitted_at)
 values ('00000000-0000-0000-0014-0000000000b1', '00000000-0000-0000-0014-0000000000a1',
         '00000000-0000-0000-0014-0000000000c9', 'car_damage', 'people', 'Funded request', 30000,
-        current_date - 20, 'funded', 'A funded request waiting for its payout.',
+        current_date - 20, 'draft', 'A funded request waiting for its payout.',
         'Fender after a shopping-cart denty', now(), 87::smallint, now() - interval '12 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0014-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0014-0000000000b1';
+update public.requests set status = 'funded' where id = '00000000-0000-0000-0014-0000000000b1';
+insert into public.evidence (id, request_id, kind, original_path, redacted_path, sha256,
+                             redaction_status)
+values ('00000000-0000-0000-0014-0000000000e1', '00000000-0000-0000-0014-0000000000b1',
+        'invoice', 'x/original.pdf', 'x/redacted.pdf', repeat('a', 64), 'confirmed');
+
 insert into public.contributions (id, request_id, contributor_id, source, amount_cents, status,
-                                  captured_at)
+                                  created_at)
 values ('00000000-0000-0000-0014-0000000000c3', '00000000-0000-0000-0014-0000000000b1',
         '00000000-0000-0000-0014-0000000000a1', 'gift', 30000, 'captured', now() - interval '2 days');
 

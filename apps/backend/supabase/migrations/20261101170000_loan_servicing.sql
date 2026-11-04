@@ -68,6 +68,12 @@ begin
                  and status in ('active', 'paused')) then
     raise exception 'only the lender can forgive an active loan' using errcode = '42501';
   end if;
+  -- The cap is stated where it is refused, not left to the deferred totals
+  -- trigger: a deferred constraint raises at COMMIT, which a client calling
+  -- this function would never see — the same money the trigger backstops.
+  if p_amount_cents > public.loan_outstanding_cents(p_loan) then
+    raise exception 'payments and forgiveness exceed the principal' using errcode = '23514';
+  end if;
   insert into public.loan_forgiveness (loan_id, tax_year, amount_cents) values (p_loan, p_tax_year, p_amount_cents);
 
   v_seqs := (select array_agg(seq order by seq desc) from public.loan_installments

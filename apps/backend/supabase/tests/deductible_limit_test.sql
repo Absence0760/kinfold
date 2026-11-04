@@ -51,7 +51,9 @@ insert into public.requests
   (id, member_id, kind, funding, title, amount_cents, incident_on, asset_id, status)
 values ('00000000-0000-0000-0065-0000000000e1', '00000000-0000-0000-0065-0000000000b1',
         'car_deductible', 'pool', 'A scraped door', 50000, current_date - 10,
-        '00000000-0000-0000-0065-0000000000d1', 'in_review');
+        '00000000-0000-0000-0065-0000000000d1', 'draft');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0065-0000000000e1';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0065-0000000000e1';
 
 -- --- the refiled stand-ins sit at the limit, and nothing exceeds it ------------------
 
@@ -61,7 +63,7 @@ select is((select annual_deductible_cents from public.cover_plans
 select is((select count(*) from public.cover_plans
            where coalesce(annual_deductible_cents, 0) > 100000)::int, 0::int,
   'no filed annual on the table promises cover above the year''s limit');
-select is_ok((select count(*) from private.cover_plans_history) >= 10,
+select ok((select count(*) from private.cover_plans_history) >= 10,
   'the refiling trailed a history row per rate, like every other filed change');
 
 -- --- an over-limit filing is refused by the door, with the reason --------------------
@@ -116,7 +118,7 @@ select lives_ok($$select public.record_claim('00000000-0000-0000-0065-0000000000
   'once the annual is spent the member''s share rises to the whole loss');
 select is((select paid_cents from public.claims where partner_ref = 'dl_c3'),
   0::bigint, 'the exhausted claim pays nothing: the member carries the loss');
-select is_ok((select sum(c.paid_cents) from public.claims c
+select ok((select sum(c.paid_cents) from public.claims c
               where c.status = 'paid' and c.request_id = '00000000-0000-0000-0065-0000000000e1')
               <= 100000,
   'a member-year of deductible cover never exceeds the $1,000 limit');

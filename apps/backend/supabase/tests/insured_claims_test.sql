@@ -45,9 +45,12 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
 values ('00000000-0000-0000-0012-0000000000b1', '00000000-0000-0000-0012-0000000000a1',
-        'car_damage', 'both', 'Collision damage', 90000, current_date - 4, 'funded',
+        'car_damage', 'both', 'Collision damage', 90000, current_date - 4, 'draft',
         'Another driver cut in and dented my door panel.',
         'Door panel from a lane-change collision', now(), 91::smallint, now() - interval '3 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0012-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0012-0000000000b1';
+update public.requests set status = 'funded' where id = '00000000-0000-0000-0012-0000000000b1';
 
 -- --- the partner's feed records claims ------------------------------------
 
@@ -74,5 +77,6 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0012-0000000000a2');
 select lives_ok($$select public.deny_claim((select id from public.claims where partner_ref = 'ins_claim_1'), 'the reviewer''s photos show parking damage')$$,
   'a denial right after a recorded refuse review goes through');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.denied'),
   1::bigint, 'the denial is audit-logged with its reason');

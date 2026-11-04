@@ -49,7 +49,7 @@ create function pg_temp.request(p_id uuid, p_member uuid, p_kind public.request_
 returns uuid language sql as $$
   insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on, payee_id)
   values (p_id, p_member, p_kind, 'people', 'Test request', p_amount, current_date - 5,
-          (select id from public.payees where kind = p_payee_kind))
+          (select id from public.payees where kind = p_payee_kind limit 1))
   returning id;
 $$;
 
@@ -96,6 +96,7 @@ select throws_ok($$select public.submit_request('00000000-0000-0000-000f-0000000
   '23514', 'the payee does not fit this request', 'a repair cannot be paid at a repair shop');
 
 -- The same request against a contractor goes through.
+reset role;
 select pg_temp.request('00000000-0000-0000-000f-0000000000b2', '00000000-0000-0000-000f-0000000000a1',
                        'home_repair', 'contractor');
 select pg_temp.evidence('00000000-0000-0000-000f-0000000000b2');

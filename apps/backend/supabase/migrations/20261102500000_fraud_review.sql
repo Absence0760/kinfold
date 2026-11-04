@@ -22,15 +22,17 @@ begin
       using errcode = '42501';
   end if;
   select coalesce((
-    select jsonb_agg(jsonb_build_object('kind', s.kind, 'severity', s.severity))
+    select jsonb_agg(
+      jsonb_build_object('kind', s.kind, 'severity', s.severity)
+      order by (s.severity = 'high') desc, s.created_at desc
+    )
     from private.fraud_signals s
     where s.request_id = p_request and s.resolved_at is null
-    order by (s.severity = 'high') desc, created_at desc
   ), '[]'::jsonb) into v_found;
   -- A PII-adjacent read: every look at a member's fraud standing is on the
   -- trail, like every other privileged read in the repo.
   perform private.audit('fraud_signals.read', 'fraud_signals', p_request,
-    jsonb_build_object('count', jsonb_length(v_found)));
+    jsonb_build_object('count', jsonb_array_length(v_found)));
   return v_found;
 end $$;
 

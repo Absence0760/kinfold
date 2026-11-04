@@ -43,7 +43,9 @@ insert into public.member_roles (member_id, role)
 
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on, status)
   values ('00000000-0000-0000-0025-0000000000e1', '00000000-0000-0000-0025-0000000000f2',
-          'car_damage', 'people', 'A dented door', 100000, current_date - 3, 'in_review');
+          'car_damage', 'people', 'A dented door', 100000, current_date - 3, 'draft');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0025-0000000000e1';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0025-0000000000e1';
 
 -- --- the checks' findings, and the reviewer's read ------------------------------
 

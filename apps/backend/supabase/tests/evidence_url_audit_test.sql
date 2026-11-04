@@ -41,9 +41,11 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
 values ('00000000-0000-0000-0013-0000000000b1', '00000000-0000-0000-0013-0000000000a1',
-        'car_damage', 'pool', 'A request under review', 123456, current_date - 3, 'in_review',
+        'car_damage', 'pool', 'A request under review', 123456, current_date - 3, 'draft',
         'A dented fender after a shopping trolley clipped it.',
         'Fender after a slow corner clipping', now(), 72::smallint, now() - interval '2 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0013-0000000000b1';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0013-0000000000b1';
 
 -- --- the audit follows every issuing ---------------------------------------
 

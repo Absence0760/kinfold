@@ -62,10 +62,10 @@ set local role service_role;
 select pg_temp.as_service();
 select is((select amount_cents from public.subscription_payments
            where id = public.enqueue_dues('00000000-0000-0000-0016-0000000000a1',
-                                          (now() - interval '20 days')::date)) ,
+                                          (date_trunc('month', now() - interval '20 days'))::date)) ,
   4000::bigint, 'the dues ask carries the member''s own figure');
 select is(public.enqueue_dues('00000000-0000-0000-0016-0000000000a1',
-                              (now() - interval '20 days')::date),
+                              (date_trunc('month', now() - interval '20 days'))::date),
   (select id from public.subscription_payments
      where member_id = '00000000-0000-0000-0016-0000000000a1'),
   'the same month replayed returns the payment it already made');

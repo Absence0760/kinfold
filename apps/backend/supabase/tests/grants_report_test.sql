@@ -26,9 +26,9 @@ select lives_ok($$select public.record_grant('home_fund'::public.fund, 'local_go
 
 -- --- the report ---------------------------------------------------------------
 
-select is((select count(*) from jsonb_array_elements(public.grant_report())), 2::int,
+select is((select count(*) from jsonb_array_elements(public.grant_report())), 2::bigint,
   'the report aggregates by fund, source and federal flag — two pots');
-select is((select e ->> 'amount_cents' from jsonb_array_elements(public.grant_report())
+select is((select (e ->> 'amount_cents')::bigint from jsonb_array_elements(public.grant_report()) as e
            where e ->> 'source' = 'foundation'), 250000::bigint,
   'the foundation row carries the money that source reported');
 select is(public.ledger_balance('home_fund'::public.fund, 'available'), 0::bigint,

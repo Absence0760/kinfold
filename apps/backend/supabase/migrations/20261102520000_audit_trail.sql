@@ -28,7 +28,7 @@ begin
   -- Reading the trail is itself on the trail, like every privileged read.
   perform private.audit('audit_log.read', 'audit_log', NULL,
     jsonb_build_object('limit', least(greatest(p_limit, 1), 100),
-                       'count', jsonb_length(v_found)));
+                       'count', jsonb_array_length(v_found)));
   return v_found;
 end $$;
 

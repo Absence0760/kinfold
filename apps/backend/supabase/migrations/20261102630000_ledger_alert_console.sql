@@ -34,7 +34,7 @@ begin
   ), '[]'::jsonb) into v_found;
   perform private.audit('ledger_differences.read', 'ledger_differences', NULL,
     jsonb_build_object('limit', least(greatest(p_limit, 1), 100),
-                       'count', jsonb_length(v_found)));
+                       'count', jsonb_array_length(v_found)));
   return v_found;
 end $$;
 

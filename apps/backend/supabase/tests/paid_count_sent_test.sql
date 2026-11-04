@@ -44,15 +44,19 @@ begin
                                incident_on, status, public_summary, public_summary_confirmed_at,
                                current_score, submitted_at)
   values (p_rid, p_member, 'car_damage', 'pool', 'Prior request', 50000, current_date - 30,
-          'paid', 'Old fender after a slow corner clipping', now(), 85::smallint,
+          'draft', 'Old fender after a slow corner clipping', now(), 85::smallint,
           p_created - interval '20 days');
+update public.requests set status = 'scoring' where id = p_rid;
+update public.requests set status = 'open' where id = p_rid;
+update public.requests set status = 'funded' where id = p_rid;
+update public.requests set status = 'paid' where id = p_rid;
   insert into public.evidence (id, request_id, kind, original_path, redacted_path,
                                sha256, redaction_status)
-  values (p_eid, p_rid, 'invoice', 'x/o.pdf', 'x/r.pdf', repeat('a', 64), 'confirmed');
+  values (p_eid, p_rid, 'invoice', 'x/' || p_rid::text || '/o.pdf', 'x/' || p_rid::text || '/r.pdf', repeat('a', 64), 'confirmed');
   insert into public.payouts (request_id, payee_id, amount_cents, invoice_evidence_id,
                               status, partner_ref, created_at, sent_at)
   values (p_rid, '00000000-0000-0000-0061-0000000000c1', 50000, p_eid,
-          case when p_sent is null then 'pending' else 'sent' end,
+          case when p_sent is null then 'pending'::public.payout_status else 'sent'::public.payout_status end,
           'pc_' || p_rid::text, p_created, p_sent);
   set local session_replication_role = origin;
 end $$;

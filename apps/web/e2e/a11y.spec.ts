@@ -92,7 +92,7 @@ async function overflowReports(page: Page) {
 				// never be accused: the closed menu and the display:none desktop link
 				// row hide whole subtrees, and none of that ink can move the scroll.
 				let hidden = false;
-				for (let up = host; up; up = up.parentElement) {
+				for (let up: HTMLElement | null = host; up; up = up.parentElement) {
 					const upStyle = getComputedStyle(up);
 					if (upStyle.display === 'none' || upStyle.visibility === 'hidden') { hidden = true; break; }
 				}

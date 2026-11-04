@@ -78,7 +78,7 @@ select is((select status from public.fund_loans
            where partner_ref = 'loan_p1'), 'paused', 'the loan reads paused');
 select is((select count(*) from public.fund_loan_pauses
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_p1')),
-  1::int, 'the pause is recorded with its reason');
+  1::bigint, 'the pause is recorded with its reason');
 select is((select due_on from public.fund_loan_installments
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_p1')
              and seq = 2),
@@ -124,7 +124,7 @@ select throws_ok($$update public.fund_loan_pauses set months = 12
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0025-0000000000a2'::uuid);
-select is((select count(*) from public.fund_loan_pauses), 0::int,
+select is((select count(*) from public.fund_loan_pauses), 0::bigint,
   'another member sees nothing in their pauses');
 
 rollback;

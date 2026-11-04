@@ -164,6 +164,11 @@ begin
   perform private.audit('fund_loans.created', 'fund_loans', v_id,
     jsonb_build_object('borrower', p_borrower, 'principal_cents', p_principal_cents,
                        'schedule', p_schedule, 'partner_ref', p_partner_ref));
+  -- income loans are partner-managed end to end: there is no borrower signing
+  -- ceremony, so the partner's create already puts the loan on the clock.
+  if p_schedule = 'income' then
+    update public.fund_loans set status = 'active' where id = v_id;
+  end if;
   return v_id;
 end $$;
 
@@ -268,7 +273,7 @@ begin
   end if;
   if l.schedule = 'monthly' then
     select * into i from public.fund_loan_installments where loan_id = p_loan and seq = p_seq for update;
-    if i.id is null then
+    if i.loan_id is null then
       raise exception 'installment not found' using errcode = 'P0002';
     end if;
     v_left := i.amount_cents - i.paid_cents;

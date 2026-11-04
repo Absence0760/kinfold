@@ -104,8 +104,8 @@ select is((select raised_cents from public.board_requests
 
 -- --- a finished request keeps its money figures off the board --------------------
 
-select isnull((select raised_cents from public.board_requests
-               where id = '00000000-0000-0000-000e-0000000000b3'),
+select ok((select raised_cents from public.board_requests
+           where id = '00000000-0000-0000-000e-0000000000b3') IS NULL,
   'a paid request on the board shares no raised-so-far');
 select is((select taking_pledges from public.board_requests
            where id = '00000000-0000-0000-000e-0000000000b3'),

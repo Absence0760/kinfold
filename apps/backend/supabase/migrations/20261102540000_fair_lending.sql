@@ -133,7 +133,7 @@ begin
   if not private.is_service() then
     raise exception 'the CDFI report is written by the lending partner''s auditors' using errcode = '42501';
   end if;
-  select f.race into v_form from private.fair_lending
+  select race into v_form from private.fair_lending
   where loan_id = p_loan and source = 'monitoring_form';
   v_found := jsonb_build_object(
     'race', coalesce(v_form, 'Do Not Know'),

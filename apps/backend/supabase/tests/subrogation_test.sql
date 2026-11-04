@@ -16,18 +16,24 @@ create function pg_temp.as_service() returns void language sql as $$
   select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 $$;
 
-create function pg_temp.member(p_id uuid) returns uuid language sql as $$
+create function pg_temp.member(p_id uuid) returns uuid language plpgsql as $$
+begin
+  insert into auth.users (id, aud, role) values (p_id, 'authenticated', 'authenticated');
   insert into public.members (id, display_name, region, status)
-  values (p_id, 'Member A1', 'CA', 'active') returning id;
-$$;
+    values (p_id, 'Member A1', 'CA', 'active');
+  return p_id;
+end $$;
 
-create function pg_temp.request(p_id uuid, p_member uuid) returns uuid language sql as $$
+create function pg_temp.request(p_id uuid, p_member uuid) returns uuid language plpgsql as $$
+begin
   insert into public.requests (id, member_id, kind, funding, title, amount_cents,
                                incident_on, status, created_at)
   values (p_id, p_member, 'car_damage', 'people', 'Test request', 100000,
-          current_date - 5, 'open', now())
-  returning id;
-$$;
+          current_date - 5, 'draft', now());
+  update public.requests set status = 'scoring' where id = p_id;
+  update public.requests set status = 'open' where id = p_id;
+  return p_id;
+end $$;
 
 -- Fixtures are created once with literal ids so the later calls can reuse them.
 select pg_temp.member('00000000-0000-0000-0015-0000000000a1'::uuid);
@@ -41,7 +47,7 @@ select pg_temp.as_service();
 select lives_ok($$select public.record_partner_recovery('00000000-0000-0000-0015-000000000001'::uuid,
   'insurance', 30000::bigint, current_date - 5::date, 'pi_sub_1')$$,
   'the service records the partner insurer''s claim money');
-select is((select count(*) from public.request_recoveries), 1::int, 'the recovery landed once');
+select is((select count(*) from public.request_recoveries), 1::bigint, 'the recovery landed once');
 select is((select partner_ref from public.request_recoveries limit 1), 'pi_sub_1',
   'the partner''s reference is stored, so the money is traceable');
 
@@ -50,7 +56,7 @@ select is((select partner_ref from public.request_recoveries limit 1), 'pi_sub_1
 select lives_ok($$select public.record_partner_recovery('00000000-0000-0000-0015-000000000001'::uuid,
   'insurance', 30000::bigint, current_date - 5::date, 'pi_sub_1')$$,
   'the same partner reference is a no-op');
-select is((select count(*) from public.request_recoveries), 1::int,
+select is((select count(*) from public.request_recoveries), 1::bigint,
   'the retry stored no second row');
 
 -- --- refusals --------------------------------------------------------------------

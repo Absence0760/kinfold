@@ -46,7 +46,7 @@ $$;
 -- One installment is marked paused when p_paused.
 create function pg_temp.loan_in(p_loan uuid, p_borrower uuid, p_lender uuid,
                                 p_status public.loan_status, p_paused boolean)
-returns void language sql as $$
+returns void language plpgsql as $$
 begin
   insert into public.family_loans (id, borrower_id, lender_id, principal_cents, payment_day,
                                    pause_months_per_year, default_plan, status,
@@ -79,7 +79,7 @@ select is((select public.record_loan_payment('00000000-0000-0000-0008-0000000000
 select is((select paid_cents from public.loan_installments
            where loan_id = '00000000-0000-0000-0008-0000000000f1' and seq = 1),
   15000::bigint, 'the installment says paid');
-select isnot((select paid_on from public.loan_installments
+select isnt((select paid_on from public.loan_installments
               where loan_id = '00000000-0000-0000-0008-0000000000f1' and seq = 1),
   NULL::date, 'the full installment remembers the paid date (existing trigger)');
 select is((select public.record_loan_payment('00000000-0000-0000-0008-0000000000f1', 2, 10000::bigint)),
@@ -87,7 +87,7 @@ select is((select public.record_loan_payment('00000000-0000-0000-0008-0000000000
 
 select throws_ok($$select public.record_loan_payment('00000000-0000-0000-0008-0000000000f1', 2, 5001::bigint)$$,
   '23514', 'loan payment must be between 1 and 5000 cents',
-  'an installment can't be overpaid');
+  'an installment can''t be overpaid');
 select throws_ok($$select public.record_loan_payment('00000000-0000-0000-0008-0000000000f1', 2, 0::bigint)$$,
   '23514', 'loan payment must be between 1 and 5000 cents',
   'zero moves no money');

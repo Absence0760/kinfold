@@ -89,10 +89,12 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at, payee_id)
 values ('00000000-0000-0000-0015-0000000000b1', '00000000-0000-0000-0015-0000000000a1',
-        'car_damage', 'pool', 'Covered partly', 100000, current_date - 5, 'open',
+        'car_damage', 'pool', 'Covered partly', 100000, current_date - 5, 'draft',
         'A request the insurer covered partly.', 'Door panel after a lane-change rub',
         now(), 85::smallint, now() - interval '9 days',
         '00000000-0000-0000-0015-0000000000c1');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0015-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0015-0000000000b1';
 select pg_temp.claim('00000000-0000-0000-0015-0000000000b1', 30000::bigint, 'pc_1');
 select is(public.insured_cover_cents('00000000-0000-0000-0015-0000000000b1'),
   30000::bigint, 'the cover read answers with the standing claim''s gross');
@@ -105,10 +107,12 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at, payee_id)
 values ('00000000-0000-0000-0015-0000000000b2', '00000000-0000-0000-0015-0000000000a1',
-        'car_damage', 'pool', 'Fully covered', 150000, current_date - 5, 'open',
+        'car_damage', 'pool', 'Fully covered', 150000, current_date - 5, 'draft',
         'A request the insurer already paid in full.', 'Roof rail after a shopping-cart storm',
         now(), 85::smallint, now() - interval '9 days',
         '00000000-0000-0000-0015-0000000000c1');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0015-0000000000b2';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0015-0000000000b2';
 select pg_temp.claim('00000000-0000-0000-0015-0000000000b2', 150000::bigint, 'pc_3');
 
 select set_config('test.run1', public.run_pool_allocation('protection', 400000)::text, true);
@@ -127,10 +131,12 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at, payee_id)
 values ('00000000-0000-0000-0015-0000000000b3', '00000000-0000-0000-0015-0000000000a1',
-        'car_damage', 'pool', 'Denied cover', 100000, current_date - 5, 'open',
+        'car_damage', 'pool', 'Denied cover', 100000, current_date - 5, 'draft',
         'A request whose insurance denial puts the whole damage on the pool.',
         'Fender after a slow corner clipping', now(), 85::smallint, now() - interval '9 days',
         '00000000-0000-0000-0015-0000000000c1');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0015-0000000000b3';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0015-0000000000b3';
 select pg_temp.claim('00000000-0000-0000-0015-0000000000b3', 40000::bigint, 'pc_4', 'denied');
 select set_config('test.run2', public.run_pool_allocation('protection', 200000)::text, true);
 select is(pg_temp.grant_of(current_setting('test.run2')::uuid, '00000000-0000-0000-0015-0000000000b3'),

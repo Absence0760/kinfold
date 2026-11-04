@@ -49,7 +49,7 @@ select pg_temp.as_service();
 select lives_ok($$select public.create_fund_loan(
   '00000000-0000-0000-0020-0000000000a1'::uuid, 100000::bigint, true,
   60000, 40000, 0, 'monthly', 0, 'loan_m1')$$, 'the partner opens a monthly fund loan');
-select is((select count(*) from public.fund_loans), 1::int, 'one loan was opened');
+select is((select count(*) from public.fund_loans), 1::bigint, 'one loan was opened');
 select is(public.create_fund_loan(
   '00000000-0000-0000-0020-0000000000a1'::uuid, 100000::bigint, true,
   60000, 40000, 0, 'monthly', 0, 'loan_m1'),

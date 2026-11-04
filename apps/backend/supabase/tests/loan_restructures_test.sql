@@ -45,37 +45,37 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0028-0000000000a1'::uuid);
 insert into public.family_loans (id, borrower_id, lender_id, principal_cents,
                                  status, borrower_signed_at, lender_signed_at)
-values ('00000000-0000-0000-0028-0000000000l1', '00000000-0000-0000-0028-0000000000a1',
+values ('00000000-0000-0000-0028-0000000000b1', '00000000-0000-0000-0028-0000000000a1',
         '00000000-0000-0000-0028-0000000000a2', 100000, 'active', now(), now()),
-       ('00000000-0000-0000-0028-0000000000l2', '00000000-0000-0000-0028-0000000000a1',
+       ('00000000-0000-0000-0028-0000000000b2', '00000000-0000-0000-0028-0000000000a1',
         '00000000-0000-0000-0028-0000000000a2', 20000, 'active', now(), now()),
-       ('00000000-0000-0000-0028-0000000000l3', '00000000-0000-0000-0028-0000000000a1',
+       ('00000000-0000-0000-0028-0000000000b3', '00000000-0000-0000-0028-0000000000a1',
         '00000000-0000-0000-0028-0000000000a2', 100000, 'active', now(), now());
-insert into public.loan_installments (loan_id, seq, due_on, amount_cents, paid_cents)
-  ('00000000-0000-0000-0028-0000000000l1', 1, current_date - 30, 20000, 20000),
-  ('00000000-0000-0000-0028-0000000000l1', 2, current_date - 20, 20000, 0),
-  ('00000000-0000-0000-0028-0000000000l1', 3, current_date - 10, 20000, 0),
-  ('00000000-0000-0000-0028-0000000000l1', 4, current_date + 10, 20000, 0),
-  ('00000000-0000-0000-0028-0000000000l1', 5, current_date + 20, 20000, 0),
-  ('00000000-0000-0000-0028-0000000000l2', 1, current_date - 30, 20000, 20000),
-  ('00000000-0000-0000-0028-0000000000l3', 1, current_date - 30, 99800, 99800),
-  ('00000000-0000-0000-0028-0000000000l3', 2, current_date - 10, 200, 0);
+insert into public.loan_installments (loan_id, seq, due_on, amount_cents, paid_cents) values
+  ('00000000-0000-0000-0028-0000000000b1', 1, current_date - 30, 20000, 20000),
+  ('00000000-0000-0000-0028-0000000000b1', 2, current_date - 20, 20000, 0),
+  ('00000000-0000-0000-0028-0000000000b1', 3, current_date - 10, 20000, 0),
+  ('00000000-0000-0000-0028-0000000000b1', 4, current_date + 10, 20000, 0),
+  ('00000000-0000-0000-0028-0000000000b1', 5, current_date + 20, 20000, 0),
+  ('00000000-0000-0000-0028-0000000000b2', 1, current_date - 30, 20000, 20000),
+  ('00000000-0000-0000-0028-0000000000b3', 1, current_date - 30, 99800, 99800),
+  ('00000000-0000-0000-0028-0000000000b3', 2, current_date - 10, 200, 0);
 
 -- --- either side stages the new schedule ----------------------------------------
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0028-0000000000a1'::uuid);
 select lives_ok($$select public.restructure_loan(
-  '00000000-0000-0000-0028-0000000000l1'::uuid, 8, (date_trunc('month', current_date
+  '00000000-0000-0000-0028-0000000000b1'::uuid, 8, (date_trunc('month', current_date
   + interval '1 month'))::date)$$, 'the borrower stages eight months');
 select is((select count(*) from public.loan_restructures
-           where loan_id = '00000000-0000-0000-0028-0000000000l1'::uuid
-             and other_signed_at is null), 1::int, 'the ask waits for the other side');
+           where loan_id = '00000000-0000-0000-0028-0000000000b1'::uuid
+             and other_signed_at is null), 1::bigint, 'the ask waits for the other side');
 select throws_ok($$select public.restructure_loan(
-  '00000000-0000-0000-0028-0000000000l1'::uuid, 10, current_date + 1)$$,
+  '00000000-0000-0000-0028-0000000000b1'::uuid, 10, current_date + 1)$$,
   '23514', 'a second ask is refused while one is pending');
 select is((select count(*) from public.loan_installments
-           where loan_id = '00000000-0000-0000-0028-0000000000l1'::uuid), 5::int,
+           where loan_id = '00000000-0000-0000-0028-0000000000b1'::uuid), 5::bigint,
   'the staged ask alone moves no money');
 reset role;
 
@@ -83,43 +83,43 @@ reset role;
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0028-0000000000a2'::uuid);
-select is(public.sign_loan_restructure('00000000-0000-0000-0028-0000000000l1'::uuid),
+select is(public.sign_loan_restructure('00000000-0000-0000-0028-0000000000b1'::uuid),
   'active', 'the lender signs and the schedule re-spreads');
 select is((select count(*) from public.loan_installments
-           where loan_id = '00000000-0000-0000-0028-0000000000l1'::uuid
-             and paid_cents < amount_cents), 8::int, 'the unpaid money re-spread over eight months');
+           where loan_id = '00000000-0000-0000-0028-0000000000b1'::uuid
+             and paid_cents < amount_cents), 8::bigint, 'the unpaid money re-spread over eight months');
 select is((select min(due_on) from public.loan_installments
-           where loan_id = '00000000-0000-0000-0028-0000000000l1'::uuid
+           where loan_id = '00000000-0000-0000-0028-0000000000b1'::uuid
              and paid_cents < amount_cents),
   (date_trunc('month', current_date + interval '1 month'))::date,
   'the new schedule starts on the agreed day');
-select is(public.loan_outstanding_cents('00000000-0000-0000-0028-0000000000l1'::uuid),
+select is(public.loan_outstanding_cents('00000000-0000-0000-0028-0000000000b1'::uuid),
   80000::bigint, 'restructuring repays the same money over different dates, never less');
 select is((select amount_cents from public.loan_installments
-           where loan_id = '00000000-0000-0000-0028-0000000000l1'::uuid
+           where loan_id = '00000000-0000-0000-0028-0000000000b1'::uuid
              and paid_cents = amount_cents), 20000::bigint,
   'the installment already paid keeps its date and amount');
 
 -- --- refusals --------------------------------------------------------------------
 
 select throws_ok($$select public.restructure_loan(
-  '00000000-0000-0000-0028-0000000000l1'::uuid, 6, current_date - 1)$$,
+  '00000000-0000-0000-0028-0000000000b1'::uuid, 6, current_date - 1)$$,
   '23514', 'a schedule can''t start in the past');
 select throws_ok($$select public.restructure_loan(
-  '00000000-0000-0000-0028-0000000000l1'::uuid, 481, current_date + 1)$$,
+  '00000000-0000-0000-0028-0000000000b1'::uuid, 481, current_date + 1)$$,
   '23514', 'a schedule longer than 480 months is refused');
 select throws_ok($$select public.restructure_loan(
-  '00000000-0000-0000-0028-0000000000l2'::uuid, 6, current_date + 1)$$,
+  '00000000-0000-0000-0028-0000000000b2'::uuid, 6, current_date + 1)$$,
   '23514', 'a loan owed nothing has nothing to restructure');
 select throws_ok($$select public.restructure_loan(
-  '00000000-0000-0000-0028-0000000000l3'::uuid, 300, current_date + 1)$$,
+  '00000000-0000-0000-0028-0000000000b3'::uuid, 300, current_date + 1)$$,
   '23514', 'too many installments for what is left to pay');
 reset role;
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0028-0000000000a3'::uuid);
 select throws_ok($$select public.restructure_loan(
-  '00000000-0000-0000-0028-0000000000l1'::uuid, 6, current_date + 1)$$,
+  '00000000-0000-0000-0028-0000000000b1'::uuid, 6, current_date + 1)$$,
   'P0002', 'a member with no relation stages nothing');
 select is((select count(*) from public.loan_restructures), 0::bigint,
   'a member with no relation reads nothing');
@@ -128,8 +128,8 @@ reset role;
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0028-0000000000a2'::uuid);
 select is((select sum(amount_cents) from public.loan_installments
-           where loan_id = '00000000-0000-0000-0028-0000000000l1'::uuid
-             and paid_cents < amount_cents), 80000::bigint,
+           where loan_id = '00000000-0000-0000-0028-0000000000b1'::uuid
+             and paid_cents < amount_cents), 80000::numeric,
   'the re-spread covers exactly the money still owed');
 reset role;
 

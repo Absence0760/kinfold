@@ -150,7 +150,7 @@ from unnest(array['00000000-0000-0000-0009-0000000000b1', '00000000-0000-0000-00
 -- --- 5. roles count only for active members ----------------------------------------
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0009-0000000000a8');
-select is(public.has_role('reviewer'), false, 'a suspended member''s roles do not count');
+select is(public.has_role('reviewer'::public.member_role), false, 'a suspended member''s roles do not count');
 select throws_ok(
   $$select public.record_review('00000000-0000-0000-0009-0000000000b1', 'approve', 'Evidence is consistent.')$$,
   '42501', 'reviewers only', 'a suspended reviewer cannot review');

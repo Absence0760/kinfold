@@ -42,12 +42,16 @@ select pg_temp.member('00000000-0000-0000-0019-0000000000a2');
 insert into public.requests (id, member_id, kind, funding, title, amount_cents,
                              incident_on, status, created_at)
 values ('00000000-0000-0000-0019-0000000000b1', '00000000-0000-0000-0019-0000000000a1',
-        'car_damage', 'pool', 'A large request', 5000000, current_date - 5, 'open', now());
+        'car_damage', 'pool', 'A large request', 5000000, current_date - 5, 'draft', now());
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0019-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0019-0000000000b1';
 
 insert into public.requests (id, member_id, kind, funding, title, amount_cents,
                              incident_on, status, created_at)
 values ('00000000-0000-0000-0019-0000000000b2', '00000000-0000-0000-0019-0000000000a2',
-        'car_damage', 'pool', 'A small request', 4999999, current_date - 5, 'open', now());
+        'car_damage', 'pool', 'A small request', 4999999, current_date - 5, 'draft', now());
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0019-0000000000b2';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0019-0000000000b2';
 
 -- --- the large-amount line reads the fund's setting -----------------------------
 
@@ -86,7 +90,7 @@ select is(public.record_inspection('00000000-0000-0000-0019-0000000000b1'::uuid,
   'clear', 'insp_2'),
   (select id from public.inspections where inspector_ref = 'insp_2'),
   'the retried reference answers with the visit it already made');
-select is((select count(*) from public.inspections), 2::int,
+select is((select count(*) from public.inspections), 2::bigint,
   'the retry stored no second row');
 
 -- --- members read their own and cannot write -------------------------------------
@@ -95,14 +99,14 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0019-0000000000a1'::uuid);
 select throws_ok($$select public.record_inspection('00000000-0000-0000-0019-0000000000b1'::uuid,
   'clear', 'insp_3')$$, '42501', 'a member cannot record an inspection');
-select is((select count(*) from public.inspections), 2::int,
+select is((select count(*) from public.inspections), 2::bigint,
   'the requester reads what was found on their request');
 reset role;
 
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0019-0000000000a2'::uuid);
-select is((select count(*) from public.inspections), 0::int,
-  'a member who isn't the requester and isn't a reviewer reads nothing');
+select is((select count(*) from public.inspections), 0::bigint,
+  'a member who isn''t the requester and isn''t a reviewer reads nothing');
 reset role;
 
 rollback;

@@ -39,13 +39,20 @@ insert into public.requests
   (id, member_id, kind, funding, title, amount_cents, incident_on, asset_id, status)
 values ('00000000-0000-0000-0031-0000000000e1', '00000000-0000-0000-0031-0000000000b1',
         'car_deductible', 'pool', 'A scraped door', 40000, current_date - 10,
-        '00000000-0000-0000-0031-0000000000d1', 'in_review'),
+        '00000000-0000-0000-0031-0000000000d1', 'draft'),
        ('00000000-0000-0000-0031-0000000000e2', '00000000-0000-0000-0031-0000000000b1',
         'car_deductible', 'pool', 'A scraped SUV', 40000, current_date - 10,
-        '00000000-0000-0000-0031-0000000000d2', 'in_review'),
+        '00000000-0000-0000-0031-0000000000d2', 'draft'),
        ('00000000-0000-0000-0031-0000000000e3', '00000000-0000-0000-0031-0000000000b1',
         'home_repair', 'pool', 'A leaking roof', 500000, current_date - 10,
-        'in_review');
+        null, 'draft');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0031-0000000000e2';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0031-0000000000e2';
+
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0031-0000000000e3';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0031-0000000000e3';
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0031-0000000000e1';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0031-0000000000e1';
 
 -- --- the cap on a classed sedan -------------------------------------------------
 

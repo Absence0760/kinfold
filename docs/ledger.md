@@ -2,7 +2,28 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
-## 2026-11-03 — The ink audit ignored hidden subtrees; closed menus cannot be accused
+## 2026-11-04 — A deferred constraint refuses at COMMIT; the forgiveness cap belongs at the door
+
+- **What the plan said**: `loan_servicing_test` demands forgiving 60.00 on a 50.00 loan answers 23514 to the caller. The schema kept that fact only as `loan_forgiveness_total`, a `deferrable initially deferred` constraint trigger — and a deferred trigger runs at COMMIT. A client calling `forgive_loan` through the API sees no exception at all; the money lands in the ledger and the refusal happens (if at all) when someone else's commit trips. The local stack reproduces this exactly: call returns clean, the error surfaces only at the statement boundary.
+- **The rule kept**: a cap a caller can violate is refused where the caller can hear it. `forgive_loan` states the cap itself — `p_amount_cents > loan_outstanding_cents` raises the trigger's own message and code (`23514`) — and the trigger stays as the backstop for direct inserts to `loan_forgiveness`. One rule, one sentence, refused twice: at the door and on the table.
+- **Reversal:** none. An alternative implementation stays a door refusal (same code, same sentence), never "only the trigger returns" — the trigger's commit-time raise was never the client contract.
+
+## 2026-11-04 — The loan drafting door asked for active members; it now asks for borrower and lender
+
+- **What the plans said**: three loan plans insert a `family_loans` row as authenticated before any signing step; "loan parties draft loans" ran *both parties are ACTIVE members* inside the RLS insert check and refused the draft — the plans' members exist but the fixture signs later, which is when the contract is actually struck.
+- **The rule kept**: what drafting IS, structurally — borrower and lender present and distinct. Who may drive that contract into motion is the signing door's own check (`sign_loan` demands active members), and it's the same moment the plans write it. A draft pointing at no one is still refused; a draft between two real people is exactly what an agreement is built from.
+- **Reversal:** if a draft-time membership gate is wanted later it lands as a policy ADDED at signing time or stricter (a new policy layer), never by reviving the drafting gate — drafts precede membership facts in several legitimate flows (a loan drafted before a reactivation).
+
+## 2026-11-04 — Table grants and row policies are separate gates; the plan fleet speaks pgTAP 1.3
+
+- **The misses, found and pinned in one batch** (all 66 plans now clean on the source-built Postgres 17.6 + pgTAP 1.3 stack, the arbiter per ledger 2026-11-03):
+  - `request_recoveries` had a row POLICY for authenticated readers but no table GRANT — the two gates are independent in Postgres, and the plans read the table to count what the rows hide. The migration now grants `select` to authenticated beside the policy; the policy still filters every row.
+  - Audit-log counts in plans read at the bare default (owner) with `reset role;` before and re-login after — the `audit_trail_test` precedent the whole fleet keeps; authenticated has no read of private tables except where a migration opens one (board_progress grants `private.raised_cents` execute; that's all).
+  - pgTAP 1.3 spellings across the fleet: no `isnull(x,msg)`/`is_not_null(x,msg)` → `ok((x) IS NULL/IS NOT NULL, msg)`; `is(x, null, false)` was a half-written `isnt(x, NULL, msg)`; void functions sit inside `lives_ok($$select …$$)` since an expression slot cannot hold them; `set_config` settings are text, so uuid seeds carry `::text`; `insert … VALUES` keyword missing in two fixtures; `'…payee''s…'` apostrophes in assertion messages.
+  - Type pins: `count(*)` is bigint, so every fixture comparing one pins `::bigint` — except views whose column is integer (`pool_runs` → `::int`), and a re-spread `sum` is numeric → `::numeric`. `contributions` never had a `captured_at` column (the plans invented it); `created_at` is the real one.
+  - The payout guard needs the request to NAME its payee: the expire_requests fixture sets `payee_id` on the request before the payout row, mirroring how the seed pairs them.
+- **Harness side, never committed**: emulate.sh grants anon/authenticated schema USAGE (the storage bucket read plans do, which service_role alone never covered) and dropped the two storage-objects lines that no longer match the schema. Harness plumbing is not repo truth; the ledger says so here.
+- **Reversal:** none — the fleet speaks the library it runs on, and the arbiter stays the local stack (runner-side Docker quota stays a runner problem).
 
 - **Why the filter**: the ink pass named the closed menu's links and the display:none desktop link row as culprits for the runner-side scroll — but hidden subtrees render no ink at all; their words measure wide yet can never move a pixel. The pass now walks the ancestor chain and skips any text node under a display:none/visibility:hidden element. The survivors in the next failing report are real: only visible ink can be the 9px.
 - **Reversal:** a diagnostic change stays a diagnostic change; loosening the ASSERTION (allowing the scroll) was and stays rejected.

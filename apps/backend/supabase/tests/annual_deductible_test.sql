@@ -52,10 +52,14 @@ insert into public.requests
   (id, member_id, kind, funding, title, amount_cents, incident_on, asset_id, status)
 values ('00000000-0000-0000-0058-0000000000e1', '00000000-0000-0000-0058-0000000000b1',
         'car_deductible', 'pool', 'A scraped door', 50000, current_date - 10,
-        '00000000-0000-0000-0058-0000000000d1', 'in_review'),
+        '00000000-0000-0000-0058-0000000000d1', 'draft'),
        ('00000000-0000-0000-0058-0000000000e2', '00000000-0000-0000-0058-0000000000b1',
         'home_repair', 'pool', 'A leaking roof', 500000, current_date - 10,
-        'in_review');
+        null, 'draft');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0058-0000000000e2';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0058-0000000000e2';
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0058-0000000000e1';
+update public.requests set status = 'in_review' where id = '00000000-0000-0000-0058-0000000000e1';
 
 -- --- the annual deductible is the partner's to file ---------------------------------
 
@@ -90,6 +94,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0058-0000000000b2');
 select lives_ok($$select public.deny_claim((select id from public.claims where partner_ref = 'ad_c1'), 'the reviewer''s photos show parking damage')$$,
   'a denial right after a recorded refuse review goes through');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.denied'),
   1::bigint, 'the denial is audit-logged');
 

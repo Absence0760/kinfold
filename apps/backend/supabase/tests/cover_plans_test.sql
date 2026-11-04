@@ -76,11 +76,11 @@ select throws_ok($$select public.set_cover_plan('sedan', 'standard', 10000::bigi
 select is((select premium_cents from public.cover_plans
            where vehicle_class = 'sedan' and plan = 'standard'), 18900::bigint,
   'the refused change left the row alone');
-select is((select count(*) from private.cover_plans_history), 0::int,
+select is((select count(*) from private.cover_plans_history), 0::bigint,
   'a refused change wrote no history row');
 select lives_ok($$select public.set_cover_plan('sedan', 'basic', 12000::bigint,
   50000::bigint, 'partner_insurer', current_date)$$, 'a lawful Basic change goes through');
-select is((select count(*) from private.cover_plans_history), 1::int,
+select is((select count(*) from private.cover_plans_history), 1::bigint,
   'the lawful change logged exactly one history row');
 
 rollback;

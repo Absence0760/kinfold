@@ -15,7 +15,8 @@ select plan(12);
 
 create function pg_temp.member(p_id uuid, p_region text default 'CA',
                                p_status public.member_status default 'active')
-returns uuid language sql as $$
+returns uuid language plpgsql as $$
+begin
   insert into auth.users (
     instance_id, id, aud, role, email, encrypted_password,
     email_confirmed_at, created_at, updated_at,
@@ -27,11 +28,16 @@ returns uuid language sql as $$
     '{"provider":"email"}', '{}', false, '', '', '', '');
   insert into public.members (id, display_name, region, status)
   values (p_id, 'Member ' || right(p_id::text, 4), p_region, p_status);
-$$;
+  return p_id;
+end $$;
 
 create function pg_temp.login(p_id uuid) returns void language sql as $$
   select set_config('request.jwt.claims',
                     json_build_object('sub', p_id, 'role', 'authenticated')::text, true);
+$$;
+
+create function pg_temp.as_service() returns void language sql as $$
+  select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 $$;
 
 select pg_temp.member('00000000-0000-0000-0020-0000000000a1');               -- requester, CA
@@ -41,13 +47,20 @@ insert into public.requests (id, member_id, kind, funding, title, amount_cents, 
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at)
 values ('00000000-0000-0000-0020-0000000000b1', '00000000-0000-0000-0020-0000000000a1',
-        'car_damage', 'both', 'Collision damage', 90000, current_date - 4, 'funded',
+        'car_damage', 'both', 'Collision damage', 90000, current_date - 4, 'draft',
         'Another driver cut in and dented my door panel.',
         'Door panel from a lane-change collision', now(), 91::smallint, now() - interval '3 days'),
        ('00000000-0000-0000-0020-0000000000b2', '00000000-0000-0000-0020-0000000000a1',
-        'car_damage', 'both', 'Second collision damage', 90000, current_date - 4, 'funded',
+        'car_damage', 'both', 'Second collision damage', 90000, current_date - 4, 'draft',
         'A shop van clipped my bumper in the loading bay.',
         'Bumper from a loading-bay scrape', now(), 88::smallint, now() - interval '3 days');
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0020-0000000000b2';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0020-0000000000b2';
+update public.requests set status = 'funded' where id = '00000000-0000-0000-0020-0000000000b2';
+
+update public.requests set status = 'scoring' where id = '00000000-0000-0000-0020-0000000000b1';
+update public.requests set status = 'open' where id = '00000000-0000-0000-0020-0000000000b1';
+update public.requests set status = 'funded' where id = '00000000-0000-0000-0020-0000000000b1';
 
 -- Two standing claims from the partner's feed, nothing decided yet.
 insert into public.claims (id, request_id, partner_ref, gross_cents, member_share_cents,
@@ -79,14 +92,18 @@ select lives_ok($$select public.decide_claim('00000000-0000-0000-0020-0000000000
   'The photos show parking damage, not a lane change.')$$,
   'a reviewer closes a standing claim in one step');
 select is((select reason from public.claims where partner_ref = 'dr_c1'),
-  'The photos show parking damage, not a lane change.', 'the denial carries the person's words');
+  'The photos show parking damage, not a lane change.', 'the denial carries the person''s words');
 select is((select count(*) from public.reviews
            where request_id = '00000000-0000-0000-0020-0000000000b1' and decision = 'refuse'),
   1::bigint, 'the refusal is recorded beside it');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.denied'),
   1::bigint, 'the denial is audit-logged');
 
 -- --- the table backstops the door -------------------------------------------------
+
+set local role service_role;
+select pg_temp.as_service();
 
 select throws_ok($$insert into public.claims (id, request_id, partner_ref, gross_cents,
   member_share_cents, paid_cents, status, reason)

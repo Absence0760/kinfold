@@ -12,12 +12,16 @@ declare
 begin
   select coalesce((
     select jsonb_agg(
-      jsonb_build_object('fund', g.fund, 'source', g.source, 'federal', g.federal,
-                         'amount_cents', sum(g.amount_cents), 'grants', count(*))
+      jsonb_build_object('fund', a.fund, 'source', a.source, 'federal', a.federal,
+                         'amount_cents', a.amount_cents, 'grants', a.grants)
     )
-    from public.grants g
-    group by g.fund, g.source, g.federal
-    order by g.fund, g.source, g.federal
+    from (
+      select g.fund, g.source, g.federal,
+             sum(g.amount_cents) as amount_cents, count(*) as grants
+      from public.grants g
+      group by g.fund, g.source, g.federal
+      order by g.fund, g.source, g.federal
+    ) a
   ), '[]'::jsonb) into v_found;
   return v_found;
 end $$;

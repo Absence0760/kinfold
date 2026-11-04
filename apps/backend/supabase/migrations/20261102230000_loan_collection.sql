@@ -23,7 +23,7 @@ begin
     raise exception 'loan not found, or not collecting' using errcode = 'P0002';
   end if;
   select * into i from public.loan_installments where loan_id = p_loan and seq = p_seq for update;
-  if i.id is null then
+  if i.loan_id is null then
     raise exception 'installment not found' using errcode = 'P0002';
   end if;
   if i.paused then

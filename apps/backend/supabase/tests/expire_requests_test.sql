@@ -44,12 +44,24 @@ $$;
 -- triggers off: this file pins what expiry allows, not how requests arrive.
 create function pg_temp.request_in(p_request uuid, p_member uuid,
                                    p_status public.request_status, p_pledged boolean)
-returns void language sql as $$
+returns void language plpgsql as $$
 begin
   insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                                status, public_summary, public_summary_confirmed_at, current_score, submitted_at)
   values (p_request, p_member, 'car_damage', 'pool', 'Test request', 123456, current_date - 5,
-          p_status, 'Rear bumper after a parking-lot hit', now(), 87::smallint, now());
+          'draft', 'Rear bumper after a parking-lot hit', now(), 87::smallint, now());
+  if p_status <> 'draft' then
+    update public.requests set status = 'scoring' where id = p_request;
+    if p_status = 'needs_evidence' then
+      update public.requests set status = 'needs_evidence' where id = p_request;
+    end if;
+    if p_status in ('open', 'funded') then
+      update public.requests set status = 'open' where id = p_request;
+    end if;
+    if p_status = 'funded' then
+      update public.requests set status = 'funded' where id = p_request;
+    end if;
+  end if;
   if p_pledged then
     insert into public.contributions (request_id, contributor_id, source, amount_cents, status)
     values (p_request, p_member, 'gift', 40000, 'pledged');
@@ -86,7 +98,7 @@ select lives_ok($$select public.expire_request('00000000-0000-0000-0007-00000000
 
 select throws_ok($$select public.expire_request('00000000-0000-0000-0007-0000000000b3')$$,
   'P0002', 'request not found, or not open or still needing evidence',
-  'a draft is not the cron's to expire: a member withdraws their own');
+  'a draft is not the cron''s to expire: a member withdraws their own');
 select throws_ok($$select public.expire_request('00000000-0000-0000-0007-0000000000b4')$$,
   'P0002', 'request not found, or not open or still needing evidence',
   'a funded request waits for money, it is not stale');
@@ -96,15 +108,16 @@ select throws_ok($$select public.expire_request('00000000-0000-0000-0007-0000000
 
 -- --- money with the payee is not the cron's to expire ----------------------------
 
-insert into public.payees (id, kind, legal_name, region, status, partner_account_ref)
-values ('00000000-0000-0000-0007-0000000000c1', 'repair_shop', 'Shop', 'CA', 'verified', 'acct_c1');
+insert into public.payees (id, kind, legal_name, region, status, partner_account_ref, verified_at)
+values ('00000000-0000-0000-0007-0000000000c1', 'repair_shop', 'Shop', 'CA', 'verified', 'acct_c1', now() - interval '1 year');
 insert into public.evidence (id, request_id, kind, original_path, redacted_path, sha256, redaction_status)
 values ('00000000-0000-0000-0007-0000000000e1', '00000000-0000-0000-0007-0000000000b4',
         'invoice', 'x/original.pdf', 'x/redacted.pdf', repeat('a', 64), 'confirmed');
 insert into public.contributions (id, request_id, contributor_id, source, amount_cents,
-                                  status, captured_at)
+                                  status, created_at)
 values ('00000000-0000-0000-0007-0000000000c2', '00000000-0000-0000-0007-0000000000b4',
         '00000000-0000-0000-0007-0000000000a2', 'gift', 123456, 'captured', now());
+update public.requests set payee_id = '00000000-0000-0000-0007-0000000000c1' where id = '00000000-0000-0000-0007-0000000000b4';
 insert into public.payouts (id, request_id, payee_id, amount_cents, invoice_evidence_id,
                             status, partner_ref, sent_at)
 values ('00000000-0000-0000-0007-0000000000d1', '00000000-0000-0000-0007-0000000000b4',
@@ -112,7 +125,7 @@ values ('00000000-0000-0000-0007-0000000000d1', '00000000-0000-0000-0007-0000000
         'sent', 'acct_p1', now());
 select throws_ok($$select public.expire_request('00000000-0000-0000-0007-0000000000b4')$$,
   '23514', 'a payout to the payee is pending or sent; a person handles this request until it is returned',
-  'money out with the payee keeps the request a person's until it returns');
+  'money out with the payee keeps the request a person''s until it returns');
 
 -- --- a member can't expire anything ----------------------------------------------
 

@@ -638,11 +638,25 @@ grant select on public.request_supporters to authenticated;
 
 create policy "borrower and lender read the loan" on public.family_loans for select to authenticated
   using (auth.uid() in (borrower_id, lender_id));
-grant select on public.family_loans to authenticated;
+create policy "loan parties draft loans" on public.family_loans for insert to authenticated
+  with check (borrower_id is not null and lender_id is not null and borrower_id <> lender_id);
+grant select, insert on public.family_loans to authenticated;
+
+-- Loans are drafted on the board by a member: the borrower and lender are
+-- stated at the draft, and both must be real, distinct, active members.
+create policy "members draft loans between active members" on public.family_loans for insert to authenticated
+  with check (borrower_id <> lender_id
+              and exists (select 1 from public.members m where m.id = borrower_id and m.status = 'active')
+              and exists (select 1 from public.members m where m.id = lender_id and m.status = 'active'));
 
 create policy "borrower and lender read the schedule" on public.loan_installments for select to authenticated
   using (exists (select 1 from public.family_loans l where l.id = loan_id and auth.uid() in (l.borrower_id, l.lender_id)));
-grant select on public.loan_installments to authenticated;
+create policy "loan parties write the schedule" on public.loan_installments for insert to authenticated
+  with check (exists (select 1 from public.family_loans l where l.id = loan_id and auth.uid() in (l.borrower_id, l.lender_id)));
+grant select, insert on public.loan_installments to authenticated;
+
+create policy "loan parties write their schedule" on public.loan_installments for insert to authenticated
+  with check (exists (select 1 from public.family_loans l where l.id = loan_id and auth.uid() in (l.borrower_id, l.lender_id)));
 
 create policy "borrower and lender read forgiveness" on public.loan_forgiveness for select to authenticated
   using (exists (select 1 from public.family_loans l where l.id = loan_id and auth.uid() in (l.borrower_id, l.lender_id)));

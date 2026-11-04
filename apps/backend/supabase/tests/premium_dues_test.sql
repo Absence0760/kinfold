@@ -79,7 +79,7 @@ select pg_temp.as_service();
 select lives_ok(
   $$select private.post_journal('protection', 'dues', null, 'pi_dues1',
       '[{"code":"partner_cash","amount_cents":-50000},{"code":"dues","amount_cents":50000}]')$$,
-  'dues money arrives in the dues account, not the fund's pool money');
+  'dues money arrives in the dues account, not the fund''s pool money');
 select lives_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a1'::uuid, 'prem_1')$$,
   'the premiums are paid out of dues money');
@@ -90,7 +90,7 @@ select is(public.ledger_balance('protection'::public.fund, 'dues'), 21200::bigin
 select is(public.ledger_balance('protection'::public.fund, 'available'), 0::bigint,
   'dues money never arrives as pool money');
 select is((select count(*) from private.ledger_journals
-           where partner_ref = 'prem_1' and kind = 'premium'), 1::int,
+           where partner_ref = 'prem_1' and kind = 'premium'), 1::bigint,
   'a replayed reference stores no second journal');
 select throws_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a3'::uuid, 'prem_3')$$,

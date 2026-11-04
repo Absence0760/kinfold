@@ -73,7 +73,8 @@ begin
     values (p_fund, p_source, p_programme, p_federal, p_amount_cents, p_partner_ref)
     returning id into v_id;
   perform private.post_journal(p_fund, 'grant', v_id, p_partner_ref,
-    jsonb_build_array(jsonb_build_object('code', v_code, 'amount_cents', p_amount_cents)));
+    jsonb_build_array(jsonb_build_object('code', 'partner_cash', 'amount_cents', -p_amount_cents),
+                      jsonb_build_object('code', v_code, 'amount_cents', p_amount_cents)));
   perform private.audit('grants.recorded', 'grants', v_id,
     jsonb_build_object('fund', p_fund, 'source', p_source, 'programme', p_programme,
                        'federal', p_federal, 'amount_cents', p_amount_cents));

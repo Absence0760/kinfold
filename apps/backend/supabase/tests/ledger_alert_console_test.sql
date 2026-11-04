@@ -68,7 +68,7 @@ set local role authenticated;
 select pg_temp.login('00000000-0000-0000-0063-0000000000c1');
 select ok((
   select d IS NOT NULL
-         and jsonb_length(d) = 2
+         and jsonb_array_length(d) = 2
          and (d -> 0 -> 'code') = '"available"'::jsonb
          and ((d -> 0 -> 'statement_cents'))::int = 100000
          and ((d -> 0 -> 'ledger_cents'))::int = 99000

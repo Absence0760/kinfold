@@ -55,9 +55,9 @@ begin
   insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                                status, public_summary, public_summary_confirmed_at, current_score, submitted_at)
   values (p_request, p_member, 'car_damage', 'pool', 'Test request', 123456, current_date - 5,
-          p_status, 'Rear bumper after a parking-lot hit', now(), 87::smallint, now());
+          'draft', 'Rear bumper after a parking-lot hit', now(), 87::smallint, now());
   insert into public.evidence (id, request_id, kind, original_path, redacted_path, sha256, redaction_status)
-  values (p_evidence, p_request, 'invoice', 'x/original.pdf', 'x/redacted.pdf', repeat('a', 64), 'confirmed');
+  values (p_evidence, p_request, 'invoice', 'x/' || p_request::text || '/original.pdf', 'x/' || p_request::text || '/redacted.pdf', repeat('a', 64), 'confirmed');
   insert into public.payouts (id, request_id, payee_id, amount_cents, invoice_evidence_id,
                               status, partner_ref)
   values (p_payout, p_request, '00000000-0000-0000-0006-0000000000c1', 100000, p_evidence,
@@ -72,8 +72,8 @@ begin
 end $$;
 
 select pg_temp.member('00000000-0000-0000-0006-0000000000a1');
-insert into public.payees (id, kind, legal_name, region, status)
-values ('00000000-0000-0000-0006-0000000000c1', 'repair_shop', 'Shop', 'CA', 'verified');
+insert into public.payees (id, kind, legal_name, region, status, partner_account_ref, verified_at)
+values ('00000000-0000-0000-0006-0000000000c1', 'repair_shop', 'Shop', 'CA', 'verified', 'acct_c1', now() - interval '1 year');
 
 -- b1: open request, pending payout, nothing refunded yet.
 select pg_temp.request_with_payout('00000000-0000-0000-0006-0000000000b1',
@@ -96,7 +96,7 @@ select lives_ok($$select public.report_payout('00000000-0000-0000-0006-000000000
   'the service reports a pending payout as sent');
 select is((select status from public.payouts where id = '00000000-0000-0000-0006-0000000000d1'),
   'sent', 'the payout says sent');
-select isnot((select sent_at from public.payouts where id = '00000000-0000-0000-0006-0000000000d1'),
+select isnt((select sent_at from public.payouts where id = '00000000-0000-0000-0006-0000000000d1'),
   NULL::timestamptz, 'the existing trigger stamps the sent date');
 
 select lives_ok($$select public.report_payout('00000000-0000-0000-0006-0000000000d1', 'sent')$$,
