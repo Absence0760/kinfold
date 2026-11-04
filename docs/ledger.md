@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The grant report's aggregate had its FROM at the tail; SQL puts it before GROUP BY
+
+- **What CI said**: the walk covered twenty-seven more migrations before stopping at grant_report — the ‘group by’ token arrived while the parser still expected the aggregate's source. The subquery had been written select-agg… group by… order by… FROM last; SQL reads them select, from, group by, order by.
+- **The two shapes**: the source moved ahead of the grouping — service_paths and board_privacy already carry this shape and have passed the parser. And count(g), the only aggregate in the tree taking a bare table alias (which Postgres refuses as an aggregate argument), became count(*), the repo's convention across thirty other counts.
+- **Reversal:** with a deployed database this lands as a NEW migration (create or replace grant_report), never an edit to a stamped file.
+
 ## 2026-11-03 — UPDATE reads SET before WHERE: the bucket limits had the clauses swapped
 
 - **What CI said**: the walk reached evidence_limits.sql and stopped at a bare ‘where’. Both statements had been written where-then-set; UPDATE is ‘update t set … where …’, and a parser that never saw a clause before the set rejects the swap. A sweep over every UPDATE in our SQL finds this pair as the only swapped ones.
