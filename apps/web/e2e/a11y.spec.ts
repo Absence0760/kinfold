@@ -154,12 +154,24 @@ async function overflowReports(page: Page) {
 				// box that pushed the page sideways, so that hide changes nothing.
 				const rootScroll = document.documentElement.scrollWidth;
 				const carriers: { name: string; drop: number }[] = [];
-				const sections = Array.from(document.body.children);
-				for (const el of Array.from(document.body.children)) {
-					if (el.tagName === 'MAIN' || el.tagName === 'SECTION') {
-						sections.push(...Array.from(el.children));
+				const sections: HTMLElement[] = [];
+				const collect = (el: HTMLElement) => {
+					// A `display: contents` element has no box of its own, so it can
+					// never be the carrier: the prerendered site wraps the whole body
+					// in one, and stopping at the body's direct children left the hunt
+					// with a single candidate (that class-less wrapper DIV) hiding
+					// EVERYTHING - which is what the runners kept reporting.
+					if (getComputedStyle(el).display === 'contents') {
+						for (const c of Array.from(el.children)) collect(c as HTMLElement);
+						return;
 					}
-				}
+					sections.push(el);
+					// Named blocks are worth pointing at even when they sit deeper.
+					if (el.tagName === 'MAIN' || el.tagName === 'SECTION') {
+						for (const c of Array.from(el.children)) collect(c as HTMLElement);
+					}
+				};
+				for (const el of Array.from(document.body.children)) collect(el as HTMLElement);
 				for (const el of sections) {
 					if (getComputedStyle(el).display === 'none') continue;
 					const prevStyle = el.getAttribute('style');
@@ -174,13 +186,27 @@ async function overflowReports(page: Page) {
 						});
 					}
 				}
-				// A pseudo-element on the document's root is neither an element RECT
-				// nor a TEXT NODE, so nothing above can name one - and when every
-				// box and every run of laid-out ink stays inside the viewport, it is
-				// all a reader still has to scroll past. content:none drops that ink
-				// and keeps the box; the page's own sideways scroll says whether it
-				// was the push, so the report names the pseudo or stays silent.
-				for (const owner of ['html', 'body']) {
+				// Pseudo-element ink is invisible to both walks above: a ::before or
+				// ::after generated box is not an element RECT (no element to point
+				// at) and not a TEXT NODE (no character data), yet its ink counts
+				// in the page's scrollable overflow - it is the whole of a scroll
+				// that nothing else can name. Drop each element's own generated
+				// content in turn (content:none keeps the element's box) and let
+				// the page's own sideways scroll say whether that pseudo pushed
+				// it; a probe that misses leaves the page exactly as it was.
+				const selectorFor = (el: HTMLElement) => {
+					if (el.id) return `#${el.id}`;
+					const named = (el.getAttribute('class') || '').split(' ')
+						.filter((c) => c && !c.startsWith('svelte-'));
+					if (named.length) return `${el.tagName}.${named[0]}`;
+					return null;
+				};
+const pseudoOwners: string[] = ['html', 'body'];
+				for (const el of sections) {
+					const sel = selectorFor(el);
+					if (sel) pseudoOwners.push(sel);
+				}
+				for (const owner of pseudoOwners) {
 					for (const edge of ['::before', '::after']) {
 						const probe = document.createElement('style');
 						probe.textContent = `${owner}${edge}{content:none}`;
@@ -192,6 +218,7 @@ async function overflowReports(page: Page) {
 						}
 					}
 				}
+
 				carriers.sort((a, b) => b.drop - a.drop);
 				for (const c of carriers.slice(0, 4)) {
 					suspects.push(`carrier: hiding ${c.name} removes ${Math.round(c.drop)} of the ${Math.round(rootScroll - viewport)}px scroll`);
