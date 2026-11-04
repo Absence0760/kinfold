@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-04 — A schema-usage revoke reaches every role; the service's reach is handed back
+
+- **What the next remote round said**: five more plans died with `permission denied for schema private` from calls the SERVICE makes into `private` (the dues/premium ledger journals, the fraud-signal resolve, the ledger alerts, the fair_lending append-only refusal) — 42501 before their own triggers could answer, so the plans never saw the rule they pin.
+- **The cause**: `revoke usage on schema private from public, anon, authenticated` — in GRANT/REVOKE, `public` means EVERY role, so that revoke took the schema off the service_role too, not just the clients. The grants block below hands service_role tables, functions, and sequences — but never the schema's own usage.
+- **The fix**: `grant usage on schema private to service_role;` beside the revoke (`hardening.sql`), so the service's reach into `private` is explicit and the append-only guards and ledger journals answer with their own sentences again. The client roles stay revoked — the design's door is unchanged, only the service's reach is made explicit instead of leaning on Supabase's implicit defaults.
+- **The one wording that stays a stack nuance**: `rls_test`'s anon board read answers `permission denied for function on_board` on the deployed PG 15 and `permission denied for view board_requests` on my PG 17 (a security-masked view is named as a function there). Same code, same rule, one Postgres difference — the assertion stays on the stack's own words and the difference is noted in followups, never papered over by accepting either wording.
+- **Reversal:** none. Revoking `usage` is not a substitute for a revoke-less design: with no explicit grant back, both stacks answer differently and the plans become untrustworthy.
+
 ## 2026-11-04 — Money fixtures state the money their own guards read
 
 - **What the plans hit**: `payout_creation_test` read payout rows before the call that makes them (the read answered nothing); `payout_reporting_test`'s fixture opened a payout with no captured contributions, so the payout cap guard ("payouts cannot exceed captured contributions", `…120500`) answered on the first report instead of the transition under test.

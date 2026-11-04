@@ -767,6 +767,15 @@ revoke all on all functions in schema public from public, anon, authenticated;
 -- more than the design allows.
 revoke usage on schema private from public, anon, authenticated;
 
+-- The revoke above takes the schema off EVERY role (its `public` keyword
+-- means everyone), so the service role loses its reach back: the grants
+-- below hand tables and functions, but without schema usage a service call
+-- into `private` is refused before its own triggers can answer - and an
+-- append-only guard's refusal is exactly what a plan (and the console) needs
+-- to hear. Supabase's default grants covered this on the deployed stack;
+-- state it here so both stacks agree.
+grant usage on schema private to service_role;
+
 -- The service role (edge functions) bypasses RLS but still needs privileges:
 -- the earlier blanket revokes from PUBLIC took away its execute, and tables
 -- created by postgres never granted it read or write. Append-only triggers,
