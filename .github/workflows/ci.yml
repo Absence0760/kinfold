@@ -181,6 +181,13 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
 
+      # The job calls `pnpm test:backend:db` below, so it needs pnpm on the
+      # runner — the same pinned set-up step the web and e2e jobs carry.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+        with:
+          version: 10.33.2
+
       - name: Start the local stack (Docker on the runner, throwaway creds from .env defaults)
         run: cd apps/backend && supabase start
 
