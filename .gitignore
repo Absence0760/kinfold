@@ -104,3 +104,5 @@ apps/web/.e2e-chromium-cache/
 # Flutter (apps/mobile) generated trees: pub metadata and build output.
 .dart_tool/
 apps/mobile/pubspec.lock
+# CI mobile job's Flutter SDK cache (workspace-relative; see .github/workflows/ci.yml)
+sdk/flutter/
