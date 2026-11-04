@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The CI mobile job caches the SDK across runs instead of cloning per push
+
+- **The decision**: the durable fix the mobile landing recorded against the per-push clone landed the same day: the stable-channel clone is wrapped in the same cache shape the e2e job already uses for Playwright's Chromium (the pinned actions/cache ref, a path, a key — here flutter-sdk-stable with a 7-day restore TTL). One clone serves a week of pushes; a channel release still lands at the next TTL window, which is what keeps the cached half from pinning the repo to an old SDK.
+- **The guard moved with the cache**: the clone step runs only on a cache miss (it tests the SDK’s own bin dir), because git refuses a clone into the restored, non-empty directory.
+- **Teeth**: YAML parses with the cache block; the CI job’s guard is the same shape the repo’s dev scripts use for optional setup. (CI itself runs on GitHub’s runners; the local machine answers no CI at all — the standing carve-out.)
+- **Reversal:** when a Flutter release needs to pin an exact SDK version for a build, the key grows the version and the TTL retires.
+
 ## 2026-11-03 — The structure audit now refuses generated files from the phone tree too
 
 - **The decision**: the audit that refuses tracked files inside generated directories (“the audit reads the live build, not a snapshot”) was web/backend-only; Flutter’s build output (the mobile tree’s build and .dart_tool directories) sat outside it, so the mobile leg’s own pending item: a future `git add apps/mobile/...` slip that pulled a build artifact in would pass silently. The list grows with both dirs, the same rule shape, no new rule.
