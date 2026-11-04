@@ -6,7 +6,7 @@
 -- id — the name still comes from the payees read policy, so an unverified
 -- payee stays unnamed to a supporter.
 
-drop policy "supporters read requests they back" on public.requests for select to authenticated;
+drop policy "supporters read requests they back" on public.requests;
 
 create view public.support_requests with (security_barrier) as
 select
