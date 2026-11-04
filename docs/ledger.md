@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-04 — A scrolling report that names nothing gets its tightest fits listed
+
+- **What the runners say**: four desktop-context reflow checks fail ONLY on GitHub's runners — the page scrolls 9px sideways at 320px yet no element box sticks past the edge. The hunt (followups: "hunt it with the named-element report") got better names from the hidden-subtree fix, but a report that stays silent when neither a box nor a word crosses gives the hunt nothing at all.
+- **The diagnostic**: the ink pass also collects near-misses (longest word within 4px of its content box); when a scrolling page produces no crossing suspects, the three tightest fits join the report as "ink: tight fit on … (Npx to spare)". A runner whose fallback face draws a word a hair wider turns one of these into the missing 9px.
+- **What stays exact**: the ASSERTION is unchanged — the report only grows inside failing messages (the whole block runs when the page already scrolls), and a green page's list stays empty. This is a diagnostic change, the same kind as the hidden-subtree walk; loosening the rule stays rejected.
+- **Reversal:** a diagnostic change stays a diagnostic change; if the near-miss lines point at a real culprit, the fix is CSS at the source, never the report.
+
 ## 2026-11-04 — The runner ran pgTAP this push; audit-log reads move to the bare owner
 
 - **What CI said**: the runner's quota let pgTAP actually run this time, and 14 plans answered `permission denied for schema private` — the audit-log, history, and fair_lending counts the plans make at authenticated/service. Those roles hold no grants in `private` and never will (members.sql:12 and requests.sql:482 revoke and keep the schema closed); the local stack had only masked this by granting service_role whole-schema privileges in harness plumbing.

@@ -83,6 +83,7 @@ async function overflowReports(page: Page) {
 			const ctx = canvas.getContext('2d');
 			const walker = document.createTreeWalker(document.body, 3);
 			const seen = new Set();
+			const near = [];
 			for (let node = walker.nextNode(); node; node = walker.nextNode()) {
 				const raw = node.textContent;
 				if (!raw || !raw.trim()) continue;
@@ -117,6 +118,20 @@ async function overflowReports(page: Page) {
 					if (seen.has(key)) continue;
 					seen.add(key);
 					suspects.push(`ink: "${worstWord}" measures ${Math.round(worst)}px but only ${Math.round(budget)}px of box is left on ${name}`);
+					near.push({ over, worst, budget, name, word: worstWord });
+				} else if (over > -4) {
+					const name = host.tagName + (host.getAttribute('class') ? '.' + host.getAttribute('class') : '');
+					near.push({ over, worst, budget, name, word: worstWord });
+				}
+			}
+			if (!suspects.length && !wide.length) {
+				// A page that scrolls while no box and no word crosses still needs
+				// names: a runner whose fallback face draws a word a hair wider turns
+				// one of these tight fits into the 9px. List the three tightest so
+				// the hunt has candidates - the assertion itself is unchanged.
+				near.sort((a, b) => b.over - a.over);
+				for (const n of near.slice(0, 3)) {
+					suspects.push(`ink: tight fit on ${n.name} - "${n.word}" measures ${Math.round(n.worst)}px in ${Math.round(n.budget)}px of box (${n.over}px to spare)`);
 				}
 			}
 		}
