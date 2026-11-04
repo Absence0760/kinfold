@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A revoke the parser couldn't read: one statement, the repo's from-form
+
+- **What CI said**: after the pinned-view fix the walk advanced one more migration and stopped inside payout_reporting's grant block — “syntax error at or near ‘from’” (SQLSTATE 42601) with the caret on the revoke line. Two statements had been written for one intent: a bare revoke with the `on` keyword missing, and a to-audience variant that appears nowhere else in the repo.
+- **Why one line, from-form**: every other revoke this stack's parser has already accepted is a single statement that names the losing roles with `from`, then grants the survivor explicitly (service_paths, board_privacy, evidence_lifecycle all read this way). The replacement is that same sentence with our own function's name — not a new SQL idea, a restatement of an existing one.
+- **Reversal:** with a deployed database, the grant-block fix lands as a NEW migration (revoke the function from the trio, grant to service), never as an edit to a stamped file — same rule as every schema fix above.
+
 ## 2026-11-03 — A view a policy reads cannot be dropped: the policy now travels with it
 
 - **What CI said**: with the loop guard in place, the walk advanced two more migrations and failed with a named dependent — “cannot drop view board_requests because other objects depend on it” (SQLSTATE 2BP01), “policy redacted evidence on the board on table storage.objects depends on view board_requests”. The storage policy's parsed expression holds the view, so dropping the view alone is refused.
