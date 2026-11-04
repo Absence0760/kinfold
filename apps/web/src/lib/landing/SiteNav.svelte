@@ -195,12 +195,23 @@
 		}
 
 		.badge {
+			/* At narrow widths the pill may wrap: a nowrap flex item refuses
+			   to shrink below its whole text, and on Chromium builds whose font
+			   metrics run a hair wider that rigid line is what made the 320px
+			   page scroll 9px sideways (the audit's hunt descended into the
+			   header and named this span beside the brand mark). Wrapping keeps
+			   the words whole and readable; the pill just gets taller. */
+			white-space: normal;
+			min-width: 0;
 			margin-left: auto;
 		}
 
 		.menu {
 			display: block;
-			margin-right: -10px;
+			/* NO negative margin-right: a -10px pull on the last flex item is
+			   a sideways push at the row's end, and the audit's hunt kept
+			   naming the bar as the carrier of a 9px scroll at 320px - the
+			   row now keeps its slack instead of reaching the edge. */
 		}
 
 		.nav-inner {
