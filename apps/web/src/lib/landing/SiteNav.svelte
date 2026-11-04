@@ -157,6 +157,12 @@
 
 	.menu nav {
 		position: absolute;
+		/* A closed <details> still LAYS its links out (newer Chromium renders the
+		   closed subtree as hidden-but-laid-out, and a laid-out box inflates the
+		   document's scroll even where nothing is painted) - the audit read that
+		   as `hiding HEADER.nav removes 9 of the 9px`. Clip it: a reader never
+		   scrolls past an invisible menu, and open, these links already fit. */
+		overflow-x: clip;
 		left: 0;
 		right: 0;
 		top: var(--nav-h);

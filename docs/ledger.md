@@ -2,6 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-04 — The carrier was the closed menu laying its links out past the viewport; the audit names it and CSS contains it
+
+- **What the runners said**: the hunt fix landed and the four `[desktop]` reflow checks now name their own culprit — `the page scrolls 9px sideways at 320px` plus `carrier: hiding HEADER.nav svelte-nkp01n removes 9 of the 9px scroll`. The nav bar alone accounts for the page's whole sideways scroll; no box line and no pseudo line accompanies it, and the same pages pass in `[phone]` and in a full local run.
+- **The cause, at the CSS source**: at 320px the `<details>` menu's six links are laid out even while the menu is CLOSED — their right edges land ~40px past the viewport (measured: right 360 at 320). A newer Chromium renders a closed `<details>` as a hidden-but-laid-out subtree, and a laid-out box inflates the document's scrollable overflow even where nothing is painted; the menu's absolute box sizes to the 44px `<details>`, so its grid links spill past the viewport. The Chromium build on this machine never counted those hidden boxes — which is why the 9px stood only on the runners and every local check stayed green.
+- **The fix, where the overflow lives**: `overflow-x: clip` on `.menu nav`. An invisible subtree must never be something a reader has to scroll past, and clipped content contributes nothing to a scrollable box. The clip is inert for a reader: with the menu open, the links already fit inside it (measured: max right edge 300px of a 320px viewport, zero clipped links). No `overflow-y` — a menu's links are read top to bottom, and this repo's audit forbids hiding readable content, which a vertical clip could eventually do.
+- **The rule unchanged**: the assertion still demands an empty report (`toEqual([])`) at 320 CSS px; the fix removes the source of the overflow instead of leaning on the check, and the hunt's lines exist only inside a failing message.
+- **Reversal:** none. If a future menu ever carries links that must spill, the bar stops fitting its own width and the page must answer this audit on its own terms — the clip cannot stay while readable content hides sideways.
+
 ## 2026-11-04 — The audit's hunt was dead code; the report now names the carrier
 
 - **What the runners said**: four `[desktop]` checks answer exactly one line — `the page scrolls 9px sideways at 320px` — with no culprit named, while the same pages pass in the `[phone]` context and in a full local run. A report that accuses the page but names nothing is the audit failing itself: the assertion is right, the diagnosis is missing.
