@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — An answer the stack gave is never retryable: sign-in's order now holds in Dart
+
+- **The decision**: an audit of the Dart classifier against the web's (not the words, the logic) found a real drift. The web checks the network class BEFORE the generic status ≥ 500, so a 503 whose body words name a network problem reads “Can’t reach Kinfold. Check your connection…”; the flow had marked every 5xx answer retryable (status ≥ 500), forcing server words. Retryable mirrors supabase-js's AuthRetryableFetchError — the transport's OWN request failed — a property no refusal's status can imply; an answer the stack gave is never retryable, so faultFrom's flag is false and the order does the rest.
+- **Teeth**: reverting the fix to the pre-fix semantics (retryable := status ≥ 500) named the new pinned test red; restored, 30 flutter tests green, analyze clean.
+- **Reversal:** when the mobile transport becomes a real HTTP client, fetch failures will set the flag from the client's own retryability — the seam, not the answer, owns it.
+
 ## 2026-11-03 — The SDK cache keys by week; the TTL half of the last entry was wrong
 
 - **What was wrong**: the entry before this one shipped the cache with a TTL option (restore-on-ttl) and recorded it as a decision. The action's own README says the TTL inputs belong to the legacy cache service, which GitHub sunset on 2026-02-01 — the input would be a silent no-op on the live service, and CI would run a per-push clone with a green job, which reads as done.
