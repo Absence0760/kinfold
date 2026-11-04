@@ -2,6 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — SQL function modifiers: `view` and bare `security` were reserved; normalized to `stable`
+
+- **The same bug class, one migration deeper**: after the `on`-column rename, the runner’s stack start walked to the next migration and died at a syntax error near `view` — our SQL functions had been written `language sql view security definer` (10 sites) and `language sql security definer` (4 sites with no modifier, where `security` itself sat in the modifier slot). Both tokens are reserved words to this parser. 14 sites across 10 migrations now read `language sql stable security definer`.
+- **Why `stable`**: it is the repo’s own dominant convention (45 uses now) and already appears on mutating functions (6 of the pre-fix 31 sites insert or update), so the fix changes a token, not a purity claim. `immutable` (3 sites) left untouched: the parser has never rejected it, and inventing a second token per site would be guesswork — CI’s parser, not this machine, is the arbiter, and the next run reports what it thinks.
+- **Standing fact**: nothing on this machine parses our SQL — no Docker daemon, so `test:backend:db` never runs; the runner’s stack start is the only parser these files have ever met. Reserved-word identifiers (a column literally named `on`, the modifier-slot words) therefore land in the repo without any local gate noticing.
+- **Reversal:** with a deployed database, each normalization lands as a NEW migration touching only the function definition (revoke/create), never as an edit to a stamped file.
+
 ## 2026-11-03 — A column literally named `on` never parsed; the CI runner is the schema’s only validator
 
 - **The bug CI found**: our own migration named a date column `on`. Supabase’s parser treats it as a reserved word — the runner’s stack start died on a syntax error at the bare identifier `on` (SQLSTATE 42601) — so `request_recoveries` never existed and every pgTAP plan that reads it was unvalidated. The rename moves to `recovered_on` in one coordinated edit: the table, both `record_*` insert tuples, the seed, the web’s row type, the loader’s order key, the vitest rows, and the panel that renders the line.
