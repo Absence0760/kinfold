@@ -82,10 +82,10 @@ begin
   return v_id;
 end $$;
 
-revoke all on function public.set_vehicle_class(uuid, public.vehicle_class);
+revoke all on function public.set_vehicle_class(uuid, public.vehicle_class) from public, anon;
 revoke all on function public.cover_premium_cents(uuid) from public, anon;
 grant execute on function public.cover_premium_cents(uuid) to authenticated, service_role;
 
 revoke all on function public.pay_cover_premium(uuid, text) from public, anon, authenticated;
 grant execute on function public.pay_cover_premium(uuid, text) to service_role;
-grant execute on function public.set_vehicle_class(uuid, public.vehicle_class) from authenticated;
+grant execute on function public.set_vehicle_class(uuid, public.vehicle_class) to authenticated;
