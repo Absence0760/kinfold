@@ -115,8 +115,11 @@ select is((select count(*) from public.fund_loan_missed_installments
 select lives_ok($$select public.apply_fund_loan_default(
   (select id from public.fund_loans where partner_ref = 'loan_m1')::uuid)$$,
   'the partner''s agreement closes the loan under its plan');
+reset role;
 select is((select count(*) from private.audit_log where action = 'loan.default.fund'),
   1::bigint, 'the closure is audit-trailed');
+set local role service_role;
+select pg_temp.as_service();
 select is((select count(*) from public.fund_loan_missed_installments
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_m1')),
   0::bigint, 'a closed loan stops collecting, so it has nothing missed');

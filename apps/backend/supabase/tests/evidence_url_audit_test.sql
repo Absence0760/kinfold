@@ -54,8 +54,11 @@ select pg_temp.as_service();
 select lives_ok($$select public.record_evidence_url('00000000-0000-0000-0013-0000000000b1',
   '00000000-0000-0000-0013-0000000000a1/00000000-0000-0000-0013-0000000000b1/capture.jpg')$$,
   'the service records an issuing for the request under review');
+reset role;
 select is((select count(*) from private.audit_log where action = 'evidence.url_issued'),
   1::bigint, 'the audit row carries the trail (request and path in jsonb)');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- refusals ------------------------------------------------------------------
 
