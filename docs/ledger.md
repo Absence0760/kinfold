@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — Multi-clause ALTERs need their clauses comma-separated; two migrations ran them together
+
+- **What CI said**: the walk advanced past grant_report this push and stopped at a bare ‘add’ — annual_deductible’s ALTER to cover_plans had its column clause and its check clause running straight into each other. The working ALTERs in the tree (repayment, hardening, service_paths, premium_dues) separate clauses with commas; a parser inside ALTER expects a clause, then either a comma or the statement’s end.
+- **Why the sweep, not the one site**: a structural audit over every ALTER in every migration (clause count versus comma separators) found exactly two offenders — annual_deductible, where CI stopped, and open_books_reach further down the walk, still unparsed. Both re-commma'd in one commit; the audit then reports zero remaining, so this push’s walk should not have to stop here twice.
+- **Reversal:** with a deployed database, an ALTER-clause fix lands as a NEW migration (the same ALTER, correctly separated), never an edit to a stamped file.
+
 ## 2026-11-03 — The aggregate's FROM had landed inside the call's arguments: one close was missing
 
 - **What CI said**: the same migration one statement deeper — a syntax error pinned on the FROM token. The first fix had moved the aggregate's grouping into the right clause chain but left jsonb_agg's argument paren open at that point, so the source read as a second function argument rather than the select's clause chain.
