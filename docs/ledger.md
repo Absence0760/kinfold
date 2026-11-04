@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A function that WRITES cannot be stable; the audit sink had lost that fact
+
+- **What CI said**: all 62 migrations applied, then seeding failed with a semantic rule — “INSERT is not allowed in a non-volatile function” (SQLSTATE 0A000). private.audit's body IS an insert, and while the day's grammar repairs normalized its modifier slot to `language sql stable`, a write-side function cannot carry stable or immutable: PostgreSQL checks the annotation of the function LEXICALLY CONTAINING the write, and the seed phase is where audit() first runs.
+- **The rule kept**: volatility keywords belong to read-only helpers. The audit sink keeps its security modifier and empty search path, drops the keyword, and VOLATILE (the default) names what it really is. A sweep over every migration plus seed.sql finds no other stable/immutable body that writes — the annotation and the body now agree across the whole schema.
+- **Reversal:** with a deployed database, this lands as `alter function private.audit(...) volatile` (the annotation change alone) as a NEW migration, never an edit to a stamped file.
+
 ## 2026-11-03 — Multi-clause ALTERs need their clauses comma-separated; two migrations ran them together
 
 - **What CI said**: the walk advanced past grant_report this push and stopped at a bare ‘add’ — annual_deductible’s ALTER to cover_plans had its column clause and its check clause running straight into each other. The working ALTERs in the tree (repayment, hardening, service_paths, premium_dues) separate clauses with commas; a parser inside ALTER expects a clause, then either a comma or the statement’s end.
