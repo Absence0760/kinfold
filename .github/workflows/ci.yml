@@ -147,7 +147,7 @@ jobs:
         run: echo "week=$(/bin/date -u "+%Y-%V")" >> "$GITHUB_OUTPUT"
 
       - name: Cache the Flutter SDK
-        uses: actions/cache@d29c1df198dd38ac88e0ae23a2881b99c2d20e68 # v2.1.0
+        uses: actions/cache@374a27f26986edd8c430f386d152a856e179c0ae # v4.2.4
         with:
           path: ${{ runner.home }}/sdk/flutter
           key: flutter-sdk-stable-${{ steps.sdk-week.outputs.week }}
@@ -215,7 +215,7 @@ jobs:
       # directory keyed on the @playwright/test version means one download per
       # version bump, not one per push.
       - name: Cache Playwright's Chromium build
-        uses: actions/cache@d29c1df198dd38ac88e0ae23a2881b99c2d20e68 # v2.1.0
+        uses: actions/cache@374a27f26986edd8c430f386d152a856e179c0ae # v4.2.4
         with:
           path: apps/web/.e2e-chromium-cache
           key: e2e-chromium-${{ hashFiles('apps/web/package.json') }}
