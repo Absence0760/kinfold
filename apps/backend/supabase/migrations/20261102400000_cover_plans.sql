@@ -80,7 +80,7 @@ $$;
 -- The plan a member runs: their own choice, else Basic (members below the dues
 -- floor get Basic, fully paid by the cooperative).
 create function public.member_plan(p_member uuid) returns public.cover_plan
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select coalesce((select plan from public.cover_choices where member_id = p_member),
                   'basic'::public.cover_plan);
 $$;
@@ -88,7 +88,7 @@ $$;
 -- The cooperative's paid-in-full premium for one member's covered vehicle, read
 -- as their plan and class. The dues side never calls this figure premium.
 create function public.premium_for(p_member uuid, p_class public.vehicle_class)
-returns bigint language sql view security definer set search_path = '' as $$
+returns bigint language sql stable security definer set search_path = '' as $$
   select premium_cents from public.cover_plans
   where vehicle_class = p_class and plan = public.member_plan(p_member);
 $$;

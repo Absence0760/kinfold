@@ -122,7 +122,7 @@ create trigger audit_log_append_only before update or delete on private.audit_lo
   for each row execute function private.forbid_change();
 
 create function private.audit(p_action text, p_target text, p_target_id uuid, p_detail jsonb default '{}')
-returns void language sql security definer set search_path = '' as $$
+returns void language sql stable security definer set search_path = '' as $$
   insert into private.audit_log (actor, action, target, target_id, detail)
   values (auth.uid(), p_action, p_target, p_target_id, p_detail);
 $$;

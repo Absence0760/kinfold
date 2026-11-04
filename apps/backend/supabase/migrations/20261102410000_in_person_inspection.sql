@@ -45,7 +45,7 @@ grant select on public.inspections to authenticated;
 
 -- Whether this request's amount reaches its fund's large-amount line.
 create function public.needs_inspection(p_request uuid) returns boolean
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select exists (select 1 from public.fund_settings s
                  where s.fund = public.fund_for_kind(r.kind)
                  and r.amount_cents >= s.inspection_min_cents)

@@ -9,7 +9,7 @@
 -- run; only the need line changes, so the parity tests keep their figures.
 
 create function public.insured_cover_cents(p_request uuid) returns bigint
-language sql security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select coalesce(sum(c.gross_cents), 0)
   from public.claims c
   where c.request_id = p_request and c.status in ('recorded', 'paid');

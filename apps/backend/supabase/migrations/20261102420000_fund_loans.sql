@@ -80,7 +80,7 @@ grant select on public.fund_loan_payments to authenticated;
 
 -- The member's latest still-live verified income (definer reads past RLS).
 create function private.member_live_income_cents(p_member uuid) returns bigint
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select coalesce((select monthly_income_cents
                    from public.income_verifications
                    where member_id = p_member and expires_at > now()
@@ -90,7 +90,7 @@ $$;
 -- One month's share of an income schedule: never more than the share of income
 -- at the moment of asking, so a falling income shrinks payments by itself.
 create function public.fund_loan_income_due_cents(p_loan uuid) returns bigint
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select case when l.schedule = 'income'
               then l.income_share_bps * private.member_live_income_cents(l.borrower_id) / 10000
               else 0::bigint end
@@ -98,7 +98,7 @@ language sql view security definer set search_path = '' as $$
 $$;
 
 create function public.fund_loan_outstanding_cents(p_loan uuid) returns bigint
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select l.principal_cents
        - coalesce((select sum(amount_cents) from public.fund_loan_payments where loan_id = l.id), 0)
        - coalesce((select sum(paid_cents) from public.fund_loan_installments where loan_id = l.id), 0)

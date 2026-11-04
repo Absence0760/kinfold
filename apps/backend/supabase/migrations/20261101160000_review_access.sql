@@ -14,7 +14,7 @@
 -- --- 1. one place decides "may this member review this request?" -----------------
 
 create function private.may_review(p_request uuid, p_reviewer uuid) returns boolean
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select exists (
     select 1 from public.requests r
     join public.members m on m.id = r.member_id
@@ -74,7 +74,7 @@ end $$;
 -- rather than an inline subquery: `id` names two columns (appeals has one too),
 -- so the name would resolve to the wrong row inside the subquery.
 create function private.has_open_appeal(p_request uuid) returns boolean
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select exists (select 1 from public.appeals a
                  where a.request_id = p_request and a.status = 'open');
 $$;

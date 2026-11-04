@@ -10,7 +10,7 @@
 --     loan payoff                     -> a lender, seller or title company
 
 create function public.payee_fits(p_request_kind public.request_kind, p_payee_kind public.payee_kind) returns boolean
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select (p_request_kind in ('car_damage', 'car_deductible') and p_payee_kind = 'repair_shop')
     or (p_request_kind = 'home_repair' and p_payee_kind = 'contractor')
     or (p_request_kind in ('down_payment', 'mortgage_gap', 'loan_payoff')

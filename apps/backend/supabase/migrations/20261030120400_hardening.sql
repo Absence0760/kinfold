@@ -749,7 +749,7 @@ end $$;
 -- PostgREST exposes only `public`, so edge functions post through this.
 create function public.post_journal(
   p_fund public.fund, p_kind text, p_ref uuid, p_partner_ref text, p_lines jsonb
-) returns uuid language sql security definer set search_path = '' as $$
+) returns uuid language sql stable security definer set search_path = '' as $$
   select private.post_journal(p_fund, p_kind, p_ref, p_partner_ref, p_lines);
 $$;
 

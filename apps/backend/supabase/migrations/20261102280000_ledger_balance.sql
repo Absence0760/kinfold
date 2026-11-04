@@ -6,7 +6,7 @@
 -- only (member/payee money stays theirs).
 
 create function public.ledger_balance(p_fund public.fund, p_code text) returns bigint
-language sql security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select coalesce(sum(l.amount_cents), 0)
   from private.ledger_lines l
   join private.ledger_accounts a on a.id = l.account_id

@@ -54,7 +54,7 @@ $$;
 
 -- What the ranking currently reads for a request; null until ranked.
 create function public.needs_score(p_request uuid) returns smallint
-language sql view security definer set search_path = '' as $$
+language sql stable security definer set search_path = '' as $$
   select score from public.needs_records
   where request_id = p_request
   order by formula_version desc, created_at desc
