@@ -2,6 +2,11 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The ink audit ignored hidden subtrees; closed menus cannot be accused
+
+- **Why the filter**: the ink pass named the closed menu's links and the display:none desktop link row as culprits for the runner-side scroll — but hidden subtrees render no ink at all; their words measure wide yet can never move a pixel. The pass now walks the ancestor chain and skips any text node under a display:none/visibility:hidden element. The survivors in the next failing report are real: only visible ink can be the 9px.
+- **Reversal:** a diagnostic change stays a diagnostic change; loosening the ASSERTION (allowing the scroll) was and stays rejected.
+
 ## 2026-11-03 — The seed aimed home money at a repair shop; it lacked a contractor
 
 - **What CI said**: with the schema's grammar all parsed, seeding tripped a semantic guard — “the payee does not fit this request” (SQLSTATE 23514) from submit_request. The data was the offender, not the schema: seeded b5 is home_repair and pointed at c1, a repair shop; the seed had no contractor payee at all, and the payee-fits rule (added the day the guard shipped) is exactly the mapping the form already enforces.

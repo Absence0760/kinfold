@@ -88,9 +88,17 @@ async function overflowReports(page: Page) {
 				if (!raw || !raw.trim()) continue;
 				const host = node.parentElement;
 				if (!host) continue;
+				// A text node whose ANY ancestor is hidden renders nothing; it must
+				// never be accused: the closed menu and the display:none desktop link
+				// row hide whole subtrees, and none of that ink can move the scroll.
+				let hidden = false;
+				for (let up = host; up; up = up.parentElement) {
+					const upStyle = getComputedStyle(up);
+					if (upStyle.display === 'none' || upStyle.visibility === 'hidden') { hidden = true; break; }
+				}
+				if (hidden) continue;
 				const style = getComputedStyle(host);
 				if (!ctx) continue;
-				if (style.display === 'none' || style.visibility === 'hidden') continue;
 				const budget = host.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0');
 				if (!(budget > 0)) continue;
 				ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
