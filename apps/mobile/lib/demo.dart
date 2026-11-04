@@ -48,7 +48,15 @@ const loopbackHosts = {'localhost', '127.0.0.1', '::1'};
 /// project from sending the seeded credentials to it.
 bool demoSignInAllowed(bool dev, String supabaseUrl) {
   if (!dev) return false;
-  var host = Uri.parse(supabaseUrl).host;
+  var host = '';
+  try {
+    host = Uri.parse(supabaseUrl).host;
+  } catch (e) {
+    // Unparseable: not a loopback stack. The web wraps its URL parse the
+    // same way and says false — this function never throws, so a garbage
+    // env value means the demo people are simply not offered.
+    return false;
+  }
   if (host.startsWith('[') && host.endsWith(']')) host = host.substring(1, host.length - 1);
   return loopbackHosts.contains(host);
 }

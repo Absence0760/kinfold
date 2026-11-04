@@ -24,5 +24,8 @@ void main() {
     // A bare IP with a scope (the stack answering a network name) is still the
     // machine’s own — the web unwraps the brackets the same way.
     expect(demoSignInAllowed(true, 'http://[::1]:54721'), true);
+    // A value the URL grammar rejects (an unclosed bracket) is not a stack:
+    // false, not an exception — the web's parse is guarded the same way.
+    expect(demoSignInAllowed(true, 'http://[::1'), false);
   });
 }
