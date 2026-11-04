@@ -129,16 +129,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # The SDK the repo's local run also carries (docs/STACK.md): the stable
-      # channel is cached across runs with a TTL, so a release lands weekly
-      # instead of one clone per push — the durable fix the mobile landing
-      # recorded against the per-push clone.
+      # The SDK the repo's local run also carries (docs/STACK.md), cached
+      # across runs: the key buckets by year and week (the action's own
+      # date-keyed example), so one clone serves a week of pushes and a
+      # channel release lands at the next bucket. TTL options belonged to
+      # the legacy cache service, which is sunset — the date bucket is the
+      # documented shape for this action.
+      - name: Get the SDK cache bucket
+        id: sdk-week
+        run: echo "week=$(/bin/date -u "+%Y-%V")" >> "$GITHUB_OUTPUT"
+
       - name: Cache the Flutter SDK
         uses: actions/cache@58eb117e85aeb3744e23b8b3f75258e12722217e # v1.3.0
         with:
           path: ${{ runner.home }}/sdk/flutter
-          key: flutter-sdk-stable
-          cache: 'restore-on-ttl: 7d'
+          key: flutter-sdk-stable-${{ steps.sdk-week.outputs.week }}
 
       - name: Install the Flutter SDK
         run: |
