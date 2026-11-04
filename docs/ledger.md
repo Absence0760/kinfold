@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — UPDATE reads SET before WHERE: the bucket limits had the clauses swapped
+
+- **What CI said**: the walk reached evidence_limits.sql and stopped at a bare ‘where’. Both statements had been written where-then-set; UPDATE is ‘update t set … where …’, and a parser that never saw a clause before the set rejects the swap. A sweep over every UPDATE in our SQL finds this pair as the only swapped ones.
+- **Why the values stayed**: evidence_limits_test reads the columns back (the 20 MB cap, the mime set), so the figures are the plan's teeth — only the keyword order moved. This is the fourth grammar shape in the day's saga (the bare `from`, the policy's action clause, the CASE missing its `when`, the UPDATE's clause order): each is pinned by CI's parser, and each fix restates a shape the repo already has elsewhere.
+- **Reversal:** with a deployed database, bucket limits land as a NEW migration (the same UPDATE, correct order), never an edit to a stamped file.
+
 ## 2026-11-03 — A return type needs its function dropped: CREATE OR REPLACE refuses the change
 
 - **What CI said**: the walk advanced past the supporter view and failed with a semantic (not grammatical) error — “cannot change return type of existing function” (SQLSTATE 42P13), at refund_figure's redefinition of mark_refunded, which went from answering void to answering the figure it stored.
