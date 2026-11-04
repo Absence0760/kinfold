@@ -2,6 +2,15 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-04 — The audit's hunt was dead code; the report now names the carrier
+
+- **What the runners said**: four `[desktop]` checks answer exactly one line — `the page scrolls 9px sideways at 320px` — with no culprit named, while the same pages pass in the `[phone]` context and in a full local run. A report that accuses the page but names nothing is the audit failing itself: the assertion is right, the diagnosis is missing.
+- **The cause, in the audit's own machinery**: the carrier hunt sits inside `if (scrolling)` but was guarded by `!wide.length` — and `wide` **always** carries the scroll sentence once the page scrolls, so the guard could never be true. The hunt was dead code, which is why every runner failure named no section.
+- **The fix**: keep the scroll sentence (`wide`) apart from the box lines (`boxLines`) so the hunt runs exactly when nothing else explains the scroll; the hunt removes subtrees from the LAYOUT (`display: none`, since `visibility: hidden` keeps every box that pushed the page) and watches the page's own sideways scroll fall.
+- **The one overflow no scan above can see**: ink from a pseudo-element on the document's own root is neither an element RECT nor a TEXT NODE, so the box walk and the ink walk both stay silent while the page still scrolls. The hunt now probes `html`/`body` `::before`/`::after` with `content: none` and lets the page's own scroll say whether it was the push — the report names the pseudo, or the probe leaves the page untouched.
+- **The rule is unchanged**: the assertion still demands an empty report; the hunt's lines exist only inside a failing message, so a green page never grows its report.
+- **Reversal:** none. Reopening the hunt does not soften the check — `toEqual([])` stays, and a page that passes still passes with one line.
+
 ## 2026-11-04 — REVOKE's `public` keyword means every role; the service's reach is handed back in full
 
 - **What the next remote rounds said**: plans died with `permission denied for schema private`, `permission denied for table fair_lending`, `permission denied for function post_journal` — 42501 from the SERVICE's own calls into the private world (the dues and premium journals, the fraud resolve, the ledger alerts, the fair_lending append-only refusal), so the plans never reached the rule they pin.

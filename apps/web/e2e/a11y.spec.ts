@@ -22,6 +22,12 @@ const publicRoutes = ['/', '/transparency', '/signin', '/no-such-page-anywhere']
 async function overflowReports(page: Page) {
 	const overflows = await page.evaluate(() => {
 		const wide = [];
+		// Boxes that stick past the edge, kept apart from the scroll sentence:
+		// the hunt below runs when NOTHING else explains the scroll, and the
+		// scroll sentence is always there once the page scrolls - reading the
+		// hunt off `wide` made it dead code, which is why a runner failure
+		// named no carrier.
+		const boxLines = [];
 		// Suspects named only when the page ALREADY scrolls (see below), so
 		// a green run never grows (the callback is plain JS: no annotations).
 		const suspects = [];
@@ -60,7 +66,7 @@ async function overflowReports(page: Page) {
 					}
 				}
 				if (!clipped) {
-					wide.push(`${el.tagName}.${(el.getAttribute('class') || '')} sticks ${Math.round(right - viewport)}px past the edge`);
+					boxLines.push(`${el.tagName}.${(el.getAttribute('class') || '')} sticks ${Math.round(right - viewport)}px past the edge`);
 				}
 				if (scrolling) {
 					suspects.push(`${el.tagName}.${(el.getAttribute('class') || '')} ${Math.round(right - viewport)}px past the edge (clipped or hidden)`);
@@ -138,23 +144,22 @@ async function overflowReports(page: Page) {
 					suspects.push(`ink: "${raw.trim().slice(0, 40)}" lays ${over}px past the edge on ${name}`);
 				}
 			}
-			if (scrollWidthNow > 0 && !suspects.length && !wide.length) {
+			if (scrollWidthNow > 0 && !suspects.length && !boxLines.length) {
 				// Nothing crossed and no box sticks out: find WHICH top-level subtree
 				// carries the scroll by removing one at a time from the LAYOUT and
 				// watching the page's sideways scroll drop - a real bisect on the
 				// machine that scrolls, so the hunt names a section instead of staying
 				// silent. display:none, not visibility:hidden: the scroll comes from
 				// layout boxes, and a hidden-but-still-laid-out subtree keeps every
-				// box that pushed the page sideways, so that hide changed nothing.
-				// Biggest dropper first; a partial drop still names the carrier.
+				// box that pushed the page sideways, so that hide changes nothing.
 				const rootScroll = document.documentElement.scrollWidth;
+				const carriers: { name: string; drop: number }[] = [];
 				const sections = Array.from(document.body.children);
 				for (const el of Array.from(document.body.children)) {
 					if (el.tagName === 'MAIN' || el.tagName === 'SECTION') {
 						sections.push(...Array.from(el.children));
 					}
 				}
-				const carriers: { name: string; drop: number }[] = [];
 				for (const el of sections) {
 					if (getComputedStyle(el).display === 'none') continue;
 					const prevStyle = el.getAttribute('style');
@@ -169,13 +174,31 @@ async function overflowReports(page: Page) {
 						});
 					}
 				}
+				// A pseudo-element on the document's root is neither an element RECT
+				// nor a TEXT NODE, so nothing above can name one - and when every
+				// box and every run of laid-out ink stays inside the viewport, it is
+				// all a reader still has to scroll past. content:none drops that ink
+				// and keeps the box; the page's own sideways scroll says whether it
+				// was the push, so the report names the pseudo or stays silent.
+				for (const owner of ['html', 'body']) {
+					for (const edge of ['::before', '::after']) {
+						const probe = document.createElement('style');
+						probe.textContent = `${owner}${edge}{content:none}`;
+						document.head.appendChild(probe);
+						const now = document.documentElement.scrollWidth;
+						document.head.removeChild(probe);
+						if (now < rootScroll) {
+							suspects.push(`pseudo: dropping ${owner}${edge} removes ${Math.round(rootScroll - now)} of the ${Math.round(rootScroll - viewport)}px scroll`);
+						}
+					}
+				}
 				carriers.sort((a, b) => b.drop - a.drop);
 				for (const c of carriers.slice(0, 4)) {
 					suspects.push(`carrier: hiding ${c.name} removes ${Math.round(c.drop)} of the ${Math.round(rootScroll - viewport)}px scroll`);
 				}
 			}
 		}
-		return [...wide, ...suspects];
+		return [...wide, ...boxLines, ...suspects];
 	});
 	return overflows;
 }
