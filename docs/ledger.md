@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The forgiveness loop now iterates a variable; the expression was the parser's snag
+
+- **The decision**: CI's walk of our SQL advanced two migrations past the modifier fix and stopped in `forgive_loan`. A cross-repo sweep found the discriminator without guessing: every other `foreach ... in array` in the repo — 11 sites across migrations and pgTAP plans — iterates a **plain variable**; this loop was the only one iterating an **expression** (`array coalesce(v_seqs, ‘{}’)`). The null-coalesce moved into its own `if`, and the loop now runs over the variable — the repo's proven shape, not a guess at what plpgsql allows.
+- **Open verdict**: the parser on this machine doesn't exist (no Docker daemon), so CI's next run is the arbiter: it either applies the migration and moves on, or it names the next snag — in which case this entry needs a correction and the sweep reopens.
+- **Reversal:** with a deployed database, the loop rewrite lands as a NEW migration (`create or replace function`), never as an edit to a stamped file — same rule as the modifier normalization above.
+
 ## 2026-11-03 — SQL function modifiers: `view` and bare `security` were reserved; normalized to `stable`
 
 - **The same bug class, one migration deeper**: after the `on`-column rename, the runner’s stack start walked to the next migration and died at a syntax error near `view` — our SQL functions had been written `language sql view security definer` (10 sites) and `language sql security definer` (4 sites with no modifier, where `security` itself sat in the modifier slot). Both tokens are reserved words to this parser. 14 sites across 10 migrations now read `language sql stable security definer`.
