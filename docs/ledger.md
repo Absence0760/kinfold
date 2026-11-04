@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — The supporter view's CASE was a switch missing its when
+
+- **What CI said**: one statement deeper in the same migration, a syntax error at `then`. The payee-visibility column had been written `case exists (…) then r.payee_id end` — PostgreSQL's CASE has exactly two shapes, a switch (an operand, then `when` arms) and a search (`when` arms only); an operand followed straight by `then` belongs to neither, and this was the bug.
+- **Why it's closed, not still open**: the fix adds the `when` the searched form needs, and a tree-wide sweep of every CASE in our SQL — migrations, seed, and the pgTAP plans — finds this as the only one lacking a `when`. The class is done; CI's walk keeps the verdict on the rest.
+- **Reversal:** with a deployed database this lands as a NEW migration (create or replace the view), never an edit to a stamped file — same rule as every schema fix above.
+
 ## 2026-11-03 — A policy is dropped by its name; the action clause was the parser's snag
 
 - **What CI said**: the walk reached support_view.sql and stopped at a bare ‘for’ — the drop policy statement carried a ‘for select to authenticated’ clause the parser couldn't read. Every other drop of a policy this stack has fed the parser names the policy bare; the policy's action and role are part of its identity, so the clause restates the name and adds nothing. This was the only drop carrying one, and it landed bare.
