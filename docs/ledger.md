@@ -2,6 +2,12 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
+## 2026-11-03 — A return type needs its function dropped: CREATE OR REPLACE refuses the change
+
+- **What CI said**: the walk advanced past the supporter view and failed with a semantic (not grammatical) error — “cannot change return type of existing function” (SQLSTATE 42P13), at refund_figure's redefinition of mark_refunded, which went from answering void to answering the figure it stored.
+- **Why drop-then-create**: PostgreSQL's CREATE OR REPLACE edits a function object in place, and a return type is part of that object; our own tree already carries the pattern for this (decide_appeal, record_claim) — drop the old function, create the new one, re-claim the grants that lived on the dropped object. The migration now follows that shape, and a sweep across every migration's create-or-replace sites finds no other return-type change left without its drop.
+- **Reversal:** with a deployed database, this lands as a NEW migration (drop function, create function, re-grant) — the same shape as above; stamped-file edits stay admissible only while every stack is born at db reset.
+
 ## 2026-11-03 — The supporter view's CASE was a switch missing its when
 
 - **What CI said**: one statement deeper in the same migration, a syntax error at `then`. The payee-visibility column had been written `case exists (…) then r.payee_id end` — PostgreSQL's CASE has exactly two shapes, a switch (an operand, then `when` arms) and a search (`when` arms only); an operand followed straight by `then` belongs to neither, and this was the bug.
