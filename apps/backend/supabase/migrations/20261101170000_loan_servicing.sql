@@ -80,24 +80,27 @@ begin
     v_seqs := '{}';
   end if;
 
+  -- The guard skips instead of exiting: the stack's parser stops at the
+  -- break token (our only one; the repo's other loops all run the guarded
+  -- way), and once v_left runs out the remaining iterations do nothing —
+  -- same money leaves the schedule either way.
   foreach v_seq in array v_seqs loop
-    if v_left <= 0 then
-      break;
+    if v_left > 0 then
+      select * into v_row from public.loan_installments where loan_id = p_loan and seq = v_seq;
+      v_cut := v_left;
+      if v_row.amount_cents - v_row.paid_cents < v_left then
+        v_cut := v_row.amount_cents - v_row.paid_cents;
+      end if;
+      if v_cut = v_row.amount_cents and v_row.paid_cents = 0 then
+        -- Nothing would be left of this installment: drop it rather than keep a
+        -- zero row (and a zero amount is refused by the schedule in the first place).
+        delete from public.loan_installments where loan_id = p_loan and seq = v_seq;
+      else
+        update public.loan_installments set amount_cents = amount_cents - v_cut
+        where loan_id = p_loan and seq = v_seq;
+      end if;
+      v_left := v_left - v_cut;
     end if;
-    select * into v_row from public.loan_installments where loan_id = p_loan and seq = v_seq;
-    v_cut := v_left;
-    if v_row.amount_cents - v_row.paid_cents < v_left then
-      v_cut := v_row.amount_cents - v_row.paid_cents;
-    end if;
-    if v_cut = v_row.amount_cents and v_row.paid_cents = 0 then
-      -- Nothing would be left of this installment: drop it rather than keep a
-      -- zero row (and a zero amount is refused by the schedule in the first place).
-      delete from public.loan_installments where loan_id = p_loan and seq = v_seq;
-    else
-      update public.loan_installments set amount_cents = amount_cents - v_cut
-      where loan_id = p_loan and seq = v_seq;
-    end if;
-    v_left := v_left - v_cut;
   end loop;
 
   if public.loan_outstanding_cents(p_loan) = 0 then
