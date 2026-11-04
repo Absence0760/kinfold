@@ -58,10 +58,13 @@ AuthFault faultFrom(int status, String body) {
     code = '';
     message = '';
   }
+  // An answer the stack itself gave is not a fetch failure: the retryable
+  // half mirrors supabase-js's AuthRetryableFetchError, a flag a transport
+  // sets when ITS request failed — never something a refusal's status implies.
   return AuthFault(
     code: code,
     message: message,
     status: status,
-    retryable: status >= 500,
+    retryable: false,
   );
 }

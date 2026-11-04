@@ -35,6 +35,11 @@ Future<Response> melting(String path, {String method = 'GET', Map<String, String
   return (status: 503, body: 'gateway dropped, no words');
 }
 
+Future<Response> upstreamWords(String path, {String method = 'GET', Map<String, String>? json}) async {
+  record(method, path, json);
+  return (status: 503, body: '{"code":"upstream","message":"load failed"}');
+}
+
 Future<Response> gibberish(String path, {String method = 'GET', Map<String, String>? json}) async {
   record(method, path, json);
   return (status: 400, body: 'nonsense-not-json');
@@ -46,6 +51,7 @@ void main() {
   final Provider wrong = Provider(url: localStackUrl(), send: badCredentials);
   final Provider rateLimiter = Provider(url: localStackUrl(), send: limited);
   final Provider meltdown = Provider(url: localStackUrl(), send: melting);
+  final Provider upstream = Provider(url: localStackUrl(), send: upstreamWords);
   final Provider noisy = Provider(url: localStackUrl(), send: gibberish);
 
   test('the step sends the stack’s own sign-in call, in its own words', () async {
@@ -85,6 +91,12 @@ void main() {
     final prod = await attemptSignIn(meltdown, 'maria@test.com', 'testtest');
     expect(prod.notice!.text, 'Kinfold isn’t responding right now. Nothing was changed. Try again in a few minutes.');
     expect(prod.notice!.command, null);
+  });
+
+  test('a 5xx answer whose words name a network problem reads as network, the web’s order', () async {
+    final out = await attemptSignIn(upstream, 'maria@test.com', 'testtest');
+    expect(out.notice!.text, 'Can’t reach Kinfold. Check your connection and try again.');
+    expect(out.notice!.command, null);
   });
 
   test('an answer with no words to name still fails visibly, not silently', () async {
