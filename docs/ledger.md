@@ -57,6 +57,14 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **What the books showed**: the seeded payout journal left `protection.available` carrying +72000 of money the payout had moved out — the demo's ledger wouldn't balance. The journal entry now pairs `available −72000` with `paid_out +72000`, matching what the seeded pool grant committed.
 - **Reversal:** none. The seed's figures stay consistent with the pool grant above it.
 
+## 2026-11-04 — The carrier bisect hides with display:none; visibility:hidden keeps the layout
+
+- **What the last runner round said**: `/` and `/transparency` still answer only "the page scrolls 9px sideways at 320px" — no box crossed, no ink crossed, and the carrier bisect named nothing at all.
+- **Why it stayed silent**: the bisect hid each body-level section with `visibility: hidden`, which keeps every descendant's LAYOUT box in place. The scroll comes from layout boxes, so the hide changed nothing and the pass could not observe a drop. The diagnostic was inert from the start.
+- **The change**: the bisect removes each subtree from the layout with `display: none` and watches `documentElement.scrollWidth` drop, reporting up to four carriers biggest-drop-first (`carrier: hiding X removes N of the Mpx scroll`), restoring each style right after its measure. A partial drop still names the subtree that owns part of the overflow.
+- **What stays exact**: the ASSERTION is untouched (`expect(await overflowReports(page)).toEqual([])`); the bisect runs only while the page already scrolls, so a green page's report stays empty and this run's local pages stay silent.
+- **Reversal:** none. If the next runner round names a carrier, the fix is CSS at that section's source, not another hunt pass; if it names nothing while the page still scrolls 9px, the conclusion is that the scroll comes from outside the body-level subtree tree (a pseudo- or replaced element, or the root's own box) and the hunt grows that pass.
+
 ## 2026-11-04 — The hunt bisects subtrees when nothing crosses; closed menus stop being suspects
 
 - **What the runner said after the exact-ink pass**: the report named ONLY the six anchors in the closed `<details>` menu (39–66px past the edge). Those contents render nothing — Chromium keeps a closed details' slot laid out for measurement but never paints it, and it never joins the scroll — so every name was a false positive, and the 9px culprit still had no name.

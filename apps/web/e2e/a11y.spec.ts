@@ -140,9 +140,13 @@ async function overflowReports(page: Page) {
 			}
 			if (scrollWidthNow > 0 && !suspects.length && !wide.length) {
 				// Nothing crossed and no box sticks out: find WHICH top-level subtree
-				// carries the scroll by hiding one at a time and watching the page's
-				// sideways scroll drop - a real bisect on the machine that scrolls, so
-				// the hunt names a section instead of staying silent. Restoring after.
+				// carries the scroll by removing one at a time from the LAYOUT and
+				// watching the page's sideways scroll drop - a real bisect on the
+				// machine that scrolls, so the hunt names a section instead of staying
+				// silent. display:none, not visibility:hidden: the scroll comes from
+				// layout boxes, and a hidden-but-still-laid-out subtree keeps every
+				// box that pushed the page sideways, so that hide changed nothing.
+				// Biggest dropper first; a partial drop still names the carrier.
 				const rootScroll = document.documentElement.scrollWidth;
 				const sections = Array.from(document.body.children);
 				for (const el of Array.from(document.body.children)) {
@@ -150,16 +154,24 @@ async function overflowReports(page: Page) {
 						sections.push(...Array.from(el.children));
 					}
 				}
+				const carriers: { name: string; drop: number }[] = [];
 				for (const el of sections) {
 					if (getComputedStyle(el).display === 'none') continue;
 					const prevStyle = el.getAttribute('style');
-					el.setAttribute('style', (prevStyle ? prevStyle + ';' : '') + 'visibility: hidden');
+					el.setAttribute('style', (prevStyle ? prevStyle + ';' : '') + 'display: none');
 					const now = document.documentElement.scrollWidth;
 					if (prevStyle === null) el.removeAttribute('style');
 					else el.setAttribute('style', prevStyle);
-					if (now < rootScroll && now <= viewport) {
-						suspects.push(`carrier: hiding ${el.tagName}${el.className && !el.className.startsWith('svelte-') ? '.' + el.className : ''} removes the ${Math.round(rootScroll - viewport)}px scroll`);
+					if (now < rootScroll) {
+						carriers.push({
+							name: el.tagName + (el.className && !el.className.startsWith('svelte-') ? '.' + el.className : ''),
+							drop: rootScroll - now,
+						});
 					}
+				}
+				carriers.sort((a, b) => b.drop - a.drop);
+				for (const c of carriers.slice(0, 4)) {
+					suspects.push(`carrier: hiding ${c.name} removes ${Math.round(c.drop)} of the ${Math.round(rootScroll - viewport)}px scroll`);
 				}
 			}
 		}
