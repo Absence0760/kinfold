@@ -74,64 +74,60 @@ async function overflowReports(page: Page) {
 		// Ink, not just boxes: a word wider than the box it sits in pushes ink
 		// past the edge without any element RECT crossing the viewport (scrollable
 		// overflow counts text ink), so every pass above can stay silent while the
-		// page still scrolls. Measure each text node's longest unbreakable run
-		// against the content box it lives in, using the face the page itself
-		// renders: the runner's fallback font is not the local one, and the word
-		// gets measured where it actually gets rendered.
+		// page still scrolls. Measure the ink the LAYOUT itself leaves: each text
+		// node's laid-out rects (a Range's client rects, the face the page renders
+		// with), walked up through the ancestors that clip it. No canvas guesswork -
+		// the runner's laid-out rects are exactly what the runner scrolled on. A
+		// non-rendering subtree contributes nothing and is skipped: a script tag
+		// holds the bundle bootstrap (not text content), and a closed <details>
+		// menu - what the page answers with no JavaScript - keeps its links in the
+		// tree hidden as a UA display:none slot; neither can ever push the scroll.
 		if (scrolling) {
-			const canvas = document.createElement('canvas');
-			const ctx = canvas.getContext('2d');
 			const walker = document.createTreeWalker(document.body, 3);
-			const seen = new Set();
-			const near = [];
+			// client rects are viewport-relative, and a scrolled page sits inside
+			// them shifted; measure in document space the scrollWidth is in.
+			const scrollX = -document.documentElement.getBoundingClientRect().left;
+			const seenInk = new Set();
 			for (let node = walker.nextNode(); node; node = walker.nextNode()) {
 				const raw = node.textContent;
 				if (!raw || !raw.trim()) continue;
 				const host = node.parentElement;
 				if (!host) continue;
-				// A text node whose ANY ancestor is hidden renders nothing; it must
-				// never be accused: the closed menu and the display:none desktop link
-				// row hide whole subtrees, and none of that ink can move the scroll.
+				const range = document.createRange();
+				range.setStart(node, 0);
+				range.setEnd(node, raw.length);
+				// client rects: the laid-out ink of exactly this text node - the
+				// runner's own laid-out rects are what it scrolled on. lib.dom
+				// doesn't model the property, so name it structurally; the compiler
+				// erases it and the callback serializes as plain JS.
+				const rects = Array.from((range as unknown as { clientRects: DOMRectList }).clientRects);
+				// Nothing laid out at all: not rendered (a script tag's bootstrap
+				// text, a closed details' contents, a visually-hidden subtree).
+				if (rects.length === 0) continue;
+				const clippers: HTMLElement[] = [];
 				let hidden = false;
 				for (let up: HTMLElement | null = host; up; up = up.parentElement) {
-					const upStyle = getComputedStyle(up);
-					if (upStyle.display === 'none' || upStyle.visibility === 'hidden') { hidden = true; break; }
+					const s = getComputedStyle(up);
+					if (s.display === 'none' || s.visibility === 'hidden' || s.visibility === 'collapse') { hidden = true; break; }
+					if (s.overflowX !== 'visible') clippers.push(up);
 				}
 				if (hidden) continue;
-				const style = getComputedStyle(host);
-				if (!ctx) continue;
-				const budget = host.clientWidth - parseFloat(style.paddingLeft || '0') - parseFloat(style.paddingRight || '0');
-				if (!(budget > 0)) continue;
-				ctx.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-				let worst = 0;
-				let worstWord = '';
-				for (const word of raw.split(/[\s\u00a0]+/)) {
-					for (const piece of word.split(/(?<=-)/)) {
-						const w = ctx.measureText(piece).width;
-						if (w > worst) { worst = w; worstWord = piece; }
+				let right = -1;
+				for (const rect of rects) {
+					let x1 = rect.right + scrollX;
+					for (const clipper of clippers) {
+						const cb = clipper.getBoundingClientRect();
+						if (cb.right + scrollX < x1) x1 = cb.right + scrollX;
 					}
+					if (x1 > right) right = x1;
 				}
-				const over = Math.round(worst - budget);
-				if (over > 1) {
+				const over = Math.round(right - viewport);
+				if (over > 0) {
 					const name = host.tagName + (host.getAttribute('class') ? '.' + host.getAttribute('class') : '');
-					const key = name + '|' + worstWord;
-					if (seen.has(key)) continue;
-					seen.add(key);
-					suspects.push(`ink: "${worstWord}" measures ${Math.round(worst)}px but only ${Math.round(budget)}px of box is left on ${name}`);
-					near.push({ over, worst, budget, name, word: worstWord });
-				} else if (over > -4) {
-					const name = host.tagName + (host.getAttribute('class') ? '.' + host.getAttribute('class') : '');
-					near.push({ over, worst, budget, name, word: worstWord });
-				}
-			}
-			if (!suspects.length && !wide.length) {
-				// A page that scrolls while no box and no word crosses still needs
-				// names: a runner whose fallback face draws a word a hair wider turns
-				// one of these tight fits into the 9px. List the three tightest so
-				// the hunt has candidates - the assertion itself is unchanged.
-				near.sort((a, b) => b.over - a.over);
-				for (const n of near.slice(0, 3)) {
-					suspects.push(`ink: tight fit on ${n.name} - "${n.word}" measures ${Math.round(n.worst)}px in ${Math.round(n.budget)}px of box (${n.over}px to spare)`);
+					const key = name + '|' + raw.trim().slice(0, 40);
+					if (seenInk.has(key)) continue;
+					seenInk.add(key);
+					suspects.push(`ink: "${raw.trim().slice(0, 40)}" lays ${over}px past the edge on ${name}`);
 				}
 			}
 		}

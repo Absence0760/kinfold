@@ -2,12 +2,13 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
-## 2026-11-04 — A scrolling report that names nothing gets its tightest fits listed
+## 2026-11-04 — The 9px hunt: suspects come from the layout's own ink, not canvas guesses
 
-- **What the runners say**: four desktop-context reflow checks fail ONLY on GitHub's runners — the page scrolls 9px sideways at 320px yet no element box sticks past the edge. The hunt (followups: "hunt it with the named-element report") got better names from the hidden-subtree fix, but a report that stays silent when neither a box nor a word crosses gives the hunt nothing at all.
-- **The diagnostic**: the ink pass also collects near-misses (longest word within 4px of its content box); when a scrolling page produces no crossing suspects, the three tightest fits join the report as "ink: tight fit on … (Npx to spare)". A runner whose fallback face draws a word a hair wider turns one of these into the missing 9px.
-- **What stays exact**: the ASSERTION is unchanged — the report only grows inside failing messages (the whole block runs when the page already scrolls), and a green page's list stays empty. This is a diagnostic change, the same kind as the hidden-subtree walk; loosening the rule stays rejected.
-- **Reversal:** a diagnostic change stays a diagnostic change; if the near-miss lines point at a real culprit, the fix is CSS at the source, never the report.
+- **What the hunt has**: the runner reports a 9px sideways scroll at 320px with no element box past the edge. The ink pass previously *measured* words on a canvas and blamed anything wider than its host's content box — on the runner that blamed the closed `<details>` menu's links, a script tag's bootstrap text, and clipped `visually-hidden` spans: nodes that render no ink at all, so never possible culprits. The wrong model made the report untrustworthy.
+- **The change**: suspects are now what the layout itself leaves — each text node's laid-out rects (`Range`'s `clientRects`, the face the page renders with), walked up through every clipping ancestor, measured in document space (client rects sit viewport-relative, and the hunt runs while the page is already shifted by its own scroll). A text node with no rects, or with any hidden ancestor, is skipped: a script tag holds the bundle bootstrap, and a closed `<details>` keeps its links in the tree as a UA `display:none` slot — neither can push the scroll on any machine.
+- **Why it's principled**: the runner's laid-out rects are exactly the ink the runner scrolled on, so the named suspect is now trustworthy rather than a font-model guess; the exclusions are nodes that contribute NO ink (clipped/hidden/non-content), the same reason the box pass only trusts rendered boxes.
+- **What stays exact**: the ASSERTION is untouched — `overflowReports` stays a report, suspects join only while the page already scrolls, and a green page's list stays empty. Loosening the rule (a px allowance) remains rejected; if a named suspect survives, the fix is CSS at the source.
+- **Reversal:** none. If the exact-ink pass names nothing again while the runner scrolls 9px, the conclusion is that the scroll comes from something outside text ink (a replaced or pseudo-element), and the hunt grows that pass — still diagnostic only.
 
 ## 2026-11-04 — The runner ran pgTAP this push; audit-log reads move to the bare owner
 
@@ -16,7 +17,7 @@ The record of judgment calls taken on the operator's behalf while building the r
 - **The storage slip, same batch**: `review_access_test` inserted `size, type` into `storage.objects`; the CI bucket schema has no such columns, so the fixture now writes only `bucket_id, name` — the two columns both stacks share.
 - **Reversal:** none. A grant opening private tables to clients would invert the repo's whole discipline about the private schema; owner-crossing for a count is the existing precedent, and with a deployed database it stays exactly this pattern in new test files.
 
-## 2026-11-04 — A deferred constraint refuses at COMMIT; the forgiveness cap belongs at the door
+## 2026-11-04 — Insurance cover cannot be priced from nothing; the roadmap's state is machine-checked
 
 - **What the roadmap says**: rows 2i and 3f are the only two of twenty-six that carry no landed annotation, and both are insurance pricing — own-damage gap cover ("only once a year of loss data supports it") and home deductible cover under the group policy ("if loss data supports it"). The cooperative has no loss history yet: the books report dues, premiums, claims money and pool money, but not a year of exposure-to-loss, which is exactly the input the partner's rating needs.
 - **The call**: don't build an unpriced insurance layer. Feasibility's own verdict names the break-even bands ($13–19 a month for gap cover, "raised only with loss data"), and a layer that goes live before its rate is filed would be a policy the insurer cannot stand behind — the same discipline that keeps cover_capped and annual_deductible_cents refusing uncapped claims. What IS buildable is already there: home grants through the Home Fund pool (fund_settings home_repair kinds + fund-generic band run, pinned by pgTAP pool_test's home_fund block) landed with the pool work 2026-11-02.
