@@ -52,6 +52,5 @@ end $$;
 
 -- New relations get default grants from Supabase: take them back, then hand
 -- this to the service only — a member never reports an outcome.
-revoke all from function public.report_payout(uuid, public.payout_status);
-revoke all from function public.report_payout(uuid, public.payout_status) to public, anon, authenticated;
+revoke all on function public.report_payout(uuid, public.payout_status) from public, anon, authenticated;
 grant execute on function public.report_payout(uuid, public.payout_status) to service_role;
