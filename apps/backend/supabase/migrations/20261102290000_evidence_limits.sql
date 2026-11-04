@@ -6,13 +6,13 @@
 -- covers a phone video clip; anything bigger is not evidence.
 
 update storage.buckets
-  where name = 'evidence-original'
   set allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp',
                                  'video/quicktime', 'video/mp4', 'application/pdf'],
-      file_size_limit = 20971520;
+      file_size_limit = 20971520
+  where name = 'evidence-original';
 
 update storage.buckets
-  where name = 'evidence-redacted'
   set allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp',
                                  'video/quicktime', 'video/mp4', 'application/pdf'],
-      file_size_limit = 20971520;
+      file_size_limit = 20971520
+  where name = 'evidence-redacted';
