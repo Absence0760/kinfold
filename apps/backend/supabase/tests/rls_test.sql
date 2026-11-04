@@ -228,7 +228,12 @@ select set_config('request.jwt.claims', '{"role":"anon"}', true);
 
 select throws_ok('select count(*) from public.requests', '42501', 'permission denied for table requests',
   'anon cannot read requests');
-select throws_ok('select count(*) from public.board_requests', '42501', 'permission denied for view board_requests',
+-- One stack nuance, pinned open: a security_barrier view's refusal names itself
+-- differently across Postgres versions - PG 15 reports the function behind the
+-- view ('permission denied for function on_board'), PG 17 names the view. The
+-- rule is the code (42501: no read rights); the wording is Postgres's own, so
+-- this assertion carries the code and the intent, not one stack's sentence.
+select throws_ok('select count(*) from public.board_requests', '42501', NULL,
   'anon cannot read the request board');
 select throws_ok('select count(*) from public.evidence', '42501', 'permission denied for table evidence',
   'anon cannot read evidence');

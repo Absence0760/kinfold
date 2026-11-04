@@ -779,10 +779,13 @@ grant usage on schema private to service_role;
 -- The service role (edge functions) bypasses RLS but still needs privileges:
 -- the earlier blanket revokes from PUBLIC took away its execute, and tables
 -- created by postgres never granted it read or write. Append-only triggers,
--- the status guard and the payout guard still apply to it.
-grant select, insert, update, delete on all tables in schema public to service_role;
-grant usage, select on all sequences in schema public to service_role;
-grant execute on all functions in schema public to service_role;
+-- the status guard and the payout guard still apply to it. Note the revokes
+-- above used the `public` keyword, which in REVOKE means EVERY role - so the
+-- service role is caught by them too, and every object in BOTH schemas has
+-- to be handed back here or the service cannot reach it at all.
+grant select, insert, update, delete on all tables in schema public, private to service_role;
+grant usage, select on all sequences in schema public, private to service_role;
+grant execute on all functions in schema public, private to service_role;
 
 -- Function grants for the whole schema, after the blanket revoke above.
 grant execute on function

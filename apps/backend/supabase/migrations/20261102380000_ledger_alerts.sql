@@ -46,4 +46,9 @@ revoke all on function public.record_ledger_difference(public.fund, text, bigint
 grant execute on function public.record_ledger_difference(public.fund, text, bigint, bigint)
   to service_role;
 
+-- A table created after hardening.sql still carries Postgres's own defaults,
+-- which hand the client roles a read: state the door instead of leaning on
+-- whatever the stack's defaults happen to be (same pattern as the other new
+-- tables in this repo). Clients get nothing; the service holds the books.
+revoke all on public.ledger_differences from public, anon, authenticated;
 grant select, insert on public.ledger_differences to service_role;

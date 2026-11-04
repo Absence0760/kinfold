@@ -153,8 +153,13 @@ end $$;
 -- back and give the service role what it needs. Clients get nothing at all —
 -- even a member with the loan's id can't read their own demographics here,
 -- which is the point: the rows answer the auditor, not the borrower's screen.
+-- The service role gets the write rights on purpose: nothing about these rows
+-- may change, and the sentence that says so is the append-only trigger (the
+-- design's own door), exactly as audit_log and the ledger books rely on it -
+-- an ACL that never hands the write over would answer in Postgres's words
+-- before that refusal could be heard.
 revoke all on private.fair_lending from public, anon, authenticated;
-grant select, insert on private.fair_lending to service_role;
+grant select, insert, update, delete on private.fair_lending to service_role;
 
 revoke all on function public.offer_fair_lending_self_test(uuid, boolean, boolean, boolean, boolean, text, text, text) from public, anon;
 grant execute on function public.offer_fair_lending_self_test(uuid, boolean, boolean, boolean, boolean, text, text, text) to authenticated;
