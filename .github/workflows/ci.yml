@@ -137,11 +137,13 @@ jobs:
           version: 10.33.2
 
       # The SDK the repo's local run also carries (docs/STACK.md), cached
-      # across runs: the key buckets by year and week (the action's own
-      # date-keyed example), so one clone serves a week of pushes and a
-      # channel release lands at the next bucket. TTL options belonged to
-      # the legacy cache service, which is sunset — the date bucket is the
-      # documented shape for this action.
+      # across runs on a workspace-relative path — the same shape the e2e job
+      # uses for Playwright's Chromium. The key buckets by year and week (the
+      # action's own date-keyed example): one clone per week, a channel
+      # release lands at the next bucket. (TTL options belonged to the
+      # legacy cache service, which GitHub sunset; a runner.home-based path
+      # resolved wrong on the runner — the log showed /sdk/flutter — which
+      # is why the cache now sits beside the checkout like the e2e one.)
       - name: Get the SDK cache bucket
         id: sdk-week
         run: echo "week=$(/bin/date -u "+%Y-%V")" >> "$GITHUB_OUTPUT"
@@ -149,24 +151,33 @@ jobs:
       - name: Cache the Flutter SDK
         uses: actions/cache@374a27f26986edd8c430f386d152a856e179c0ae # v4.2.4
         with:
-          path: ${{ runner.home }}/sdk/flutter
+          path: sdk/flutter
           key: flutter-sdk-stable-${{ steps.sdk-week.outputs.week }}
 
+      # The SDK dir lands inside the checkout workspace (created after
+      # checkout, never committed); git refuses to clone over the restored
+      # dir, hence the miss-guard. PATH is exported INSIDE each pnpm step:
+      # pnpm rebuilds PATH for its script children (node_modules/.bin style),
+      # so a $GITHUB_PATH addition would be lost before flutter is found —
+      # the run log's first failure was exactly "flutter: not found".
       - name: Install the Flutter SDK
         run: |
-          if [ ! -d "$HOME/sdk/flutter/bin" ]; then
-            git clone --depth=1 -b stable https://github.com/flutter/flutter.git "$HOME/sdk/flutter"
+          if [ ! -d "sdk/flutter/bin" ]; then
+            git clone --depth=1 -b stable https://github.com/flutter/flutter.git sdk/flutter
           fi
-          echo "PATH=$HOME/sdk/flutter/bin:$PATH" >> "$GITHUB_PATH"
 
       # The phone app's lint gate: the same carve-out shape as check:edge
       # (CI's runners don't ship the tool, so the job that bootstraps it runs
       # it), named in the package.json check divider and docs/STACK.md.
       - name: Analyze the phone app
-        run: pnpm check:mobile
+        run: |
+          export PATH="$(cd sdk/flutter/bin && pwd):$PATH"
+          pnpm check:mobile
 
       - name: Flutter tests
-        run: pnpm test:mobile
+        run: |
+          export PATH="$(cd sdk/flutter/bin && pwd):$PATH"
+          pnpm test:mobile
 
   backend:
     name: backend
