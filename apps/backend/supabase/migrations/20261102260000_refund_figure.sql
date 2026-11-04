@@ -9,7 +9,13 @@
 -- function object), so the grants are re-claimed right below — service only,
 -- as hardening_test and service_paths_test demand.
 
-create or replace function public.mark_refunded(p_contribution uuid, p_partner_ref text)
+-- The return type changes (void -> the figure), which CREATE OR REPLACE
+-- cannot do: the old function is dropped first, same as the repo's other
+-- signature changes. Its grants live on the dropped object and are re-claimed
+-- below.
+drop function public.mark_refunded(uuid, text);
+
+create function public.mark_refunded(p_contribution uuid, p_partner_ref text)
 returns bigint language plpgsql security definer set search_path = '' as $$
 declare
   v_cents bigint;
