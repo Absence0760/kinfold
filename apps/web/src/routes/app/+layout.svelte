@@ -56,12 +56,12 @@
 		top: 0;
 		z-index: 10;
 		background: color-mix(in srgb, var(--bg) 88%, transparent);
-		/* NO backdrop-filter here: a newer Chromium adds a blur's filter region
-		   (~10px) to the document's scrollable overflow even though no box and no
-		   ink crosses the viewport — the audit read that as the header carrying
-		   all 9px of a 320px page's sideways scroll with no box line and no
-		   pseudo line beside it. The 88% translucent background keeps the bar
-		   readable over the page without it. */
+		/* NO backdrop-filter on this bar: a filter's blur region is one of the
+		   things a newer Chromium counts in the document's scrollable overflow
+		   (a region, not a box — invisible to every box and ink walk). The 88%
+		   translucent background alone keeps the bar readable over the page.
+		   NOTE (ledger 2026-11-04): removing this was NOT the runners' carrier —
+		   the same 9px survived the next CI round — kept as hardening only. */
 		border-bottom: 1px solid var(--border);
 	}
 

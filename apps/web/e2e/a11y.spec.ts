@@ -153,7 +153,17 @@ async function overflowReports(page: Page) {
 				// layout boxes, and a hidden-but-still-laid-out subtree keeps every
 				// box that pushed the page sideways, so that hide changes nothing.
 				const rootScroll = document.documentElement.scrollWidth;
-				const carriers: { name: string; drop: number }[] = [];
+				const carriers: { el: HTMLElement; name: string; drop: number }[] = [];
+				const labelOf = (el: HTMLElement) => el.tagName + (el.className && !el.className.startsWith('svelte-') ? '.' + el.className : '');
+				// Hide one subtree from the LAYOUT and read the page's own scroll back.
+				const hideDrop = (el: HTMLElement) => {
+					const prevStyle = el.getAttribute('style');
+					el.setAttribute('style', (prevStyle ? prevStyle + ';' : '') + 'display: none');
+					const now = document.documentElement.scrollWidth;
+					if (prevStyle === null) el.removeAttribute('style');
+					else el.setAttribute('style', prevStyle);
+					return rootScroll - now;
+				};
 				const sections: HTMLElement[] = [];
 				const collect = (el: HTMLElement) => {
 					// A `display: contents` element has no box of its own, so it can
@@ -174,17 +184,8 @@ async function overflowReports(page: Page) {
 				for (const el of Array.from(document.body.children)) collect(el as HTMLElement);
 				for (const el of sections) {
 					if (getComputedStyle(el).display === 'none') continue;
-					const prevStyle = el.getAttribute('style');
-					el.setAttribute('style', (prevStyle ? prevStyle + ';' : '') + 'display: none');
-					const now = document.documentElement.scrollWidth;
-					if (prevStyle === null) el.removeAttribute('style');
-					else el.setAttribute('style', prevStyle);
-					if (now < rootScroll) {
-						carriers.push({
-							name: el.tagName + (el.className && !el.className.startsWith('svelte-') ? '.' + el.className : ''),
-							drop: rootScroll - now,
-						});
-					}
+					const drop = hideDrop(el);
+					if (drop > 0) carriers.push({ el, name: labelOf(el), drop });
 				}
 				// Pseudo-element ink is invisible to both walks above: a ::before or
 				// ::after generated box is not an element RECT (no element to point
@@ -201,7 +202,7 @@ async function overflowReports(page: Page) {
 					if (named.length) return `${el.tagName}.${named[0]}`;
 					return null;
 				};
-const pseudoOwners: string[] = ['html', 'body'];
+				const pseudoOwners: string[] = ['html', 'body'];
 				for (const el of sections) {
 					const sel = selectorFor(el);
 					if (sel) pseudoOwners.push(sel);
@@ -220,8 +221,35 @@ const pseudoOwners: string[] = ['html', 'body'];
 				}
 
 				carriers.sort((a, b) => b.drop - a.drop);
+				const full = rootScroll - viewport;
 				for (const c of carriers.slice(0, 4)) {
-					suspects.push(`carrier: hiding ${c.name} removes ${Math.round(c.drop)} of the ${Math.round(rootScroll - viewport)}px scroll`);
+					if (c.drop < full) {
+						suspects.push(`carrier: hiding ${c.name} removes ${Math.round(c.drop)} of the ${Math.round(full)}px scroll`);
+						continue;
+					}
+					// This subtree alone explains the WHOLE scroll. The bar may be the
+					// whole carrier while every box walk stays silent (the push comes
+					// from something inside it that is not an element RECT, not a text
+					// node, not a pseudo), so name the DEEPEST descendant whose own
+					// hiding still explains all of it: the fix then goes to that
+					// element, not to the bar. A carrier that no descendant shares
+					// says so - its own box (its filter, its margins) is the push.
+					const frontier: { el: HTMLElement; drop: number }[] = [];
+					let level = Array.from(c.el.children) as HTMLElement[];
+					for (let depth = 0; depth < 6 && level.length; depth += 1) {
+						const next: HTMLElement[] = [];
+						for (const el of level) {
+							if (getComputedStyle(el).display === 'none') continue;
+							if (hideDrop(el) >= full) {
+								frontier.push({ el, drop: full });
+								for (const ch of Array.from(el.children)) next.push(ch as HTMLElement);
+							}
+						}
+						level = next;
+					}
+					const minimal = frontier.filter((f) => !frontier.some((g) => g.el !== f.el && f.el.contains(g.el)));
+					if (!minimal.length) suspects.push(`carrier-self: ${c.name} alone carries the whole ${Math.round(full)}px scroll - no descendant's hiding removes any of it, so the bar's own box is the push`);
+					for (const f of minimal.slice(0, 2)) suspects.push(`carrier: hiding ${labelOf(f.el)} removes ${Math.round(full)} of the ${Math.round(full)}px scroll`);
 				}
 			}
 		}
