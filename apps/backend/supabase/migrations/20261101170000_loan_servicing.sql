@@ -73,7 +73,14 @@ begin
   v_seqs := (select array_agg(seq order by seq desc) from public.loan_installments
               where loan_id = p_loan and paid_cents < amount_cents);
 
-  foreach v_seq in array coalesce(v_seqs, '{}') loop
+  -- The loop runs over a plain variable: every other loop in the repo does
+  -- the same, because the stack's parser takes `array <variable>`; an
+  -- expression in that slot is what CI's walk of this file choked on.
+  if v_seqs is null then
+    v_seqs := '{}';
+  end if;
+
+  foreach v_seq in array v_seqs loop
     if v_left <= 0 then
       break;
     end if;
