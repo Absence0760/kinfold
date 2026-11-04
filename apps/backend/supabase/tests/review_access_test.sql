@@ -76,9 +76,9 @@ select pg_temp.move('00000000-0000-0000-000d-0000000000b1', 'scoring', 'in_revie
 insert into public.evidence (request_id, kind, original_path, redacted_path, sha256, redaction_status)
   values ('00000000-0000-0000-000d-0000000000b1', 'photo', 'q1/original.jpg', 'q1/redacted.jpg',
           repeat('a', 64), 'confirmed');
-insert into storage.objects (bucket_id, name, size, type)
-  values ('evidence-redacted', 'q1/redacted.jpg', 1024, 'image/jpeg'),
-         ('evidence-original', 'q1/original.jpg', 1024, 'image/jpeg');
+insert into storage.objects (bucket_id, name)
+  values ('evidence-redacted', 'q1/redacted.jpg'),
+         ('evidence-original', 'q1/original.jpg');
 insert into public.scores (request_id, score, reasons, model, model_version, prompt_version, inputs_sha256)
   values ('00000000-0000-0000-000d-0000000000b1', 80::smallint, '["estimate matches the photos"]'::jsonb,
           'dev-scorer', '0.0.1', 'score-v1', repeat('a', 64));

@@ -84,16 +84,22 @@ select throws_ok($$select public.set_annual_deductible('sedan', 'basic', 200000:
 select is((select annual_deductible_cents from public.cover_plans
            where vehicle_class = 'sedan' and plan = 'basic'),
   100000::bigint, 'the refused filing left the filed annual at the limit');
+reset role;
 select is((select count(*) from private.audit_log where action = 'cover_plans.annual_filed')::int,
   0::int, 'the refused filing wrote nothing to the trail');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- the boundary at exactly the limit files ----------------------------------------
 
 select lives_ok($$select public.set_annual_deductible('sedan', 'basic', 100000::bigint,
   'partner_insurer', '2026-01-01'::date)$$,
   'an annual at exactly the year''s limit files');
+reset role;
 select is((select count(*) from private.audit_log where action = 'cover_plans.annual_filed'),
   1::bigint, 'the accepted filing is audit-logged');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- claims spend the annual up to the limit, then the share rises -------------------
 

@@ -92,6 +92,7 @@ select lives_ok(
 
 -- --- the cap is on the trail -----------------------------------------------------
 
+reset role;
 select is((select count(*) from private.audit_log
            where action = 'claim.recorded')::int, 2::int,
   'each recorded claim writes its cap onto the trail');

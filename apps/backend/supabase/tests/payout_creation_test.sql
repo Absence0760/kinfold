@@ -78,8 +78,11 @@ select is((select public.create_payout('00000000-0000-0000-0014-0000000000b1',
   'the same payout reference replayed is a no-op answering with the payout it made');
 select is((select count(*) from public.payouts where partner_ref = 'pi_pc_1'),
   1::bigint, 'the replay added no second payout');
+reset role;
 select is((select count(*) from private.audit_log where action = 'payout.pending'),
   1::bigint, 'the opening is audit-logged by the guard');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- refusals ------------------------------------------------------------------
 

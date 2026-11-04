@@ -65,12 +65,18 @@ select lives_ok($$select public.mark_claim_paid('00000000-0000-0000-0018-0000000
   'the feed confirms a recorded claim was paid');
 select is((select status from public.claims where partner_ref = 'pc_p1'),
   'paid'::public.claim_status, 'the row now says paid');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.paid'),
   1::bigint, 'the payment is audit-logged with the partner reference');
+set local role service_role;
+select pg_temp.as_service();
 select lives_ok($$select public.mark_claim_paid('00000000-0000-0000-0018-0000000000d1', 'pay_evt_1')$$,
   'a replayed confirmation changes nothing');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.paid'),
   1::bigint, 'the replay added no second audit row');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- refusals ------------------------------------------------------------------
 

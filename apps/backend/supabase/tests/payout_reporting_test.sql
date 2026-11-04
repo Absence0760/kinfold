@@ -134,5 +134,6 @@ select throws_ok($$select public.report_payout('00000000-0000-0000-0006-00000000
 
 -- --- the audit row records the report -------------------------------------------
 
+reset role;
 select is((select count(*) from private.audit_log where action = 'payout.reported'),
   1::bigint, 'a report is audit-logged once (the no-op repeat adds nothing)');

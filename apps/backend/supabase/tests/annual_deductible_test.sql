@@ -118,8 +118,11 @@ select is((select paid_cents from public.claims where partner_ref = 'ad_c3'),
 
 select lives_ok($$select public.mark_claim_paid((select id from public.claims where partner_ref = 'ad_c2'), 'ad_p2')$$,
   'the feed confirms the second claim was paid in full');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.paid'),
   1::bigint, 'the confirmation is audit-logged');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- once the annual deductible runs out, the share must rise ------------------------
 
@@ -144,6 +147,7 @@ select lives_ok($$select public.record_claim('00000000-0000-0000-0058-0000000000
 select is((select count(*) from public.claims
            where paid_cents <> gross_cents - member_share_cents)::int, 0::int,
   'no claim stored a paid figure off gross minus share');
+reset role;
 select is((select count(*) from private.audit_log where action = 'claim.recorded'),
   5::bigint, 'the five accepted claims wrote their caps onto the trail');
 reset role;

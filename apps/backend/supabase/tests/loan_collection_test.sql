@@ -112,6 +112,7 @@ select is((select status from public.family_loans where id = '00000000-0000-0000
 
 -- --- the payment is audit-logged --------------------------------------------------
 
+reset role;
 select is((select count(*) from private.audit_log where action = 'loan.payment'),
   3::bigint, 'every payment is audit-logged (refusals write nothing)');
 

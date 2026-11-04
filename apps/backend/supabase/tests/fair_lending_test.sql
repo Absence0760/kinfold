@@ -100,22 +100,31 @@ select lives_ok($$select public.record_fair_lending_monitoring_form(
   (select id from public.fund_loans where partner_ref = 'loan_h2')::uuid,
   'White', 'Not Hispanic or Latino', 'Male')$$,
   'the partner records the monitoring form on the secured loan');
+reset role;
 select is((select race from private.fair_lending
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_h1')
              and source = 'self_test'), 'Black',
   'the self-test answers are kept as given for the auditor');
+set local role service_role;
+select pg_temp.as_service();
 select is(public.cdfi_loan_fair_lending(
   (select id from public.fund_loans where partner_ref = 'loan_h1')::uuid) ->> 'race',
   'Do Not Know', 'voluntary self-test data is not federally reported');
+reset role;
 select is((select race from private.fair_lending
            where loan_id = (select id from public.fund_loans where partner_ref = 'loan_h2')
              and source = 'monitoring_form'), 'White',
   'the monitoring form answers are kept as given');
+set local role service_role;
+select pg_temp.as_service();
 select is(public.cdfi_loan_fair_lending(
   (select id from public.fund_loans where partner_ref = 'loan_h2')::uuid) ->> 'race',
   'White', 'the monitoring form data is the row the federal report counts');
+reset role;
 select is((select count(*) from private.fair_lending), 2::bigint,
   'the auditor sees one row per route');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- history ---------------------------------------------------------------------
 

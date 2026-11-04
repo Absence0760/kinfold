@@ -196,6 +196,7 @@ select is(public.apply_default_plan('00000000-0000-0000-000c-0000000000d8'),
 select is((select sum(amount_cents) from public.loan_forgiveness
            where loan_id = '00000000-0000-0000-000c-0000000000d8'),
   40000::numeric, 'the plan forgives exactly what was outstanding');
+reset role;
 select is((select count(*) from private.audit_log
            where action = 'loan.default.forgive' and target_id = '00000000-0000-0000-000c-0000000000d8'),
   1::bigint, 'and the default is written down in the audit log');

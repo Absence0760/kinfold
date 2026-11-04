@@ -89,9 +89,12 @@ select is(public.ledger_balance('protection'::public.fund, 'dues'), 21200::bigin
   'unspent dues money stays in the dues account');
 select is(public.ledger_balance('protection'::public.fund, 'available'), 0::bigint,
   'dues money never arrives as pool money');
+reset role;
 select is((select count(*) from private.ledger_journals
            where partner_ref = 'prem_1' and kind = 'premium'), 1::bigint,
   'a replayed reference stores no second journal');
+set local role service_role;
+select pg_temp.as_service();
 select throws_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a3'::uuid, 'prem_3')$$,
   '23514', 'an unclassed member has no premiums to pay');

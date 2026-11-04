@@ -90,8 +90,11 @@ select is((select status from public.requests where id = '00000000-0000-0000-000
 select is((select count(*) from public.contributions
            where request_id = '00000000-0000-0000-0007-0000000000b1' and status = 'released'),
   1::bigint, 'expiry releases the pledges, through the close trigger');
+reset role;
 select is((select count(*) from private.audit_log where action = 'request.expired'),
   1::bigint, 'the expiry is audit-logged');
+set local role service_role;
+select pg_temp.as_service();
 
 select lives_ok($$select public.expire_request('00000000-0000-0000-0007-0000000000b2')$$,
   'a needs-evidence request is expired too');

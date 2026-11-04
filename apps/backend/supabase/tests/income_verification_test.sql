@@ -55,8 +55,11 @@ select is((select count(*) from public.income_verifications
 select isnt((select record_income_verification('00000000-0000-0000-0011-0000000000a1',
                               'self_attested', 300000::bigint)), NULL::uuid,
   'a self-attested figure needs no vendor reference');
+reset role;
 select is((select count(*) from private.audit_log where action = 'income.verified'),
   2::bigint, 'each income check is audit-logged (the figure stays off the log)');
+set local role service_role;
+select pg_temp.as_service();
 
 -- --- refusals ------------------------------------------------------------------
 

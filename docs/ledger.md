@@ -2,7 +2,14 @@
 
 The record of judgment calls taken on the operator's behalf while building the roadmap: what was decided, why, and where it lives. Newest first. Each entry names the change that carries the call. Reverse any call you disagree with and the change with it — the ledger stays the place to read the calls without re-reading the code.
 
-## 2026-11-04 — Steps 2i and 3f stay gated: insurance cover cannot be priced from nothing
+## 2026-11-04 — The runner ran pgTAP this push; audit-log reads move to the bare owner
+
+- **What CI said**: the runner's quota let pgTAP actually run this time, and 14 plans answered `permission denied for schema private` — the audit-log, history, and fair_lending counts the plans make at authenticated/service. Those roles hold no grants in `private` and never will (members.sql:12 and requests.sql:482 revoke and keep the schema closed); the local stack had only masked this by granting service_role whole-schema privileges in harness plumbing.
+- **The rule kept**: the fleet already had the correct answer in `audit_trail_test` — an audit read that must count writes crosses to the bare default (the DB owner, which holds every table by ownership) with `reset role;` before and a re-login after. Same shape applied to the other 13 plans; what is asserted does not change, only which principal does the counting.
+- **The storage slip, same batch**: `review_access_test` inserted `size, type` into `storage.objects`; the CI bucket schema has no such columns, so the fixture now writes only `bucket_id, name` — the two columns both stacks share.
+- **Reversal:** none. A grant opening private tables to clients would invert the repo's whole discipline about the private schema; owner-crossing for a count is the existing precedent, and with a deployed database it stays exactly this pattern in new test files.
+
+## 2026-11-04 — A deferred constraint refuses at COMMIT; the forgiveness cap belongs at the door
 
 - **What the roadmap says**: rows 2i and 3f are the only two of twenty-six that carry no landed annotation, and both are insurance pricing — own-damage gap cover ("only once a year of loss data supports it") and home deductible cover under the group policy ("if loss data supports it"). The cooperative has no loss history yet: the books report dues, premiums, claims money and pool money, but not a year of exposure-to-loss, which is exactly the input the partner's rating needs.
 - **The call**: don't build an unpriced insurance layer. Feasibility's own verdict names the break-even bands ($13–19 a month for gap cover, "raised only with loss data"), and a layer that goes live before its rate is filed would be a policy the insurer cannot stand behind — the same discipline that keeps cover_capped and annual_deductible_cents refusing uncapped claims. What IS buildable is already there: home grants through the Home Fund pool (fund_settings home_repair kinds + fund-generic band run, pinned by pgTAP pool_test's home_fund block) landed with the pool work 2026-11-02.
