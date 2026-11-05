@@ -40,6 +40,7 @@ coverage/
 .nyc_output/
 test-results/
 playwright-report/
+playwright-report-stack/
 htmlcov/
 .pytest_cache/
 .mypy_cache/

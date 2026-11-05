@@ -87,10 +87,12 @@ for (const f of tests) {
 // the chain runs has to be a defined script (a typo would fail at run time,
 // but only for whoever happens to type it). e2e is deliberately outside the
 // chain: it needs the built site and Chromium, so it gets its own command and
-// its own CI job - docs/STACK.md and the ledger keep that decision.
+// its own CI job - docs/STACK.md and the ledger keep that decision. The
+// member-area e2e (test:web:e2e:stack) also resets the local database, which
+// `pnpm test` must never do; it runs in the CI backend job, beside the stack.
 const chain = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).scripts;
 const recipe = chain['test'];
-const outsideChain = new Set(['test:web:e2e']);
+const outsideChain = new Set(['test:web:e2e', 'test:web:e2e:stack']);
 for (const key of Object.keys(chain)) {
 	if (!key.startsWith('test:') || outsideChain.has(key)) continue;
 	if (!recipe.includes('run ' + key)) {
