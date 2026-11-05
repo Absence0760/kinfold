@@ -9,6 +9,8 @@
 --     payout guard routes it to a person (the job skips it, then reports);
 --   * a member can't expire anything; the audit row records the expiry.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(10);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -91,7 +93,7 @@ select is((select count(*) from public.contributions
            where request_id = '00000000-0000-0000-0007-0000000000b1' and status = 'released'),
   1::bigint, 'expiry releases the pledges, through the close trigger');
 reset role;
-select is((select count(*) from private.audit_log where action = 'request.expired'),
+select is((select count(*) from private.audit_log where action = 'request.expired' and at = now()),
   1::bigint, 'the expiry is audit-logged');
 set local role service_role;
 select pg_temp.as_service();

@@ -84,7 +84,10 @@ select pg_temp.payee('00000000-0000-0000-0015-0000000000c1');
 
 -- --- cover stacks before pledges --------------------------------------------------
 
--- A: 1,000.00 request with a 300.00 recorded claim.
+-- A: 1,000.00 request with a 300.00 recorded claim. The board is cleared
+-- first, like every later scenario: the seed's open pool requests would
+-- otherwise share the band and split the run.
+select pg_temp.clear_board();
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at, payee_id)

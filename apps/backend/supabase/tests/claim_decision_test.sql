@@ -6,6 +6,8 @@
 --   * a second decision on the same claim is refused, and adds no review;
 --   * a member who isn't a reviewer cannot decide at all.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(8);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -70,7 +72,7 @@ select is((select count(*) from public.reviews where request_id = '00000000-0000
 select is((select count(*) from public.reviews
            where request_id = '00000000-0000-0000-0017-0000000000b1' and decision = 'refuse'),
   1::bigint, 'the recorded decision is a refusal');
-select is((select count(*) from private.audit_log where action = 'claim.denied'),
+select is((select count(*) from private.audit_log where action = 'claim.denied' and at = now()),
   1::bigint, 'the denial is audit-logged');
 
 -- --- refusals ------------------------------------------------------------------

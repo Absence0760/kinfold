@@ -115,6 +115,10 @@ select is((select public.member_share_bps('00000000-0000-0000-0059-0000000000a3'
 -- --- the pool grants the need minus the member's own share ---------------------------
 
 reset role;
+-- Only this file's requests are on the board for the run: the seed's open pool
+-- requests would otherwise share the band, and how big the seed board is must
+-- never decide the figures this file pins.
+update public.requests set status = 'withdrawn' where status = 'open';
 insert into public.requests (id, member_id, kind, funding, title, amount_cents, incident_on,
                              status, description, public_summary, public_summary_confirmed_at,
                              current_score, submitted_at, payee_id)
@@ -143,9 +147,8 @@ update public.requests set status = 'open' where id = '00000000-0000-0000-0059-0
 
 set local role service_role;
 select pg_temp.as_service();
--- The seed board keeps its own open pool requests, so the run gets an
--- available balance big enough that no band is squeezed: the rows show each
--- member's own need-minus-share figure whole, which is what this file pins.
+-- The available balance is big enough that no band is squeezed: the rows show
+-- each member's own need-minus-share figure whole, which is what this file pins.
 select set_config('test.run1', public.run_pool_allocation('protection', 700000)::text, true);
 select is((select reserve_cents from public.pool_runs
            where id = current_setting('test.run1')::uuid),

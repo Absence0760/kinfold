@@ -15,6 +15,8 @@
 --     owner's; a stranger reads nothing, and a supporter doesn't collect the
 --     other supporters' names.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(17);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -80,7 +82,7 @@ select lives_ok(
                                    and relationship = 'sister'))$$,
   'the owner cancels the "sister" link');
 reset role;
-select is((select count(*) from private.audit_log where action = 'invite.revoked'),
+select is((select count(*) from private.audit_log where action = 'invite.revoked' and at = now()),
   1::bigint, 'cancelling is written down in the audit log');
 set local role authenticated;
 select pg_temp.login('00000000-0000-0000-000f-0000000000a1');
@@ -121,7 +123,7 @@ select results_eq(
             'car_damage', 'people', 'open', 100000::bigint)$$,
   'before accepting, the invitee sees who invited them and what they are joining');
 reset role;
-select is((select count(*) from private.audit_log where action = 'invite.preview'),
+select is((select count(*) from private.audit_log where action = 'invite.preview' and at = now()),
   1::bigint, 'the preview is written down in the audit log');
 set local role authenticated;
 

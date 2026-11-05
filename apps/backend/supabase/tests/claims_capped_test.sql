@@ -7,6 +7,8 @@
 --   * a replayed feed entry still answers with the journal it made, and the cap
 --     is written onto the trail.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(8);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -94,7 +96,7 @@ select lives_ok(
 
 reset role;
 select is((select count(*) from private.audit_log
-           where action = 'claim.recorded')::int, 2::int,
+           where action = 'claim.recorded' and at = now())::int, 2::int,
   'each recorded claim writes its cap onto the trail');
 reset role;
 

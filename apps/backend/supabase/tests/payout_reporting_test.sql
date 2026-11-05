@@ -11,6 +11,8 @@
 --     `refunds_due` splits captured money over live payouts and a late return
 --     wouldn't re-run that split, so it goes to a person instead.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(11);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -140,5 +142,5 @@ select throws_ok($$select public.report_payout('00000000-0000-0000-0006-00000000
 -- --- the audit row records the report -------------------------------------------
 
 reset role;
-select is((select count(*) from private.audit_log where action = 'payout.reported'),
+select is((select count(*) from private.audit_log where action = 'payout.reported' and at = now()),
   1::bigint, 'a report is audit-logged once (the no-op repeat adds nothing)');

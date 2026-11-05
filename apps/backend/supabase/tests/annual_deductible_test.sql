@@ -12,6 +12,8 @@
 --   * a request with no classed covered vehicle has no annual deductible;
 --   * paid is exactly gross minus share on every recorded claim.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(19);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -98,7 +100,7 @@ select pg_temp.login('00000000-0000-0000-0058-0000000000b2');
 select lives_ok($$select public.deny_claim((select id from public.claims where partner_ref = 'ad_c1'), 'the reviewer''s photos show parking damage')$$,
   'a denial right after a recorded refuse review goes through');
 reset role;
-select is((select count(*) from private.audit_log where action = 'claim.denied'),
+select is((select count(*) from private.audit_log where action = 'claim.denied' and at = now()),
   1::bigint, 'the denial is audit-logged');
 
 set local role service_role;
@@ -122,7 +124,7 @@ select is((select paid_cents from public.claims where partner_ref = 'ad_c3'),
 select lives_ok($$select public.mark_claim_paid((select id from public.claims where partner_ref = 'ad_c2'), 'ad_p2')$$,
   'the feed confirms the second claim was paid in full');
 reset role;
-select is((select count(*) from private.audit_log where action = 'claim.paid'),
+select is((select count(*) from private.audit_log where action = 'claim.paid' and at = now()),
   1::bigint, 'the confirmation is audit-logged');
 set local role service_role;
 select pg_temp.as_service();
@@ -151,7 +153,7 @@ select is((select count(*) from public.claims
            where paid_cents <> gross_cents - member_share_cents)::int, 0::int,
   'no claim stored a paid figure off gross minus share');
 reset role;
-select is((select count(*) from private.audit_log where action = 'claim.recorded'),
+select is((select count(*) from private.audit_log where action = 'claim.recorded' and at = now()),
   5::bigint, 'the five accepted claims wrote their caps onto the trail');
 reset role;
 

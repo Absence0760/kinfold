@@ -10,6 +10,8 @@
 --     once nothing is left, both through the existing triggers;
 --   * a member can't record a payment; the payment is audit-logged.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(13);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -113,7 +115,7 @@ select is((select status from public.family_loans where id = '00000000-0000-0000
 -- --- the payment is audit-logged --------------------------------------------------
 
 reset role;
-select is((select count(*) from private.audit_log where action = 'loan.payment'),
+select is((select count(*) from private.audit_log where action = 'loan.payment' and at = now()),
   3::bigint, 'every payment is audit-logged (refusals write nothing)');
 
 set local role authenticated;

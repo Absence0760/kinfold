@@ -9,6 +9,8 @@
 --   * an empty reference, an over-capture amount, and a member are refused;
 --   * the guard audits the opening.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(9);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -83,7 +85,7 @@ select is(public.create_payout('00000000-0000-0000-0014-0000000000b1'::uuid,
 select is((select count(*) from public.payouts where partner_ref = 'pi_pc_1'),
   1::bigint, 'the replay added no second payout');
 reset role;
-select is((select count(*) from private.audit_log where action = 'payout.pending'),
+select is((select count(*) from private.audit_log where action = 'payout.pending' and at = now()),
   1::bigint, 'the opening is audit-logged by the guard');
 set local role service_role;
 select pg_temp.as_service();

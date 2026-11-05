@@ -9,6 +9,8 @@
 --   * the table itself backstops the door: a wordless denial cannot be written
 --     by any route, and ten characters is accepted exactly.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(12);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -103,7 +105,7 @@ select is((select count(*) from public.reviews
            where request_id = '00000000-0000-0000-0020-0000000000b1' and decision = 'refuse'),
   1::bigint, 'the refusal is recorded beside it');
 reset role;
-select is((select count(*) from private.audit_log where action = 'claim.denied'),
+select is((select count(*) from private.audit_log where action = 'claim.denied' and at = now()),
   1::bigint, 'the denial is audit-logged');
 
 -- --- the table backstops the door -------------------------------------------------
@@ -116,7 +118,8 @@ select throws_ok($$insert into public.claims (id, request_id, partner_ref, gross
   values ('00000000-0000-0000-0020-0000000000d3', '00000000-0000-0000-0020-0000000000b2',
           'dr_w1', 30000::bigint, 500::bigint, 29500::bigint, 'denied', 'nope')$$,
   '23514', null, 'a wordless denial cannot be written by any route');
-select is((select count(*) from public.claims), 2::bigint, 'and nothing was added');
+select is((select count(*) from public.claims where request_id::text like '00000000-0000-0000-0020-%'),
+  2::bigint, 'and nothing was added');
 select lives_ok($$insert into public.claims (id, request_id, partner_ref, gross_cents,
   member_share_cents, paid_cents, status, reason)
   values ('00000000-0000-0000-0020-0000000000d3', '00000000-0000-0000-0020-0000000000b2',

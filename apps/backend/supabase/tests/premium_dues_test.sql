@@ -12,6 +12,19 @@
 begin;
 select plan(14);
 
+-- Ledger figures are read as what this file moved: the seed's own journals are
+-- already on the books (dues, premiums, payouts, pool grants), and a balance
+-- read whole would count them too. The baseline is every account's balance
+-- before this file posts anything.
+create temp table seed_ledger on commit drop as
+  select a.fund, a.code, public.ledger_balance(a.fund, a.code) as cents
+  from (select distinct fund, code from private.ledger_accounts) a;
+grant select on seed_ledger to public;
+create function pg_temp.moved(p_fund public.fund, p_code text) returns bigint language sql as $$
+  select public.ledger_balance(p_fund, p_code)
+       - coalesce((select cents from pg_temp.seed_ledger where fund = p_fund and code = p_code), 0)
+$$;
+
 -- --- fixtures ------------------------------------------------------------------
 
 create function pg_temp.member(p_id uuid, p_region text default 'CA') returns void
@@ -83,11 +96,11 @@ select lives_ok(
 select lives_ok(
   $$select public.pay_cover_premium('00000000-0000-0000-0021-0000000000a1'::uuid, 'prem_1')$$,
   'the premiums are paid out of dues money');
-select is(public.ledger_balance('protection'::public.fund, 'premiums'), 28800::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'premiums'), 28800::bigint,
   'premium money sits in its own account');
-select is(public.ledger_balance('protection'::public.fund, 'dues'), 21200::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'dues'), 21200::bigint,
   'unspent dues money stays in the dues account');
-select is(public.ledger_balance('protection'::public.fund, 'available'), 0::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'available'), 0::bigint,
   'dues money never arrives as pool money');
 reset role;
 select is((select count(*) from private.ledger_journals

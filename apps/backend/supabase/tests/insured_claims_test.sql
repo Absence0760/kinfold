@@ -8,6 +8,8 @@
 --     transaction, and is audit-logged;
 --   * the owner reads their claim; the member can't record one.
 begin;
+-- Audit counts read only this transaction's rows (`at = now()`): the seed's own
+-- trail predates it, and a count over the whole log would read the seed too.
 select plan(7);
 
 -- --- fixtures ------------------------------------------------------------------
@@ -81,5 +83,5 @@ select pg_temp.login('00000000-0000-0000-0012-0000000000a2');
 select lives_ok($$select public.deny_claim((select id from public.claims where partner_ref = 'ins_claim_1'), 'the reviewer''s photos show parking damage')$$,
   'a denial right after a recorded refuse review goes through');
 reset role;
-select is((select count(*) from private.audit_log where action = 'claim.denied'),
+select is((select count(*) from private.audit_log where action = 'claim.denied' and at = now()),
   1::bigint, 'the denial is audit-logged with its reason');

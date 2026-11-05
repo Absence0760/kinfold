@@ -14,6 +14,19 @@
 begin;
 select plan(19);
 
+-- Ledger figures are read as what this file moved: the seed's own journals are
+-- already on the books (dues, premiums, payouts, pool grants), and a balance
+-- read whole would count them too. The baseline is every account's balance
+-- before this file posts anything.
+create temp table seed_ledger on commit drop as
+  select a.fund, a.code, public.ledger_balance(a.fund, a.code) as cents
+  from (select distinct fund, code from private.ledger_accounts) a;
+grant select on seed_ledger to public;
+create function pg_temp.moved(p_fund public.fund, p_code text) returns bigint language sql as $$
+  select public.ledger_balance(p_fund, p_code)
+       - coalesce((select cents from pg_temp.seed_ledger where fund = p_fund and code = p_code), 0)
+$$;
+
 -- --- fixtures ------------------------------------------------------------------
 
 create function pg_temp.login(p_id uuid) returns void language sql as $$
@@ -32,23 +45,23 @@ select pg_temp.as_service();
 select lives_ok($$select public.record_grant('home_fund'::public.fund, 'foundation'::public.grant_source,
   'Kinfold Home Fund charity', false, 250000::bigint, 'grant_r1')$$,
   'a foundation grant lands in the Home Fund grants pot');
-select is(public.ledger_balance('home_fund'::public.fund, 'grants'), 250000::bigint,
+select is(pg_temp.moved('home_fund'::public.fund, 'grants'), 250000::bigint,
   'the grant money joins the labelled grants pot');
-select is(public.ledger_balance('home_fund'::public.fund, 'federal_grants'), 0::bigint,
+select is(pg_temp.moved('home_fund'::public.fund, 'federal_grants'), 0::bigint,
   'the federal pot stays empty until federal money arrives');
 select lives_ok($$select public.record_grant('home_fund'::public.fund, 'local_government'::public.grant_source,
   'City HOME match', true, 500000::bigint, 'grant_r2')$$,
   'a local-government grant marked federal lands in the federal pot');
-select is(public.ledger_balance('home_fund'::public.fund, 'federal_grants'), 500000::bigint,
+select is(pg_temp.moved('home_fund'::public.fund, 'federal_grants'), 500000::bigint,
   'federally funded money is its own pot');
-select is(public.ledger_balance('home_fund'::public.fund, 'grants'), 250000::bigint,
+select is(pg_temp.moved('home_fund'::public.fund, 'grants'), 250000::bigint,
   'the two pots never mix');
 select lives_ok($$select public.record_grant('protection'::public.fund, 'employer'::public.grant_source,
   'Employer dues pot', false, 40000::bigint, 'grant_r3')$$,
   'a non-federal grant for the protection fund lands in the dues pot');
-select is(public.ledger_balance('protection'::public.fund, 'dues'), 40000::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'dues'), 40000::bigint,
   'grant money pays dues, which only ever pays premiums');
-select is(public.ledger_balance('protection'::public.fund, 'available'), 0::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'available'), 0::bigint,
   'grant money never reaches the account pool allocations draw from');
 
 -- --- the refusals ----------------------------------------------------------------
@@ -69,7 +82,7 @@ select is(public.record_grant('home_fund'::public.fund, 'foundation'::public.gra
   'Kinfold Home Fund charity', false, 999999::bigint, 'grant_r1'),
   (select id from public.grants where partner_ref = 'grant_r1'),
   'a replayed report answers with the row it already made');
-select is(public.ledger_balance('home_fund'::public.fund, 'grants'), 250000::bigint,
+select is(pg_temp.moved('home_fund'::public.fund, 'grants'), 250000::bigint,
   'the replayed report counted no money again');
 select throws_ok($$insert into public.grants (fund, source, programme, federal, amount_cents, partner_ref)
   values ('home_fund'::public.fund, 'foundation'::public.grant_source, 'Zero money', false, 0::bigint, 'grant_r6')$$,
@@ -89,7 +102,7 @@ select throws_ok($$select public.record_grant('home_fund'::public.fund, 'foundat
 select throws_ok($$insert into public.grants (fund, source, programme, federal, amount_cents, partner_ref)
   values ('home_fund'::public.fund, 'foundation'::public.grant_source, 'Member write', false, 1::bigint, 'grant_r8')$$,
   '42501', 'permission denied for table grants', 'a member cannot write grant rows');
-select is((select count(*) from public.grants where fund = 'home_fund'), 2::bigint,
+select is((select count(*) from public.grants where fund = 'home_fund' and partner_ref like 'grant_r%'), 2::bigint,
   'members read who funded the cooperative');
 
 rollback;

@@ -12,6 +12,19 @@
 begin;
 select plan(10);
 
+-- Ledger figures are read as what this file moved: the seed's own journals are
+-- already on the books (dues, premiums, payouts, pool grants), and a balance
+-- read whole would count them too. The baseline is every account's balance
+-- before this file posts anything.
+create temp table seed_ledger on commit drop as
+  select a.fund, a.code, public.ledger_balance(a.fund, a.code) as cents
+  from (select distinct fund, code from private.ledger_accounts) a;
+grant select on seed_ledger to public;
+create function pg_temp.moved(p_fund public.fund, p_code text) returns bigint language sql as $$
+  select public.ledger_balance(p_fund, p_code)
+       - coalesce((select cents from pg_temp.seed_ledger where fund = p_fund and code = p_code), 0)
+$$;
+
 create function pg_temp.as_service() returns void language sql as $$
   select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 $$;
@@ -41,9 +54,9 @@ insert into public.contributions (request_id, contributor_id, source, amount_cen
 
 -- --- money arrives only with the partner's confirmation -----------------------
 
-select is(public.ledger_balance('protection'::public.fund, 'available'), 0::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'available'), 0::bigint,
   'the pool''s account is empty before the partner confirms anything');
-select is(public.ledger_balance('protection'::public.fund, 'partner_cash'), 0::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'partner_cash'), 0::bigint,
   'nothing had reached the partner''s side either');
 
 set local role anon;
@@ -55,9 +68,9 @@ set local role service_role;
 select pg_temp.as_service();
 select is(public.record_charge_confirmation('00000000-0000-0000-0009-0000000000b1', 'pi_1'), 55000::bigint,
   'the confirmation answers with the pledged money the schema captured');
-select is(public.ledger_balance('protection'::public.fund, 'available'), 55000::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'available'), 55000::bigint,
   'the captured money reaches the account the pool allocates from');
-select is(public.ledger_balance('protection'::public.fund, 'partner_cash'), -55000::bigint,
+select is(pg_temp.moved('protection'::public.fund, 'partner_cash'), -55000::bigint,
   'and the journal records the side it left, so it balances');
 select is((select count(*) from public.contributions
            where request_id = '00000000-0000-0000-0009-0000000000b1' and status = 'pledged'), 0::bigint,
