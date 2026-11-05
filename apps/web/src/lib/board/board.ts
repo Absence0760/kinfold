@@ -9,10 +9,10 @@ export { scoreBandLabel } from '#lib/requests/score-band.ts';
 export type RequestKind = Database['public']['Enums']['request_kind'];
 export type RequestStatus = Database['public']['Enums']['request_status'];
 export type BoardRow = Database['public']['Views']['board_requests']['Row'];
-/** A `board_requests` row plus the two progress columns the local schema's view
- * carries and the committed generated types don't yet (only the live stack
- * regenerates them); rows arrive with them, so they're read optionally. */
-export type BoardRowProgress = BoardRow & { raised_cents?: number | null; taking_pledges?: boolean };
+/** A `board_requests` row with its progress columns (`raised_cents`,
+ * `taking_pledges`): the generated view type carries both now, and a view
+ * column is nullable, so a missing figure still reads as null. */
+export type BoardRowProgress = BoardRow;
 
 /** One request on the board, as the page shows it. */
 export interface BoardItem {

@@ -27,6 +27,8 @@ const schedule = (paid: number[] = []): InstallmentRow[] =>
 		due_on: `${2026 + Math.floor((10 + i) / 12)}-${String(((10 + i) % 12) + 1).padStart(2, '0')}-15`,
 		amount_cents: 10000,
 		paid_cents: paid[i] ?? 0,
+		// When the last payment landed; no summary reads it.
+		paid_on: null,
 		paused: false
 	}));
 

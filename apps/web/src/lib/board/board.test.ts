@@ -52,6 +52,9 @@ const row = (over: Partial<BoardRow> = {}): BoardRow => ({
 	score_band: 80,
 	area: 'Pacific',
 	month_of: '2026-10-01',
+	// The view's progress columns: null unless a test gives a figure.
+	raised_cents: null,
+	taking_pledges: null,
 	...over
 });
 
