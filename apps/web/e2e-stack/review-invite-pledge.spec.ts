@@ -17,6 +17,7 @@ test.describe.configure({ mode: 'serial' });
 const B5_CENTS = 120000;
 const B5_TITLE = 'Burst pipe under the bathroom';
 const PAYEE = 'Golden Gate Contracting (dev)';
+const B6_APPEAL = 'The shop quoted the whole panel because the scrape runs from the door to the rear bumper.';
 let inviteUrl = '';
 
 async function signOut(page: Page) {
@@ -85,7 +86,12 @@ test('the appeal panel denies an appeal with a written reason', async ({ page })
 	await signIn(page, 'priya');
 	await page.goto('/app/review');
 	await expect(page.getByRole('heading', { name: 'Appeals' })).toBeVisible();
-	const card = page.locator('article').filter({ has: page.getByRole('heading', { name: /^Appeal filed/ }) });
+	// The seed leaves more than one appeal open for the panel, so the card is
+	// b6's own: an appeal card carrying maria's seeded appeal (seed.sql, b6).
+	const card = page
+		.locator('article')
+		.filter({ has: page.getByRole('heading', { name: /^Appeal filed/ }) })
+		.filter({ hasText: B6_APPEAL });
 	await expect(card).toHaveCount(1);
 	await card.getByRole('radio', { name: /^Deny the appeal/ }).check();
 	await card.getByLabel('Reason').fill('The estimate covers a full rear panel; the photos the member sent show only a door scrape.');
