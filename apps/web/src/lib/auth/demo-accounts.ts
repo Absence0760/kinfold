@@ -39,6 +39,24 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
 		name: 'Priya',
 		roles: 'Member + appeal panel · TX',
 		summary: 'A car damage request already paid from the community pool.'
+	},
+	{
+		email: 'kofi@test.com',
+		name: 'Kofi',
+		roles: 'Member + reviewer · IL',
+		summary: 'A second reviewer, with a Home Fund repair half granted by the pool and a Home Fund loan.'
+	},
+	{
+		email: 'ben@test.com',
+		name: 'Ben',
+		roles: 'Member · TN',
+		summary: 'Lends to several friends at 0%: loans on time, paused, behind, repaid and defaulted.'
+	},
+	{
+		email: 'nora@test.com',
+		name: 'Nora',
+		roles: 'New member · PA',
+		summary: 'Joined three days ago; her identity check hasn’t come back yet.'
 	}
 ];
 

@@ -23,10 +23,33 @@ describe('demoSignInAllowed', () => {
 	});
 });
 
+// This workspace has no Node types, so read the seed through Node's own loader.
+type Fs = { readFileSync: (path: URL, encoding: 'utf8') => string };
+const fs = (globalThis as unknown as { process: { getBuiltinModule: (id: string) => Fs } }).process.getBuiltinModule(
+	'node:fs'
+);
+const seed = fs.readFileSync(new URL('../../../../backend/supabase/seed.sql', import.meta.url), 'utf8');
+
 describe('DEMO_ACCOUNTS', () => {
-	it('lists the four seeded people once each', () => {
+	it('lists the seven demo people once each', () => {
 		const emails = DEMO_ACCOUNTS.map((a) => a.email);
-		expect(new Set(emails).size).toBe(4);
-		expect(emails).toEqual(['maria@test.com', 'sam@test.com', 'james@test.com', 'priya@test.com']);
+		expect(new Set(emails).size).toBe(7);
+		expect(emails).toEqual([
+			'maria@test.com',
+			'sam@test.com',
+			'james@test.com',
+			'priya@test.com',
+			'kofi@test.com',
+			'ben@test.com',
+			'nora@test.com'
+		]);
+	});
+
+	it('offers only people the seed creates, each named in its demo-login header', () => {
+		const header = seed.slice(0, seed.indexOf('-- --- people'));
+		for (const { email } of DEMO_ACCOUNTS) {
+			expect(seed, `${email} is created by seed.sql`).toContain(`'${email}'`);
+			expect(header, `${email} is in seed.sql's demo-login list`).toContain(email);
+		}
 	});
 });
