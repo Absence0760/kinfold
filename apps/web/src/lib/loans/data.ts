@@ -98,10 +98,12 @@ export async function loadLoan(db: Db, uid: string, id: string): Promise<LoanDet
 		db.from('loan_pauses').select('*').eq('loan_id', id).order('started_on'),
 		db.from('loan_forgiveness').select('*').eq('loan_id', id).order('created_at'),
 		db.from('loan_missed_installments').select('*').eq('loan_id', id),
-		fromNew(db, 'loan_restructures')
+		// The table has no created_at: a restructure is dated by its staging.
+		db
+			.from('loan_restructures')
 			.select('loan_id, months, first_due, stager_signed_at, other_signed_at, created_by')
 			.eq('loan_id', id)
-			.order('created_at'),
+			.order('stager_signed_at'),
 		fromNew(db, 'family_loans')
 			.select('agreement_text, agreement_finalized_at')
 			.eq('id', id)
@@ -178,7 +180,8 @@ export interface RestructureRow {
 /** Restructures on the viewer's loans waiting for the other side to sign. */
 export async function loadPendingRestructures(db: Db, loanIds: string[]): Promise<RestructureRow[]> {
 	if (loanIds.length === 0) return [];
-	const { data, error } = await fromNew(db, 'loan_restructures')
+	const { data, error } = await db
+		.from('loan_restructures')
 		.select('loan_id, months, first_due, stager_signed_at, other_signed_at, created_by')
 		.in('loan_id', loanIds);
 	if (error) throw new Error(`Couldn't load pending restructures: ${error.message}`);

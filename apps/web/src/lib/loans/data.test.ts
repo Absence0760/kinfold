@@ -20,16 +20,23 @@ type Fixture = { data: unknown; error: { message: string; code?: string } | null
 
 function fakeDb(fixtures: Record<string, Fixture>) {
 	const asked: string[] = [];
+	// Which column each read sorts by: PostgREST refuses (400) an order on a
+	// column the table doesn't have, which a fake would otherwise wave through.
+	const ordered: Record<string, string> = {};
 	const query = (name: string) => {
 		asked.push(name);
 		const result = fixtures[name] ?? { data: [], error: null };
 		const chain: Record<string, unknown> = {};
-		for (const m of ['select', 'eq', 'or', 'order', 'in']) chain[m] = () => chain;
+		for (const m of ['select', 'eq', 'or', 'in']) chain[m] = () => chain;
+		chain.order = (column: string) => {
+			ordered[name] = column;
+			return chain;
+		};
 		chain.then = (ok: (v: Fixture) => unknown, bad: (e: unknown) => unknown) => Promise.resolve(result).then(ok, bad);
 		chain.maybeSingle = () => Promise.resolve(fixtures[name] ?? { data: null, error: null });
 		return chain;
 	};
-	return { db: { from: query, rpc: query } as unknown as Db, asked };
+	return { db: { from: query, rpc: query } as unknown as Db, asked, ordered };
 }
 
 const loanId = '00000000-0000-0000-0037-0000000000a1';
@@ -164,6 +171,17 @@ describe('loadLoan', () => {
 		expect(detail.agreementFinalizedAt).toBe('2026-07-01T00:00:00Z');
 		expect(detail.restructures).toEqual([pending]);
 		expect(detail.missed).toEqual([]);
+	});
+
+	it('restructures are ordered by when they were staged, a column the table has', async () => {
+		const { db, ordered } = fakeDb({
+			family_loans: { data: loanRow, error: null },
+			loan_restructures: { data: [], error: null }
+		});
+		await loadLoan(db, 'm1', loanId);
+		// loan_restructures has no created_at (migration 20261102480000); ordering
+		// by it made every family loan page fail to load.
+		expect(ordered.loan_restructures).toBe('stager_signed_at');
 	});
 
 	it('a lender viewing the loan gets no lender relationship', async () => {
