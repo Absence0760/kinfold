@@ -28,7 +28,10 @@ export type EvidenceRow = Pick<
 	stored: boolean;
 };
 export type PayoutRow = Pick<Tables['payouts']['Row'], 'id' | 'status' | 'amount_cents' | 'sent_at' | 'created_at'>;
-export type AppealRow = Pick<Tables['appeals']['Row'], 'id' | 'reason' | 'status' | 'created_at' | 'decided_at'>;
+export type AppealRow = Pick<
+	Tables['appeals']['Row'],
+	'id' | 'reason' | 'status' | 'created_at' | 'decided_at' | 'decision_note'
+>;
 export type EventRow = Pick<Tables['request_events']['Row'], 'id' | 'from_status' | 'to_status' | 'at'>;
 export interface ReviewRow {
 	decision: Database['public']['Enums']['review_decision'];
@@ -139,7 +142,7 @@ export async function loadRequest(db: Db, id: string): Promise<RequestDetail | n
 			.select('id, kind, original_path, redacted_path, redaction_status, captured_in_app, created_at')
 			.eq('request_id', id)
 			.order('created_at'),
-		db.from('appeals').select('id, reason, status, created_at, decided_at').eq('request_id', id).order('created_at'),
+		db.from('appeals').select('id, reason, status, created_at, decided_at, decision_note').eq('request_id', id).order('created_at'),
 		db.rpc('my_request_reviews', { p_request: id }),
 		db.from('request_events').select('id, from_status, to_status, at').eq('request_id', id).order('id'),
 			db.from('payouts').select('id, status, amount_cents, sent_at, created_at').eq('request_id', id).order('created_at'),

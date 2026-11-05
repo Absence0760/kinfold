@@ -20,11 +20,17 @@ type Fixture = { data: unknown; error: { message: string; code?: string } | null
 
 function fakeDb(fixtures: Record<string, Fixture>, storage: Record<string, Fixture> = {}) {
 	const asked: string[] = [];
+	// The columns each table was read with, so a test can pin what a page shows.
+	const selected: Record<string, string> = {};
 	const query = (name: string) => {
 		asked.push(name);
 		const result = fixtures[name] ?? { data: [], error: null };
 		const chain: Record<string, unknown> = {};
-		for (const m of ['select', 'eq', 'in', 'or', 'order', 'is', 'insert', 'update', 'delete']) chain[m] = () => chain;
+		for (const m of ['eq', 'in', 'or', 'order', 'is', 'insert', 'update', 'delete']) chain[m] = () => chain;
+		chain.select = (columns?: string) => {
+			if (typeof columns === 'string') selected[name] = columns;
+			return chain;
+		};
 		// `single()` answers with the first row, like postgrest-js does.
 		chain.single = () => Promise.resolve({
 			data: Array.isArray(result.data) ? (result.data as unknown[])[0] : result.data,
@@ -50,7 +56,7 @@ function fakeDb(fixtures: Record<string, Fixture>, storage: Record<string, Fixtu
 			}
 		}
 	} as unknown as Db;
-	return { db, asked };
+	return { db, asked, selected };
 }
 
 const id = '00000000-0000-0000-0037-0000000000e1';
@@ -121,6 +127,21 @@ describe('loadRequest', () => {
 		expect(detail.evidence.map((e) => e.stored)).toEqual([true, false]);
 		expect(asked).toContain('storage:evidence-original');
 		expect(detail.needsInspection).toBe(false);
+	});
+
+	it('reads the panel\u2019s written reason with each appeal, never who decided it', async () => {
+		// A refusal is explained in plain language (design.md): once the panel
+		// decides, the member reads its reason on the request page. The panelist
+		// stays anonymous, so `decided_by` is never asked for.
+		const { db, selected } = fakeDb({
+			requests: { data: { id, member_id: 'm1', kind: 'car_damage', funding: 'people', title: 'A dented door', amount_cents: 100000, incident_on: '2026-09-14', status: 'refused' }, error: null },
+			appeals: { data: [{ id: 'a1', reason: 'The shop quoted the whole panel.', status: 'denied', created_at: '2026-10-01', decided_at: '2026-10-03', decision_note: 'The photos show only a door scrape.' }], error: null }
+		});
+		const detail = await loadRequest(db, id);
+		if (detail === null) throw new Error('fixture has the request');
+		expect(selected.appeals.split(',').map((c) => c.trim())).toContain('decision_note');
+		expect(selected.appeals).not.toContain('decided_by');
+		expect(detail.appeals[0].decision_note).toBe('The photos show only a door scrape.');
 	});
 
 	it('a request past the draft stage never lists the bucket', async () => {

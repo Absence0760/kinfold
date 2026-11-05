@@ -68,6 +68,12 @@
 					{#if a.decided_at}
 						<p class="meta">Decided {formatDay(a.decided_at)}.</p>
 					{/if}
+					{#if a.decision_note}
+						<!-- The panel's written reason: a refusal is explained in plain
+						     language (design.md), and the panelist's name is never shown. -->
+						<p class="meta">The panel’s reason:</p>
+						<blockquote class="decision">{a.decision_note}</blockquote>
+					{/if}
 				</li>
 			{/each}
 		</ul>
