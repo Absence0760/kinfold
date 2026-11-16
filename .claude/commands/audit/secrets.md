@@ -72,7 +72,7 @@ For each: the env-var name and file:line, and what should change. **Never paste 
 - `apps/backend/supabase/config.toml` — every `env(...)` reference
 - `.gitignore`, `apps/backend/supabase/.gitignore`
 - `.github/workflows/deploy.yml.example` — the OIDC + `production` environment pattern
-- `.pre-commit-config.yaml` + `.github/workflows/gitleaks.yml` — the gitleaks guard
+- `.pre-commit-config.yaml` (gitleaks, local) + `.github/workflows/secret-scan.yml` (TruffleHog, CI) — the secret-scan guards
 - `../infra-secrets/README.md` — the estate secrets model
 
 ## Delegate to
