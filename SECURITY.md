@@ -4,7 +4,7 @@
 
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
-Report it privately through GitHub's private vulnerability reporting: <https://github.com/Absence0760/kinfold/security/advisories/new> (also reachable from the repository's **Security** tab → **Report a vulnerability**). Only the maintainers can see the report. Include:
+Report it privately through GitHub's private vulnerability reporting: <https://github.com/jaredhoward-dev/kinfold/security/advisories/new> (also reachable from the repository's **Security** tab → **Report a vulnerability**). Only the maintainers can see the report. Include:
 
 - A description of the vulnerability and its impact
 - Steps to reproduce (PoC if possible)
