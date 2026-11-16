@@ -50,7 +50,7 @@ There's already a scheduled `audit.yml` workflow that runs `pnpm audit` weekly a
 5. **GitHub Actions pinning.** Grep `.github/workflows/` for `uses: <action>@<ref>`.
    - Floating refs (`@main`, `@v6`) are supply-chain risks for actions that can be force-pushed by the publisher.
    - SHA pins (`@<sha>`) are the safer default for workflows that touch `${{ secrets.* }}` or deploy.
-   - Flag floating refs on any deploy workflow (none live yet; `deploy.yml.example` is the template) and `claude.yml` (which has access to project tokens). `security.yml`, `audit.yml`, `gitleaks.yml`, `pr-title-lint.yml`, `labeler.yml` are lower-stakes but worth surfacing too.
+   - Flag floating refs on any deploy workflow (none live yet; `deploy.yml.example` is the template) and `claude.yml` (which has access to project tokens). `security.yml`, `audit.yml`, `secret-scan.yml`, `pr-title-lint.yml`, `labeler.yml` are lower-stakes but worth surfacing too.
 
 6. **Override hygiene.** Read the root `package.json` `pnpm.overrides` block. For each override:
    - Confirm it's still needed — has upstream shipped a fix that lets us drop the override? Pull the latest version of the package from npm and check.
