@@ -5,17 +5,17 @@
 # means a PR with no other matches still gets routed to you.
 
 # Catch-all — every file owned by you unless overridden below.
-*                                       @Absence0760
+*                                       @jaredhowardza
 
 # Infra / production-impact paths
-/.github/workflows/                     @Absence0760
-/.github/dependabot.yml                 @Absence0760
-/.github/CODEOWNERS                     @Absence0760
+/.github/workflows/                     @jaredhowardza
+/.github/dependabot.yml                 @jaredhowardza
+/.github/CODEOWNERS                     @jaredhowardza
 
 # Security-sensitive scaffolding
-/SECURITY.md                            @Absence0760
-/.pre-commit-config.yaml                @Absence0760
+/SECURITY.md                            @jaredhowardza
+/.pre-commit-config.yaml                @jaredhowardza
 
 # Claude tooling
-/.claude/                               @Absence0760
-/CLAUDE.md                              @Absence0760
+/.claude/                               @jaredhowardza
+/CLAUDE.md                              @jaredhowardza
